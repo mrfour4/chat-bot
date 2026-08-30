@@ -7,7 +7,7 @@ import { DocumentsPanel } from "./documents-panel";
 export const metadata = { title: "Tài liệu · Cố vấn Tuyển sinh" };
 
 export default async function TeacherDocumentsPage() {
-  const user = await requireTeacher();
+  await requireTeacher();
   const supabase = await createClient();
 
   // Rendered on the server so the list arrives with the HTML and RLS scopes it.
@@ -21,9 +21,6 @@ export default async function TeacherDocumentsPage() {
         <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight">
           Tài liệu tuyển sinh
         </h1>
-        <p className="mt-2 text-sm text-ink-soft">
-          Đăng nhập với tư cách giáo viên · {user.email}
-        </p>
       </div>
 
       <DocumentsPanel initial={documents} />
