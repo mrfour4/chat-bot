@@ -7,8 +7,8 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `2.1.3` — documents repository ✅
-**Current small phase:** `2.1.4` — upload route
+**Last completed:** `2.1.4` — upload route ✅
+**Current small phase:** `2.1.5` — indexing + post-index check
 **State:** implementing
 **Blocked on:** nothing
 
@@ -35,7 +35,7 @@ Small phase plan (docs/phases/N.md)
 - **Step by step, together.** No subagents. You read every diff.
 - **You verify the UI.** No Playwright, no browser tests. I verify with `typecheck`, `lint`, `test`, `build`, and `curl`, and report exactly what they show.
 - **Schema changes go through the Supabase CLI.** Never pasted SQL in the Dashboard.
-- **Free tier — spend API calls carefully.** Gemini is mocked in tests; real calls are reserved for one end-to-end check per phase that needs one. Free tier is also flash-models-only, which constrains **D7**.
+- **Free tier — spend API calls carefully, but do spend them.** Verify integrations against the real API rather than assuming they work; just do it with the single-page files `doc-to-test/uit-page-1.pdf` and `iuh-page-1.pdf`, and reach for the full PDFs only when a phase genuinely needs them. Free tier is also flash-models-only, which constrains **D7**.
 - **Library behaviour is verified, not remembered.** Read the installed source; published docs have already been wrong once (§5.2) and silent twice (§5.11, §5.12).
 
 ---
@@ -263,7 +263,7 @@ Docs are written just before their review gate, not all upfront.
 | 2.1.1 | Vitest harness | `vitest.config.mts`, `npm test`, 2 passing tests | [2.1.1](phases/2.1.1-vitest-harness.md) | ✅ |
 | 2.1.2 | Upload validation | `validateUpload()` pure fn, 8 tests, test-first | [2.1.2](phases/2.1.2-upload-validation.md) | ✅ |
 | 2.1.3 | Documents repository | typed CRUD with injected client, + `sha256Hex` / `describeError` | [2.1.3](phases/2.1.3-documents-repository.md) | ✅ |
-| 2.1.4 | Upload route | `POST /api/documents` → `pending` row, teacher-only, dedupe | — | ⚪ |
+| 2.1.4 | Upload route | `POST`/`GET /api/documents`, teacher-only, dedupe on checksum | [2.1.4](phases/2.1.4-upload-route.md) | ✅ |
 | 2.1.5 | Indexing + post-index check | File Search upload, poll, `ready`/`failed`; check must be a **scoped retrieval query** (§5.12). **D5 = synchronous, ~60s cap** | — | ⚪ |
 | 2.1.6 | Documents list UI | list, upload form, status polling | — | ⚪ |
 | 2.1.7 | Delete | `DELETE /api/documents/[id]`, Gemini doc + row — needs `config: { force: true }` (2.1.0 finding 5) | — | ⚪ |
@@ -327,3 +327,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `2.1.1` Vitest harness. One pinned dev dependency (`vitest` 4.1.11); `@vitejs/plugin-react` and `vite-tsconfig-paths` dropped as unearned. Config is `.mts` for the same CJS/ESM reason the scripts are. **D5 settled: synchronous indexing, ~60s cap.**
 - **2026-08-30** — `2.1.2` upload validation. Pure `validateUpload()`, 8 tests written before the implementation and observed failing. MIME is treated as a hint and the `%PDF-` signature as the gate, because browsers derive `File.type` from the extension and a renamed executable arrives claiming `application/pdf`.
 - **2026-08-30** — `2.1.3` documents repository. Client is injected rather than imported, so RLS still applies to user reads while indexing write-backs can use the secret key — and so the module stays free of `server-only` and testable. Tests cover `sha256Hex` (published vectors) and `describeError`; the PostgREST wrappers are covered by typecheck against generated schema types instead of mocks.
+- **2026-08-30** — `2.1.4` upload route. `getTeacher()` added as the non-redirecting sibling of `requireTeacher()`, because a route that redirects answers a JSON fetch with an HTML login page and a 200. Confirmed by real request: 401 with a JSON body. Dedupe is on checksum, not filename. Row stops at `pending` so 2.1.5's indexing can fail on its own terms.

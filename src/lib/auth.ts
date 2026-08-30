@@ -46,6 +46,19 @@ export async function requireUser(redirectTo = "/login"): Promise<SessionUser> {
   return user;
 }
 
+/**
+ * The signed-in teacher, or null.
+ *
+ * The non-redirecting sibling of `requireTeacher`, for route handlers. A route
+ * that redirected would answer a JSON fetch with a 307 to /login, which the
+ * caller would follow and receive HTML with a 200 -- leaving it unable to tell
+ * "forbidden" from "here is a login page".
+ */
+export async function getTeacher(): Promise<SessionUser | null> {
+  const user = await getSessionUser();
+  return user?.profile.role === "teacher" ? user : null;
+}
+
 /** Redirects anyone who is not a teacher. The RLS policies are the real guard. */
 export async function requireTeacher(): Promise<SessionUser> {
   const user = await requireUser();
