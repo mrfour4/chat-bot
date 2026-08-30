@@ -7,8 +7,8 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `2.2.1` — the ungrounded guard ✅
-**Current small phase:** `2.2.2` — citation mapping
+**Last completed:** `2.2.2` — citation mapping ✅
+**Current small phase:** `2.2.3` — `askDocuments()`
 **State:** implementing through to the chatbot; you test with a fresh key at the end
 **Blocked on:** nothing
 
@@ -315,7 +315,7 @@ Docs are written just before their review gate, not all upfront.
 | # | Small phase | Deliverable | Doc | State |
 | --- | --- | --- | --- | --- |
 | 2.2.1 | The ungrounded guard | `enforceGrounding`, 8 tests, fails closed | [2.2.1](phases/2.2.1-grounding-guard.md) | ✅ |
-| 2.2.2 | Citation mapping | `groundingMetadata` → `Citation[]`, resolved to rows | — | ⚪ |
+| 2.2.2 | Citation mapping | `extractCitations`, dedupes by page, 8 tests | [2.2.2](phases/2.2.2-citations.md) | ✅ |
 | 2.2.3 | `askDocuments()` | system instruction, `fileSearch` tool, guard wired in — **decision D7** | — | ⚪ |
 
 ### 2.3 Chatbot
@@ -375,3 +375,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `2.1.8` brought forward. The 429 above reached the teacher as raw English JSON, and a transient failure was treated as permanent. `classifyGeminiError` now yields a Vietnamese message naming the real 20/day limit, with the raw text kept for logs; transient failures retry on the API's own suggested delay, frugally (503 ×3, quota ×1). The planned retry endpoint proved unnecessary: since we never keep the PDF bytes, retry *is* re-upload, so a `failed` row is reused instead of rejected as a duplicate — three lines instead of an endpoint.
 - **2026-08-30** — `2.1.7` delete, completing 2.1. The Gemini document is removed before the row, deliberately: the reverse order leaves an unreachable orphan on a half-failure, while this order leaves a row the teacher can simply delete again. That self-heal depends on treating a Gemini 404 as success. Inline confirmation rather than `window.confirm`, which browsers let users suppress permanently — silently turning a destructive action into a one-click one.
 - **2026-08-30** — `2.2.1` the ungrounded guard. Checks for *evidence that retrieval happened* rather than inspecting the text for signs of invention, and discards the model's words when that evidence is missing. Fails closed on every unexpected shape. The decisive tests assert the hallucination's text is absent from the output, not merely that a flag is false. **D6 and D7 settled** — see §1.
+- **2026-08-30** — `2.2.2` citation mapping. Reads `documentId` through the same `DOCUMENT_ID_KEY` constant the upload writes, so the two cannot drift apart — a drift that would fail silently, with citations quietly ceasing to resolve while everything still looked fine. One citation per document-and-page; a missing page is `null` rather than a confident guess.
