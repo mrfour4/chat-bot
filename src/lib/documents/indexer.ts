@@ -4,7 +4,7 @@ import { describeError } from "@/lib/documents/errors";
 import { getFileSearchStore, getGemini } from "@/lib/gemini/client";
 import { classifyGeminiError } from "@/lib/gemini/errors";
 
-export const INDEXING_TIMEOUT_MS = 60_000;
+export const INDEXING_TIMEOUT_MS = 180_000;
 
 const POLL_INTERVAL_MS = 2_000;
 

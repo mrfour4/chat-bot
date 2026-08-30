@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { serverEnv } from "@/lib/env";
-import { getGemini } from "@/lib/gemini/client";
+import { getGemini, geminiBaseUrl } from "@/lib/gemini/client";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -43,9 +43,12 @@ export async function GET() {
             for await (const store of await ai.fileSearchStores.list()) {
                 if (store.name) stores.push(store.name);
             }
+            const baseUrl = geminiBaseUrl();
             checks.gemini = {
                 ok: true,
-                detail: `API key valid. ${stores.length} File Search store(s).`,
+                detail: baseUrl
+                    ? `MOCK server at ${baseUrl}. ${stores.length} File Search store(s).`
+                    : `API key valid. ${stores.length} File Search store(s).`,
             };
             checks.fileSearchStore = env.fileSearchStore
                 ? {

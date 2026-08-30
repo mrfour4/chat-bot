@@ -4,9 +4,21 @@ import { serverEnv } from "@/lib/env";
 
 let cached: GoogleGenAI | null = null;
 
+export function geminiBaseUrl(): string | null {
+    return process.env.GEMINI_BASE_URL || null;
+}
+
+export function isMockGemini(): boolean {
+    return geminiBaseUrl() !== null;
+}
+
 export function getGemini(): GoogleGenAI {
     if (!cached) {
-        cached = new GoogleGenAI({ apiKey: serverEnv().geminiApiKey });
+        const baseUrl = geminiBaseUrl();
+        cached = new GoogleGenAI({
+            apiKey: serverEnv().geminiApiKey,
+            ...(baseUrl ? { httpOptions: { baseUrl } } : {}),
+        });
     }
     return cached;
 }

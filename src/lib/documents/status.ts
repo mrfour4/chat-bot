@@ -4,7 +4,7 @@ export function isPending(status: DocumentStatus): boolean {
     return status === "pending" || status === "indexing";
 }
 
-export const STALE_AFTER_MS = 3 * 60 * 1000;
+export const STALE_AFTER_MS = 5 * 60 * 1000;
 
 export function isStale(
     document: { status: DocumentStatus; updated_at: string },

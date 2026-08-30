@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { INDEXING_TIMEOUT_MS } from "@/lib/documents/indexer";
 import { isPending, isStale, STALE_AFTER_MS } from "@/lib/documents/status";
 
 describe("isPending", () => {
@@ -70,5 +71,11 @@ describe("isStale", () => {
                 now,
             ),
         ).toBe(false);
+    });
+});
+
+describe("the sweeper's relationship to the indexing deadline", () => {
+    it("waits longer than a job is allowed to run", () => {
+        expect(STALE_AFTER_MS).toBeGreaterThan(INDEXING_TIMEOUT_MS);
     });
 });
