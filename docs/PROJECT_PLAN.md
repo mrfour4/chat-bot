@@ -7,14 +7,14 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `2.2.3` — `askDocuments()` ✅ · **2.2 complete**
-**Current small phase:** `2.3.0` — TanStack AI setup
+**Last completed:** `2.3.0` — streaming decision ✅
+**Current small phase:** `2.3.1` — chat route
 **State:** implementing through to the chatbot; you test with a fresh key at the end
 **Blocked on:** nothing
 
-**Settled:** **D7** = `gemini-3.6-flash` as the answering model, overridable via
-`GEMINI_MODEL` (a lower-tier model is used while quota is short). **D6** =
-TanStack AI on the client only, per §5.11.
+**Settled:** **D7** = `gemini-3.6-flash`, overridable via `GEMINI_MODEL`.
+**D6** = **no TanStack AI** — reversed in 2.3.0, because the grounding guarantee
+rules out token streaming and streaming was most of what it offered.
 
 **Try it as a real user** — upload, duplicate, bad file, failure, re-upload,
 delete, re-upload the deleted file. The four delete checks are in
@@ -171,7 +171,22 @@ for Vietnamese diacritic coverage.
 **5.10 Out of scope.** Original PDFs in Supabase Storage, multi-university
 tenancy, automated answer-quality eval beyond Phase 3.
 
-**5.11 TanStack AI: client yes, server no.** Evaluated at your suggestion. The
+**5.15 The grounding guarantee rules out token streaming.** `enforceGrounding`
+needs `groundingMetadata` to decide whether the answer may be shown at all, and
+that metadata necessarily arrives last: `groundingSupports[].segment` carries
+offsets **into the completed answer**, so it is a statement about text that
+already exists.
+
+Streaming would therefore mean showing a possibly-ungrounded answer and then
+retracting it. A student who has read "học phí 55 triệu đồng một năm" has read
+it; replacing it afterwards with "không có thông tin" is worse than never
+showing it, because we published the fabrication first.
+
+So the answer is buffered to completion, guarded, then sent whole. The pending
+state shows the work instead of the words. See `docs/phases/2.3.0-no-streaming-no-tanstack.md`.
+
+**5.11 TanStack AI: evaluated, then declined** (superseded by §5.15 — the
+finding below still stands and still constrains anything we adopt later). Evaluated at your suggestion. The
 finding that decides it — read from the package source, not the docs:
 
 ```
@@ -322,9 +337,9 @@ Docs are written just before their review gate, not all upfront.
 
 | # | Small phase | Deliverable | Doc | State |
 | --- | --- | --- | --- | --- |
-| 2.3.0 | TanStack AI setup | install, read shipped skills, `intent install` diff — **decision D6**; skipped entirely if you say no | — | ⚪ |
-| 2.3.1 | Chat SSE route | `POST /api/chat` streaming AG-UI events + `CUSTOM` citations | — | ⚪ |
-| 2.3.2 | Chat UI | `useChat` (or hand-rolled), streaming into shadcn chat primitives | — | ⚪ |
+| 2.3.0 | Streaming decision | **D6 = no TanStack AI**; grounding rules out streaming (§5.15) | [2.3.0](phases/2.3.0-no-streaming-no-tanstack.md) | ✅ |
+| 2.3.1 | Chat route | `POST /api/chat` returning a complete, guarded answer + citations | — | ⚪ |
+| 2.3.2 | Chat UI | hand-rolled `useState` + `fetch`; pending state shows the work | — | ⚪ |
 | 2.3.3 | Citation rendering | document references — the design's signature element | — | ⚪ |
 | 2.3.4 | Conversation persistence | students get history; guests do not | — | ⚪ |
 
@@ -377,3 +392,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `2.2.1` the ungrounded guard. Checks for *evidence that retrieval happened* rather than inspecting the text for signs of invention, and discards the model's words when that evidence is missing. Fails closed on every unexpected shape. The decisive tests assert the hallucination's text is absent from the output, not merely that a flag is false. **D6 and D7 settled** — see §1.
 - **2026-08-30** — `2.2.2` citation mapping. Reads `documentId` through the same `DOCUMENT_ID_KEY` constant the upload writes, so the two cannot drift apart — a drift that would fail silently, with citations quietly ceasing to resolve while everything still looked fine. One citation per document-and-page; a missing page is `null` rather than a confident guess.
 - **2026-08-30** — `2.2.3` `askDocuments()`. The three grounding layers meet here, with a test asserting `googleSearch` is *absent* from the tools — web grounding would still produce citations, so that mistake would look correct rather than broken. History is passed to the model but never acts as a source: retrieval runs every turn, so a follow-up resolves its pronouns against the conversation while its facts still come only from documents. **D7 settled: `gemini-3.6-flash`.**
+- **2026-08-30** — `2.3.0` **D6 reversed: no TanStack AI.** Not because of TanStack, but because the grounding guarantee rules out token streaming (§5.15): `groundingSupports[].segment` carries offsets into the *completed* answer, so the metadata deciding whether an answer may be shown necessarily arrives last. Streaming would mean publishing a possible fabrication and retracting it — worse than never showing it. With streaming gone, TanStack was 3 packages and a canary dependency in exchange for a `useState` array.
