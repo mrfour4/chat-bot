@@ -7,10 +7,10 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `2.1.5` — indexing + post-index check ✅ (3 API checks pending quota)
-**Current small phase:** `2.1.6` — documents list UI
-**State:** ready to plan
-**Blocked on:** nothing — the pending API checks need a fresh daily quota, not a decision
+**Last completed:** `2.1.6` — documents list UI ✅ code; **awaiting your browser check**
+**Current small phase:** `2.1.7` — delete
+**State:** paused for your verification of 2.1.6
+**Blocked on:** your browser check (see `docs/phases/2.1.6-documents-ui.md`)
 
 **Open decisions:** **D6** TanStack AI (§5.11) · **D7** default model (§5.13)
 **Settled:** **D5** = synchronous indexing with a ~60s cap, on the 10.0–14.6s
@@ -298,7 +298,7 @@ Docs are written just before their review gate, not all upfront.
 | 2.1.3 | Documents repository | typed CRUD with injected client, + `sha256Hex` / `describeError` | [2.1.3](phases/2.1.3-documents-repository.md) | ✅ |
 | 2.1.4 | Upload route | `POST`/`GET /api/documents`, teacher-only, dedupe on checksum | [2.1.4](phases/2.1.4-upload-route.md) | ✅ |
 | 2.1.5 | Indexing + post-index check | Synchronous, 60s cap, scoped post-index check; both PDF kinds verified indexing | [2.1.5](phases/2.1.5-indexing.md) | ✅ |
-| 2.1.6 | Documents list UI | list, upload form, status polling | — | ⚪ |
+| 2.1.6 | Documents list UI | upload form, live status, inline failure reasons | [2.1.6](phases/2.1.6-documents-ui.md) | ✅ code |
 | 2.1.7 | Delete | `DELETE /api/documents/[id]`, Gemini doc + row — needs `config: { force: true }` (2.1.0 finding 5) | — | ⚪ |
 | 2.1.8 | Retry + failure UX | retry action, reconcile stuck rows | — | ⚪ |
 
@@ -362,3 +362,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `2.1.3` documents repository. Client is injected rather than imported, so RLS still applies to user reads while indexing write-backs can use the secret key — and so the module stays free of `server-only` and testable. Tests cover `sha256Hex` (published vectors) and `describeError`; the PostgREST wrappers are covered by typecheck against generated schema types instead of mocks.
 - **2026-08-30** — `2.1.4` upload route. `getTeacher()` added as the non-redirecting sibling of `requireTeacher()`, because a route that redirects answers a JSON fetch with an HTML login page and a 200. Confirmed by real request: 401 with a JSON body. Dedupe is on checksum, not filename. Row stops at `pending` so 2.1.5's indexing can fail on its own terms.
 - **2026-08-30** — `2.1.5` indexing. Both a text PDF and a pure scan verified indexing through the real API. Three findings, each from a failure: **`metadataFilter` only matches lowercase metadata keys** (`documentId` silently matches nothing, `docid` works — hyphens were innocent); two orphan paths leaving documents in the store after a failed index, confirmed by finding real orphans; and **the free tier is 20 requests/day/model** (§5.14). Three answer-quality checks remain, blocked on quota, not on code.
+- **2026-08-30** — `2.1.6` documents UI. Upload form, status polling that runs only while something is in flight, and failure reasons rendered on the row rather than in a toast. Synchronous indexing means the request blocks 10–15s, so the in-progress copy names the expected duration instead of leaving the page looking frozen. `formatFileSize` added — the list was rendering a 4.1 MB scan as "4066 KB".
