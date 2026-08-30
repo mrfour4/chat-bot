@@ -1,9 +1,7 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
-import { TriangleAlertIcon } from "lucide-react";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
     Field,
@@ -20,14 +18,10 @@ const MAX_MEGABYTES = Math.round(MAX_UPLOAD_BYTES / (1024 * 1024));
 
 export function DocumentUploadForm({
     uploading,
-    error,
     onUpload,
-    onReset,
 }: {
     uploading: boolean;
-    error: string | null;
     onUpload: (file: File) => void;
-    onReset: () => void;
 }) {
     const form = useForm({
         defaultValues: { file: null as File | null },
@@ -70,7 +64,6 @@ export function DocumentUploadForm({
                                         field.handleChange(
                                             event.target.files?.[0] ?? null,
                                         );
-                                        onReset();
                                     }}
                                     className="h-9 min-w-0 flex-1 border-rule bg-paper py-1.5 text-ink-soft file:mr-3 file:cursor-pointer file:font-medium file:text-ink"
                                 />
@@ -95,26 +88,17 @@ export function DocumentUploadForm({
                             {invalid ? (
                                 <FieldError errors={errors} />
                             ) : (
-                                !error && (
-                                    <FieldDescription>
-                                        Chỉ nhận tệp PDF, tối đa {MAX_MEGABYTES}{" "}
-                                        MB. Sau khi tải lên xong, việc lập chỉ
-                                        mục chạy nền — bạn có thể rời khỏi trang
-                                        hoặc đóng trình duyệt.
-                                    </FieldDescription>
-                                )
+                                <FieldDescription>
+                                    Chỉ nhận tệp PDF, tối đa {MAX_MEGABYTES} MB.
+                                    Sau khi tải lên xong, việc lập chỉ mục chạy
+                                    nền — bạn có thể rời khỏi trang hoặc đóng
+                                    trình duyệt.
+                                </FieldDescription>
                             )}
                         </Field>
                     );
                 }}
             </form.Field>
-
-            {error && (
-                <Alert variant="destructive" className="mt-3">
-                    <TriangleAlertIcon />
-                    <AlertDescription>{error}</AlertDescription>
-                </Alert>
-            )}
         </form>
     );
 }

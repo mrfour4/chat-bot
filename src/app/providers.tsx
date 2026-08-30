@@ -3,6 +3,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
+import { Toaster } from "@/components/ui/toast";
+
 function makeQueryClient() {
     return new QueryClient({
         defaultOptions: {
@@ -35,7 +37,7 @@ function getQueryClient() {
 export function Providers({ children }: { children: ReactNode }) {
     return (
         <QueryClientProvider client={getQueryClient()}>
-            {children}
+            <Toaster>{children}</Toaster>
         </QueryClientProvider>
     );
 }

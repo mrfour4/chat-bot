@@ -8,6 +8,7 @@ import { AuthField } from "@/components/auth/auth-field";
 import { AuthResult } from "@/components/auth/auth-result";
 import { AuthSubmit } from "@/components/auth/auth-submit";
 import { FieldGroup } from "@/components/ui/field";
+import { notifyError } from "@/lib/notify";
 import { MIN_PASSWORD_LENGTH, signUpSchema } from "@/lib/validation/auth";
 
 export function SignUpForm() {
@@ -18,7 +19,9 @@ export function SignUpForm() {
         validators: { onChange: signUpSchema },
         onSubmit: async ({ value }) => {
             setResult({});
-            setResult(await signUp(value));
+            const outcome = await signUp(value);
+            setResult(outcome);
+            if (outcome.error) notifyError("Không thành công", outcome.error);
         },
     });
 

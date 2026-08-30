@@ -8,6 +8,7 @@ import { AuthField } from "@/components/auth/auth-field";
 import { AuthResult } from "@/components/auth/auth-result";
 import { AuthSubmit } from "@/components/auth/auth-submit";
 import { FieldGroup } from "@/components/ui/field";
+import { notifyError } from "@/lib/notify";
 import { signInSchema } from "@/lib/validation/auth";
 
 export function SignInForm() {
@@ -18,7 +19,9 @@ export function SignInForm() {
         validators: { onChange: signInSchema },
         onSubmit: async ({ value }) => {
             setResult({});
-            setResult(await signIn(value));
+            const outcome = await signIn(value);
+            setResult(outcome);
+            if (outcome.error) notifyError("Không thành công", outcome.error);
         },
     });
 

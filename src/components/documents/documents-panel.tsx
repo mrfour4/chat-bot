@@ -7,6 +7,7 @@ import { DocumentList } from "@/components/documents/document-list";
 import { DocumentUploadForm } from "@/components/documents/document-upload-form";
 import type { DocumentRow } from "@/lib/db";
 import { isPending, isStale } from "@/lib/documents/status";
+import { notifyError, notifySuccess } from "@/lib/notify";
 import { queryKeys } from "@/lib/query/keys";
 
 const POLL_INTERVAL_MS = 3000;
@@ -69,10 +70,15 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
             }
             return (await response.json()) as DocumentRow;
         },
-        onSuccess: () => {
+        onSuccess: (document) => {
             setUploadFormKey((key) => key + 1);
+            notifySuccess(
+                "Đã tải lên",
+                `“${document.title}” đang được lập chỉ mục. Bạn có thể rời khỏi trang.`,
+            );
             return invalidate();
         },
+        onError: (error) => notifyError("Tải lên thất bại", error.message),
     });
 
     const remove = useMutation({
@@ -86,7 +92,12 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
                 );
             }
         },
-        onSuccess: invalidate,
+        onSuccess: () => {
+            notifySuccess("Đã xoá tài liệu");
+            return invalidate();
+        },
+        onError: (error) =>
+            notifyError("Không xoá được tài liệu", error.message),
     });
 
     const retry = useMutation({
@@ -103,7 +114,11 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
                 );
             }
         },
-        onSuccess: invalidate,
+        onSuccess: () => {
+            notifySuccess("Đang lập chỉ mục lại");
+            return invalidate();
+        },
+        onError: (error) => notifyError("Không thử lại được", error.message),
     });
 
     /**
@@ -132,9 +147,7 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
             <DocumentUploadForm
                 key={uploadFormKey}
                 uploading={upload.isPending}
-                error={upload.error?.message ?? null}
                 onUpload={(file) => upload.mutate(file)}
-                onReset={() => upload.reset()}
             />
 
             <DocumentList

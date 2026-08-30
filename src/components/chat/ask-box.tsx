@@ -12,6 +12,7 @@ import type {
     ChatResponse,
     HistoryTurn,
 } from "@/components/chat/types";
+import { notifyError } from "@/lib/notify";
 
 /**
  * Respects the OS "reduce motion" setting.
@@ -108,6 +109,13 @@ export function AskBox({
                 },
             ]);
         },
+        // No success toast: the answer appearing *is* the feedback, and a toast
+        // announcing it would be a second notification of something already on
+        // screen. A failure has no such evidence, so it gets one -- and keeps
+        // the inline message too, because a toast expires and a question left
+        // unanswered would then look like it had simply been ignored.
+        onError: (error) =>
+            notifyError("Không gửi được câu hỏi", error.message),
     });
 
     const pending = send.isPending;
