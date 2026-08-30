@@ -7,10 +7,14 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `2.1.7` — delete ✅ code · **2.1 is feature-complete**
-**Current small phase:** none — awaiting your browser pass over the whole flow
-**State:** ready for your testing
-**Blocked on:** your feedback, plus **D6** and **D7** before 2.2/2.3
+**Last completed:** `2.2.1` — the ungrounded guard ✅
+**Current small phase:** `2.2.2` — citation mapping
+**State:** implementing through to the chatbot; you test with a fresh key at the end
+**Blocked on:** nothing
+
+**Settled:** **D7** = `gemini-3.6-flash` as the answering model, overridable via
+`GEMINI_MODEL` (a lower-tier model is used while quota is short). **D6** =
+TanStack AI on the client only, per §5.11.
 
 **Try it as a real user** — upload, duplicate, bad file, failure, re-upload,
 delete, re-upload the deleted file. The four delete checks are in
@@ -310,7 +314,7 @@ Docs are written just before their review gate, not all upfront.
 
 | # | Small phase | Deliverable | Doc | State |
 | --- | --- | --- | --- | --- |
-| 2.2.1 | The ungrounded guard | pure fn + tests, written before the happy path | — | ⚪ |
+| 2.2.1 | The ungrounded guard | `enforceGrounding`, 8 tests, fails closed | [2.2.1](phases/2.2.1-grounding-guard.md) | ✅ |
 | 2.2.2 | Citation mapping | `groundingMetadata` → `Citation[]`, resolved to rows | — | ⚪ |
 | 2.2.3 | `askDocuments()` | system instruction, `fileSearch` tool, guard wired in — **decision D7** | — | ⚪ |
 
@@ -370,3 +374,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `2.1.6` verified end-to-end through the browser: the upload exercised auth, validation, checksum, row creation, Gemini upload, failure handling and orphan cleanup. It failed only on the daily quota — and the store was left **empty**, confirming the 2.1.5 orphan fix in production.
 - **2026-08-30** — `2.1.8` brought forward. The 429 above reached the teacher as raw English JSON, and a transient failure was treated as permanent. `classifyGeminiError` now yields a Vietnamese message naming the real 20/day limit, with the raw text kept for logs; transient failures retry on the API's own suggested delay, frugally (503 ×3, quota ×1). The planned retry endpoint proved unnecessary: since we never keep the PDF bytes, retry *is* re-upload, so a `failed` row is reused instead of rejected as a duplicate — three lines instead of an endpoint.
 - **2026-08-30** — `2.1.7` delete, completing 2.1. The Gemini document is removed before the row, deliberately: the reverse order leaves an unreachable orphan on a half-failure, while this order leaves a row the teacher can simply delete again. That self-heal depends on treating a Gemini 404 as success. Inline confirmation rather than `window.confirm`, which browsers let users suppress permanently — silently turning a destructive action into a one-click one.
+- **2026-08-30** — `2.2.1` the ungrounded guard. Checks for *evidence that retrieval happened* rather than inspecting the text for signs of invention, and discards the model's words when that evidence is missing. Fails closed on every unexpected shape. The decisive tests assert the hallucination's text is absent from the output, not merely that a flag is false. **D6 and D7 settled** — see §1.
