@@ -215,6 +215,30 @@ async function countRetrievableChunks(documentId: string): Promise<number> {
 }
 
 /**
+ * Removes a document from the File Search store.
+ *
+ * `force` is required: a Document with chunks refuses deletion with
+ * `400 FAILED_PRECONDITION -- Cannot delete non-empty Document`, and every real
+ * document has chunks (2.1.0).
+ *
+ * A 404 is success: the goal state is that the document is not in the store,
+ * and it already is not. Treating "already gone" as an error would break the
+ * retry that makes a half-completed deletion self-healing.
+ */
+export async function deleteFromStore(geminiDocumentName: string): Promise<void> {
+  try {
+    await getGemini().fileSearchStores.documents.delete({
+      name: geminiDocumentName,
+      config: { force: true },
+    });
+  } catch (error) {
+    const status = (error as { status?: number }).status;
+    if (status === 404) return;
+    throw error;
+  }
+}
+
+/**
  * Removes a document we uploaded but are about to report as failed.
  *
  * Every path that returns `ok: false` after a successful upload goes through
@@ -227,10 +251,7 @@ async function countRetrievableChunks(documentId: string): Promise<number> {
  */
 async function discard(geminiDocumentName: string): Promise<void> {
   try {
-    await getGemini().fileSearchStores.documents.delete({
-      name: geminiDocumentName,
-      config: { force: true },
-    });
+    await deleteFromStore(geminiDocumentName);
   } catch {
     // Leaving an orphan is worse than nothing, but it is not what the teacher
     // needs to hear about.

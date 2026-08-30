@@ -23,6 +23,8 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const refresh = useCallback(async () => {
@@ -72,9 +74,37 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
       if (inputRef.current) inputRef.current.value = "";
       await refresh();
     } catch {
-      setError("Không kết nối được tới máy chủ. Vui lòng kiểm tra mạng và thử lại.");
+      setError(
+        "Không kết nối được tới máy chủ. Vui lòng kiểm tra mạng và thử lại.",
+      );
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function remove(id: string) {
+    setDeletingId(id);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/documents/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const result = await response.json().catch(() => null);
+        setError(
+          result?.message ?? "Không xoá được tài liệu. Vui lòng thử lại.",
+        );
+        return;
+      }
+
+      setDocuments((current) => current.filter((doc) => doc.id !== id));
+      setConfirmingId(null);
+    } catch {
+      setError("Không kết nối được tới máy chủ. Vui lòng thử lại.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -138,10 +168,12 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
 
       {documents.length === 0 ? (
         <div className="mt-10 rounded-lg border border-dashed border-rule p-10 text-center">
-          <p className="font-display text-lg font-medium">Chưa có tài liệu nào.</p>
+          <p className="font-display text-lg font-medium">
+            Chưa có tài liệu nào.
+          </p>
           <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-ink-soft">
-            Tải lên thông báo tuyển sinh dạng PDF. Sau khi lập chỉ mục, trợ lý sẽ
-            dùng chính văn bản đó để trả lời học sinh.
+            Tải lên thông báo tuyển sinh dạng PDF. Sau khi lập chỉ mục, trợ lý
+            sẽ dùng chính văn bản đó để trả lời học sinh.
           </p>
         </div>
       ) : (
@@ -156,9 +188,48 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
                     {new Date(doc.created_at).toLocaleDateString("vi-VN")}
                   </p>
                 </div>
-                <span className={`doc-ref ${STATUS[doc.status].className}`}>
-                  {STATUS[doc.status].text}
-                </span>
+                <div className="flex shrink-0 items-center gap-3">
+                  <span className={`doc-ref ${STATUS[doc.status].className}`}>
+                    {STATUS[doc.status].text}
+                  </span>
+
+                  {confirmingId === doc.id ? (
+                    // Inline rather than a modal: the teacher's eyes stay on the
+                    // row they are about to remove. window.confirm is out --
+                    // browsers let users suppress it permanently, which would
+                    // silently turn a destructive action into a one-click one.
+                    <span className="flex items-center gap-2">
+                      <span className="text-sm text-ink-soft">
+                        Xoá tài liệu này?
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => remove(doc.id)}
+                        disabled={deletingId === doc.id}
+                        className="rounded-md bg-lacquer px-2.5 py-1.5 text-sm font-medium text-paper disabled:opacity-40"
+                      >
+                        {deletingId === doc.id ? "Đang xoá…" : "Xoá"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingId(null)}
+                        disabled={deletingId === doc.id}
+                        className="rounded-md border border-rule px-2.5 py-1.5 text-sm text-ink-soft"
+                      >
+                        Huỷ
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingId(doc.id)}
+                      aria-label={`Xoá ${doc.title}`}
+                      className="rounded-md border border-rule px-2.5 py-1.5 text-sm text-ink-soft transition-colors hover:border-lacquer hover:text-lacquer"
+                    >
+                      Xoá
+                    </button>
+                  )}
+                </div>
               </div>
 
               {doc.status === "failed" && doc.error_message && (

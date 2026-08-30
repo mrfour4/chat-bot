@@ -7,11 +7,14 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `2.1.8` — quota-aware errors and re-upload ✅
-**Current small phase:** `2.1.7` — delete (last of 2.1)
-**State:** ready to plan
-**Blocked on:** nothing. 2.1.6 verified end-to-end by your upload: every stage
-worked, and the 429 it hit is what 2.1.8 fixed.
+**Last completed:** `2.1.7` — delete ✅ code · **2.1 is feature-complete**
+**Current small phase:** none — awaiting your browser pass over the whole flow
+**State:** ready for your testing
+**Blocked on:** your feedback, plus **D6** and **D7** before 2.2/2.3
+
+**Try it as a real user** — upload, duplicate, bad file, failure, re-upload,
+delete, re-upload the deleted file. The four delete checks are in
+`docs/phases/2.1.7-delete.md`.
 
 **Open decisions:** **D6** TanStack AI (§5.11) · **D7** default model (§5.13)
 **Settled:** **D5** = synchronous indexing with a ~60s cap, on the 10.0–14.6s
@@ -300,7 +303,7 @@ Docs are written just before their review gate, not all upfront.
 | 2.1.4 | Upload route | `POST`/`GET /api/documents`, teacher-only, dedupe on checksum | [2.1.4](phases/2.1.4-upload-route.md) | ✅ |
 | 2.1.5 | Indexing + post-index check | Synchronous, 60s cap, scoped post-index check; both PDF kinds verified indexing | [2.1.5](phases/2.1.5-indexing.md) | ✅ |
 | 2.1.6 | Documents list UI | upload form, live status, inline failure reasons | [2.1.6](phases/2.1.6-documents-ui.md) | ✅ |
-| 2.1.7 | Delete | `DELETE /api/documents/[id]`, Gemini doc + row — needs `config: { force: true }` (2.1.0 finding 5) | — | ⚪ |
+| 2.1.7 | Delete | Gemini document before row, `force: true`, 404 = success, inline confirm | [2.1.7](phases/2.1.7-delete.md) | ✅ |
 | 2.1.8 | Quota-aware errors + re-upload | readable Vietnamese failures, frugal transient retry — *brought forward ahead of 2.1.7* | [2.1.8](phases/2.1.8-retry-and-failures.md) | ✅ |
 
 ### 2.2 Gemini RAG
@@ -366,3 +369,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `2.1.6` documents UI. Upload form, status polling that runs only while something is in flight, and failure reasons rendered on the row rather than in a toast. Synchronous indexing means the request blocks 10–15s, so the in-progress copy names the expected duration instead of leaving the page looking frozen. `formatFileSize` added — the list was rendering a 4.1 MB scan as "4066 KB".
 - **2026-08-30** — `2.1.6` verified end-to-end through the browser: the upload exercised auth, validation, checksum, row creation, Gemini upload, failure handling and orphan cleanup. It failed only on the daily quota — and the store was left **empty**, confirming the 2.1.5 orphan fix in production.
 - **2026-08-30** — `2.1.8` brought forward. The 429 above reached the teacher as raw English JSON, and a transient failure was treated as permanent. `classifyGeminiError` now yields a Vietnamese message naming the real 20/day limit, with the raw text kept for logs; transient failures retry on the API's own suggested delay, frugally (503 ×3, quota ×1). The planned retry endpoint proved unnecessary: since we never keep the PDF bytes, retry *is* re-upload, so a `failed` row is reused instead of rejected as a duplicate — three lines instead of an endpoint.
+- **2026-08-30** — `2.1.7` delete, completing 2.1. The Gemini document is removed before the row, deliberately: the reverse order leaves an unreachable orphan on a half-failure, while this order leaves a row the teacher can simply delete again. That self-heal depends on treating a Gemini 404 as success. Inline confirmation rather than `window.confirm`, which browsers let users suppress permanently — silently turning a destructive action into a one-click one.
