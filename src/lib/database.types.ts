@@ -73,6 +73,7 @@ export type Database = {
           gemini_document_name: string | null
           id: string
           status: Database["public"]["Enums"]["document_status"]
+          storage_path: string | null
           title: string
           updated_at: string
           uploaded_by: string
@@ -86,6 +87,7 @@ export type Database = {
           gemini_document_name?: string | null
           id?: string
           status?: Database["public"]["Enums"]["document_status"]
+          storage_path?: string | null
           title: string
           updated_at?: string
           uploaded_by: string
@@ -99,6 +101,7 @@ export type Database = {
           gemini_document_name?: string | null
           id?: string
           status?: Database["public"]["Enums"]["document_status"]
+          storage_path?: string | null
           title?: string
           updated_at?: string
           uploaded_by?: string

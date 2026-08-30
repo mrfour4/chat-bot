@@ -84,6 +84,14 @@ export async function createDocument(
   return data;
 }
 
+export async function setStoragePath(
+  supabase: DocumentsClient,
+  id: string,
+  storagePath: string,
+): Promise<void> {
+  await update(supabase, id, { storage_path: storagePath });
+}
+
 export async function markIndexing(
   supabase: DocumentsClient,
   id: string,

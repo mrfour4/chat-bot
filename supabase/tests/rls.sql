@@ -24,6 +24,8 @@ declare
   doc_id  constant uuid := '99999999-9999-9999-9999-999999999999';
   conv_id constant uuid := '88888888-8888-8888-8888-888888888888';
   n int;
+  blocked boolean;
+  detail text;
   current_role_name text;
 begin
   -- Fixtures, created as the owner so RLS does not interfere with setup.
@@ -132,7 +134,103 @@ begin
   insert into rls_results values
     ('RLS is enabled on every public table', n = 0, n || ' tables without RLS');
 
-  -- Leave the fixtures behind so a rerun is idempotent, not cumulative.
+  ---------------------------------------------------------------- 11
+  -- Storage. The PDF is a second copy of the same secret as the metadata row,
+  -- so the object policies have to hold the same line -- otherwise a teacher
+  -- could reach a file whose row is invisible to them, or a student could
+  -- reach the file behind a row they cannot read.
+  -- A real object first. Without one these two checks pass on an empty table --
+  -- they would report "cannot read" when the truth is "nothing to read", which
+  -- is the same failure mode as a correct refusal over an empty index (§5.12).
+  -- `postgres` has rolbypassrls, so this insert is not itself a policy test.
+  insert into storage.objects (bucket_id, name)
+  values ('documents', teacher || '/' || doc_id || '.pdf')
+  on conflict (bucket_id, name) do nothing;
+
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', student, 'role', 'authenticated')::text, true);
+  select count(*) into n from storage.objects where bucket_id = 'documents';
+  perform set_config('role', 'postgres', true);
+  insert into rls_results values
+    ('student cannot read stored PDFs', n = 0, n || ' objects visible');
+
+  -- ...and the same object must be visible to a teacher, or the two checks
+  -- above prove nothing about the policy.
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', teacher, 'role', 'authenticated')::text, true);
+  select count(*) into n from storage.objects where bucket_id = 'documents';
+  perform set_config('role', 'postgres', true);
+  insert into rls_results values
+    ('teacher CAN read stored PDFs', n = 1, n || ' objects visible');
+
+  perform set_config('role', 'anon', true);
+  select count(*) into n from storage.objects where bucket_id = 'documents';
+  perform set_config('role', 'postgres', true);
+  insert into rls_results values
+    ('anon cannot read stored PDFs', n = 0, n || ' objects visible');
+
+  ---------------------------------------------------------------- 12
+  -- A teacher writing into another teacher's folder. The path's first segment
+  -- carries ownership, so this is the check that the segment is actually
+  -- enforced rather than merely conventional.
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', teacher, 'role', 'authenticated')::text, true);
+  begin
+    insert into storage.objects (bucket_id, name)
+    values ('documents', student || '/teacher-attempt.pdf');
+    blocked := false;
+    detail := 'insert was allowed';
+  exception
+    when insufficient_privilege then
+      blocked := true; detail := '';
+    -- Anything else means the insert failed for a reason that is not the
+    -- policy. Recorded rather than raised: an unhandled error aborts the whole
+    -- DO block, which is how a genuine leak once reported as zero tests run
+    -- instead of one test failed.
+    when others then
+      blocked := false; detail := 'unexpected: ' || sqlerrm;
+  end;
+  perform set_config('role', 'postgres', true);
+  insert into rls_results values
+    ('teacher cannot write into another user''s folder', blocked, detail);
+
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', student, 'role', 'authenticated')::text, true);
+  begin
+    insert into storage.objects (bucket_id, name)
+    values ('documents', student || '/student-attempt.pdf');
+    blocked := false;
+    detail := 'insert was allowed';
+  exception
+    when insufficient_privilege then
+      blocked := true; detail := '';
+    when others then
+      blocked := false; detail := 'unexpected: ' || sqlerrm;
+  end;
+  perform set_config('role', 'postgres', true);
+  insert into rls_results values
+    ('student cannot store a PDF at all', blocked, detail);
+
+  ---------------------------------------------------------------- 13
+  -- The bucket must stay private. A public bucket serves every object over an
+  -- unauthenticated URL, and no policy above would apply.
+  insert into rls_results values
+    ('documents bucket is private',
+     exists (select 1 from storage.buckets where id = 'documents' and not public),
+     '');
+
+  -- Storage refuses direct SQL deletes -- `protect_objects_delete` insists on
+  -- the Storage API, which is exactly why `removePdf()` goes through the client
+  -- rather than the table. The trigger reads a setting, so a test that seeded a
+  -- fixture can clear it without weakening anything at runtime.
+  perform set_config('storage.allow_delete_query', 'true', true);
+  delete from storage.objects where bucket_id = 'documents';
+  perform set_config('storage.allow_delete_query', 'false', true);
+
   delete from public.documents where id = doc_id;
   delete from public.conversations where id = conv_id;
 

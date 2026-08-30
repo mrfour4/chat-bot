@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getSessionUser, getTeacher } from "@/lib/auth";
 import { deleteFromStore } from "@/lib/documents/indexer";
 import { deleteDocument, getDocument } from "@/lib/documents/repo";
+import { removePdf } from "@/lib/documents/storage";
 import { createClient } from "@/lib/supabase/server";
 
 export async function DELETE(
@@ -51,6 +52,24 @@ export async function DELETE(
           code: "store-delete-failed",
           message:
             "Không xoá được tài liệu khỏi Gemini. Tài liệu vẫn còn trong danh " +
+            "sách — vui lòng thử lại.",
+        },
+        { status: 502 },
+      );
+    }
+  }
+
+  // Then the stored PDF, for the same reason and in the same order: an object
+  // left behind after the row is gone is unreachable and unnoticeable, while a
+  // row left behind can simply be deleted again.
+  if (document.storage_path) {
+    const removed = await removePdf(supabase, document.storage_path);
+    if (!removed.ok) {
+      return NextResponse.json(
+        {
+          code: "storage-delete-failed",
+          message:
+            "Không xoá được tệp PDF đã lưu. Tài liệu vẫn còn trong danh " +
             "sách — vui lòng thử lại.",
         },
         { status: 502 },

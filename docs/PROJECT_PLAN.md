@@ -9,7 +9,7 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 **Last completed:** `2.5` — polish ✅ · **PHASE 2 COMPLETE**
 **Current phase:** Phase 3 — the feedback round (§8), six small phases
-**State:** 3.3 in progress
+**State:** 3.4 in progress
 **Blocked on:** nothing. 3.1–3.5 need no Gemini calls at all; only 3.6 does.
 
 **Settled:** **D7** = `gemini-3.6-flash`, overridable via `GEMINI_MODEL`.
@@ -370,7 +370,7 @@ one doc, one commit, one review gate each. Ordered so that **point 4
 | --- | --- | --- | --- | --- |
 | 3.1 | Markdown in chat | model output rendered, not printed as syntax | [3.1](phases/3.1-markdown.md) | ✅ |
 | 3.2 | Header | active page, identity, wrapping, sticky | [3.2](phases/3.2-header.md) | ✅ |
-| 3.3 | Keep the PDF | private Storage bucket, RLS policies, upload writes it | [3.3](phases/3.3-file-storage.md) | — |
+| 3.3 | Keep the PDF | private Storage bucket, RLS policies, upload writes it | [3.3](phases/3.3-file-storage.md) | ✅ |
 | 3.4 | Preview + download | in-app viewer, signed URL, mobile fallback | [3.4](phases/3.4-preview.md) | — |
 | 3.5 | Conversations | `/chat/[id]`, history as a list, resume a conversation | [3.5](phases/3.5-conversations.md) | — |
 | 3.6 | Background indexing | upload returns at once, work survives the tab | [3.6](phases/3.6-background-indexing.md) | — |
@@ -429,3 +429,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `2.5` polish, **completing Phase 2**. Three real gaps, found by auditing rather than guessing: `scrollIntoView` was ignoring `prefers-reduced-motion` because CSS cannot fix a preference JavaScript overrides; answers were never announced to screen readers, leaving no way to tell "still thinking" from "finished"; and an empty document library made a correctly-refusing assistant look broken. All three are the same principle as 2.1.5 and 2.4.2 — **correct behaviour and broken behaviour must not look the same**.
 - **2026-08-30** — `3.1` Markdown in chat. `react-markdown` + `remark-gfm` chosen over `marked` + DOMPurify because it builds React elements directly and ignores raw HTML unless `rehype-raw` is added: model output is *structurally* unable to inject markup rather than filtered on the way in. 8 tests via `renderToStaticMarkup`, no jsdom and no Testing Library — the rendered HTML is a string. One assertion was wrong on first run, expecting `onerror` to be absent when react-markdown escapes the tag into visible text instead; escaping is the better behaviour, so the test moved to assert `&lt;img`.
 - **2026-08-30** — `3.2` the header. Five named faults rather than a restyle: no active page, no identity or role, sign-out styled as navigation, a non-wrapping row that overflows at 360px, and no stickiness on the app's longest page. Active state is selected *from* `aria-current="page"` so the announcement and the visible state cannot drift; the generated CSS was checked in the build output rather than assumed. The teacher page's own "signed in as" line was removed rather than duplicated — right information, wrong place, true on one page in four. No hamburger: three links do not earn a drawer, a toggle, focus trapping and an escape key.
+- **2026-08-30** — `3.3` keep the uploaded PDF. **§5.10 reversed:** discarding the bytes was the reason indexing had to sit inside the upload request, so storing them is 3.6's precondition, not its neighbour. Private bucket and four object policies in a migration, mirroring the table policies exactly. Ownership rides in the path (`<uploader_id>/<document_id>.pdf`) rather than storage's `owner` column, so the rule is legible in the policy. RLS suite 11 → 17 checks, and the falsification pass found two flaws **in the tests**: a leak reported as "0 tests run" because a duplicate key aborted the block, and read checks that passed on an empty table — §5.12's failure mode, in our own test suite. Both fixed; leaks now produce FAIL lines naming what leaked.

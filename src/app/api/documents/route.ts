@@ -10,7 +10,9 @@ import {
   markFailed,
   markIndexing,
   markReady,
+  setStoragePath,
 } from "@/lib/documents/repo";
+import { objectPath, putPdf } from "@/lib/documents/storage";
 import { deriveTitle } from "@/lib/documents/title";
 import { validateUpload } from "@/lib/documents/validate";
 import { createClient } from "@/lib/supabase/server";
@@ -96,6 +98,23 @@ export async function POST(request: Request) {
       uploadedBy: teacher.id,
     }));
 
+  // Keep the PDF before indexing it. Storing it is what makes preview, download
+  // and -- from 3.6 -- retrying an index possible at all, so a document that
+  // indexed but never stored would be a document nobody can ever re-index.
+  // Fail closed rather than leave that shape behind.
+  const path = objectPath(teacher.id, document.id);
+  const stored = await putPdf(supabase, { path, bytes });
+
+  if (!stored.ok) {
+    await markFailed(supabase, document.id, stored.message);
+    return NextResponse.json(
+      { ...document, status: "failed", error_message: stored.message },
+      { status: 201 },
+    );
+  }
+
+  await setStoragePath(supabase, document.id, path);
+
   // Synchronous indexing (decision D5). 2.1.0 measured 10.0-14.6s, comfortably
   // inside a request, and the alternative -- returning early and continuing in
   // the background -- is not guaranteed to run on serverless without a queue.
@@ -111,7 +130,12 @@ export async function POST(request: Request) {
   if (!outcome.ok) {
     await markFailed(supabase, document.id, outcome.message);
     return NextResponse.json(
-      { ...document, status: "failed", error_message: outcome.message },
+      {
+        ...document,
+        status: "failed",
+        storage_path: path,
+        error_message: outcome.message,
+      },
       { status: 201 },
     );
   }
@@ -122,6 +146,7 @@ export async function POST(request: Request) {
     {
       ...document,
       status: "ready",
+      storage_path: path,
       gemini_document_name: outcome.geminiDocumentName,
     },
     { status: 201 },
