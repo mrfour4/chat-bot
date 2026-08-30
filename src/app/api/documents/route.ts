@@ -70,7 +70,8 @@ export async function POST(request: Request) {
   // Dedupe on content, not filename: the same document saved under two names is
   // still the same document, and File Search would index it twice.
   const existing = await findByChecksum(supabase, checksum);
-  if (existing) {
+
+  if (existing && existing.status !== "failed") {
     return NextResponse.json(
       {
         code: "duplicate",
@@ -81,13 +82,19 @@ export async function POST(request: Request) {
     );
   }
 
-  const document = await createDocument(supabase, {
-    title: deriveTitle(file.name),
-    fileName: file.name,
-    fileSize: bytes.length,
-    checksum,
-    uploadedBy: teacher.id,
-  });
+  // A failed row is re-uploaded rather than duplicated. We deliberately do not
+  // keep the PDF bytes (§5.10), so retrying always needs the file again --
+  // which makes "upload it again" the whole retry mechanism, and means there is
+  // no separate retry endpoint that could drift out of step with this one.
+  const document =
+    existing ??
+    (await createDocument(supabase, {
+      title: deriveTitle(file.name),
+      fileName: file.name,
+      fileSize: bytes.length,
+      checksum,
+      uploadedBy: teacher.id,
+    }));
 
   // Synchronous indexing (decision D5). 2.1.0 measured 10.0-14.6s, comfortably
   // inside a request, and the alternative -- returning early and continuing in

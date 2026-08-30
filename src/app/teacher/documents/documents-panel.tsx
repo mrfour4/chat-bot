@@ -164,9 +164,14 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
               {doc.status === "failed" && doc.error_message && (
                 // On the row, not in a toast: the teacher needs to know which
                 // document is unusable, and needs it to still be there later.
-                <p className="mt-2 rounded-md border border-lacquer/30 bg-lacquer-soft px-3 py-2 text-sm leading-relaxed text-lacquer">
-                  {doc.error_message}
-                </p>
+                <div className="mt-2 rounded-md border border-lacquer/30 bg-lacquer-soft px-3 py-2">
+                  <p className="text-sm leading-relaxed text-lacquer">
+                    {doc.error_message}
+                  </p>
+                  <p className="mt-1.5 text-sm text-ink-soft">
+                    Tải lên lại chính tệp này để thử lập chỉ mục lần nữa.
+                  </p>
+                </div>
               )}
             </li>
           ))}

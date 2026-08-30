@@ -7,10 +7,11 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `2.1.6` — documents list UI ✅ code; **awaiting your browser check**
-**Current small phase:** `2.1.7` — delete
-**State:** paused for your verification of 2.1.6
-**Blocked on:** your browser check (see `docs/phases/2.1.6-documents-ui.md`)
+**Last completed:** `2.1.8` — quota-aware errors and re-upload ✅
+**Current small phase:** `2.1.7` — delete (last of 2.1)
+**State:** ready to plan
+**Blocked on:** nothing. 2.1.6 verified end-to-end by your upload: every stage
+worked, and the 429 it hit is what 2.1.8 fixed.
 
 **Open decisions:** **D6** TanStack AI (§5.11) · **D7** default model (§5.13)
 **Settled:** **D5** = synchronous indexing with a ~60s cap, on the 10.0–14.6s
@@ -298,9 +299,9 @@ Docs are written just before their review gate, not all upfront.
 | 2.1.3 | Documents repository | typed CRUD with injected client, + `sha256Hex` / `describeError` | [2.1.3](phases/2.1.3-documents-repository.md) | ✅ |
 | 2.1.4 | Upload route | `POST`/`GET /api/documents`, teacher-only, dedupe on checksum | [2.1.4](phases/2.1.4-upload-route.md) | ✅ |
 | 2.1.5 | Indexing + post-index check | Synchronous, 60s cap, scoped post-index check; both PDF kinds verified indexing | [2.1.5](phases/2.1.5-indexing.md) | ✅ |
-| 2.1.6 | Documents list UI | upload form, live status, inline failure reasons | [2.1.6](phases/2.1.6-documents-ui.md) | ✅ code |
+| 2.1.6 | Documents list UI | upload form, live status, inline failure reasons | [2.1.6](phases/2.1.6-documents-ui.md) | ✅ |
 | 2.1.7 | Delete | `DELETE /api/documents/[id]`, Gemini doc + row — needs `config: { force: true }` (2.1.0 finding 5) | — | ⚪ |
-| 2.1.8 | Retry + failure UX | retry action, reconcile stuck rows | — | ⚪ |
+| 2.1.8 | Quota-aware errors + re-upload | readable Vietnamese failures, frugal transient retry — *brought forward ahead of 2.1.7* | [2.1.8](phases/2.1.8-retry-and-failures.md) | ✅ |
 
 ### 2.2 Gemini RAG
 
@@ -363,3 +364,5 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `2.1.4` upload route. `getTeacher()` added as the non-redirecting sibling of `requireTeacher()`, because a route that redirects answers a JSON fetch with an HTML login page and a 200. Confirmed by real request: 401 with a JSON body. Dedupe is on checksum, not filename. Row stops at `pending` so 2.1.5's indexing can fail on its own terms.
 - **2026-08-30** — `2.1.5` indexing. Both a text PDF and a pure scan verified indexing through the real API. Three findings, each from a failure: **`metadataFilter` only matches lowercase metadata keys** (`documentId` silently matches nothing, `docid` works — hyphens were innocent); two orphan paths leaving documents in the store after a failed index, confirmed by finding real orphans; and **the free tier is 20 requests/day/model** (§5.14). Three answer-quality checks remain, blocked on quota, not on code.
 - **2026-08-30** — `2.1.6` documents UI. Upload form, status polling that runs only while something is in flight, and failure reasons rendered on the row rather than in a toast. Synchronous indexing means the request blocks 10–15s, so the in-progress copy names the expected duration instead of leaving the page looking frozen. `formatFileSize` added — the list was rendering a 4.1 MB scan as "4066 KB".
+- **2026-08-30** — `2.1.6` verified end-to-end through the browser: the upload exercised auth, validation, checksum, row creation, Gemini upload, failure handling and orphan cleanup. It failed only on the daily quota — and the store was left **empty**, confirming the 2.1.5 orphan fix in production.
+- **2026-08-30** — `2.1.8` brought forward. The 429 above reached the teacher as raw English JSON, and a transient failure was treated as permanent. `classifyGeminiError` now yields a Vietnamese message naming the real 20/day limit, with the raw text kept for logs; transient failures retry on the API's own suggested delay, frugally (503 ×3, quota ×1). The planned retry endpoint proved unnecessary: since we never keep the PDF bytes, retry *is* re-upload, so a `failed` row is reused instead of rejected as a duplicate — three lines instead of an endpoint.

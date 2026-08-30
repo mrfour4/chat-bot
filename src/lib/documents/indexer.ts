@@ -2,6 +2,7 @@ import "server-only";
 
 import { describeError } from "@/lib/documents/errors";
 import { getFileSearchStore, getGemini } from "@/lib/gemini/client";
+import { classifyGeminiError } from "@/lib/gemini/errors";
 
 /**
  * Roughly 4x the slowest indexing run measured in the 2.1.0 spike
@@ -19,6 +20,48 @@ const POLL_INTERVAL_MS = 2_000;
  * resolve a citation to a row, and the two must not drift apart.
  */
 export const DOCUMENT_ID_KEY = "docid";
+
+/**
+ * Retry budgets, deliberately asymmetric.
+ *
+ * A 503 is a genuinely transient capacity blip and is worth a few attempts. A
+ * 429 is the daily quota, and retrying it mostly spends quota that is already
+ * gone -- so it gets one attempt, and only when the server's own suggested
+ * delay is short enough to be worth waiting for.
+ */
+const MAX_UNAVAILABLE_ATTEMPTS = 3;
+const MAX_QUOTA_ATTEMPTS = 2;
+const MAX_QUOTA_WAIT_MS = 10_000;
+
+/**
+ * Runs `fn`, retrying only transient failures and only on the API's own terms:
+ * it tells us how long to wait, so we use its number rather than inventing a
+ * backoff curve.
+ */
+async function withTransientRetry<T>(fn: () => Promise<T>): Promise<T> {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await fn();
+    } catch (error) {
+      const failure = classifyGeminiError(error);
+
+      const limit =
+        failure.kind === "unavailable"
+          ? MAX_UNAVAILABLE_ATTEMPTS
+          : failure.kind === "quota"
+            ? MAX_QUOTA_ATTEMPTS
+            : 0;
+
+      const wait = failure.retryAfterMs ?? 3_000 * attempt;
+      const worthWaiting =
+        failure.kind !== "quota" || wait <= MAX_QUOTA_WAIT_MS;
+
+      if (attempt >= limit || !worthWaiting) throw error;
+
+      await new Promise((resolve) => setTimeout(resolve, wait));
+    }
+  }
+}
 
 export type IndexOutcome =
   | { ok: true; geminiDocumentName: string; chunkCount: number }
@@ -129,7 +172,15 @@ export async function indexDocument(input: {
     return { ok: true, geminiDocumentName, chunkCount };
   } catch (error) {
     if (uploadedName) await discard(uploadedName);
-    return { ok: false, message: describeError(error) };
+
+    // Raw SDK errors are JSON blobs about quota metrics. `describeError` makes
+    // them short and safe, but only this makes them mean something to the
+    // teacher reading the row.
+    const failure = classifyGeminiError(error);
+    if (failure.kind !== "other") {
+      console.error(`[indexing] ${failure.kind}: ${failure.detail}`);
+    }
+    return { ok: false, message: failure.message };
   }
 }
 
@@ -141,22 +192,26 @@ export async function indexDocument(input: {
  * that nearly sent the 2.1.0 spike to the wrong conclusion.
  */
 async function countRetrievableChunks(documentId: string): Promise<number> {
-  const response = await getGemini().models.generateContent({
-    model: PROBE_MODEL,
-    contents: PROBE_PROMPT,
-    config: {
-      tools: [
-        {
-          fileSearch: {
-            fileSearchStoreNames: [getFileSearchStore()],
-            metadataFilter: `${DOCUMENT_ID_KEY}=${documentId}`,
+  const response = await withTransientRetry(() =>
+    getGemini().models.generateContent({
+      model: PROBE_MODEL,
+      contents: PROBE_PROMPT,
+      config: {
+        tools: [
+          {
+            fileSearch: {
+              fileSearchStoreNames: [getFileSearchStore()],
+              metadataFilter: `${DOCUMENT_ID_KEY}=${documentId}`,
+            },
           },
-        },
-      ],
-    },
-  });
+        ],
+      },
+    }),
+  );
 
-  return response.candidates?.[0]?.groundingMetadata?.groundingChunks?.length ?? 0;
+  return (
+    response.candidates?.[0]?.groundingMetadata?.groundingChunks?.length ?? 0
+  );
 }
 
 /**
