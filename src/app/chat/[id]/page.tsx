@@ -43,7 +43,7 @@ export default async function ConversationPage({
     }));
 
     return (
-        <div className="mx-auto max-w-3xl px-5 py-10 md:py-14">
+        <div className="mx-auto max-w-2xl px-5 py-10 md:py-14">
             <div className="border-b border-rule pb-5">
                 <div className="flex items-baseline justify-between gap-4">
                     <p className="eyebrow">Tiếp tục cuộc hỏi đáp</p>

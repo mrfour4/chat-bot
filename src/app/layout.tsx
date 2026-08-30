@@ -53,14 +53,6 @@ export default async function RootLayout({
                 <Providers>
                     <SiteHeader user={user} />
                     <main className="flex-1">{children}</main>
-                    <footer className="border-t border-rule">
-                        <div className="mx-auto max-w-5xl px-5 py-6">
-                            <p className="eyebrow">
-                                Trả lời chỉ dựa trên tài liệu tuyển sinh đã tải
-                                lên
-                            </p>
-                        </div>
-                    </footer>
                 </Providers>
             </body>
         </html>

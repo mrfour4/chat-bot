@@ -190,7 +190,7 @@ export function AskBox({
                     // announce. "polite" waits for a pause rather than cutting in.
                     aria-live="polite"
                     aria-atomic="false"
-                    className="mb-6 flex flex-col gap-6"
+                    className="flex flex-col gap-6"
                 >
                     {messages.map((message) =>
                         message.role === "user" ? (
@@ -224,68 +224,86 @@ export function AskBox({
             {pending && (
                 <p
                     aria-live="polite"
-                    className="mb-6 flex items-center gap-2 text-sm text-ink-soft"
+                    className="mt-6 flex items-center gap-2 text-sm text-ink-soft"
                 >
                     <span
                         aria-hidden
                         className="size-3 shrink-0 animate-spin rounded-full border-2 border-rule border-t-ink motion-reduce:animate-none"
                     />
                     {/* We cannot stream the answer (§5.15), so we show the work instead.
-              This stage is real, not decorative. */}
+                        This stage is real, not decorative. */}
                     Đang tìm trong tài liệu tuyển sinh…
                 </p>
             )}
 
-            <form
-                onSubmit={(event) => {
-                    event.preventDefault();
-                    ask(question);
-                }}
-                className="flex items-center gap-2 rounded-lg border border-rule bg-white p-2 transition-colors focus-within:border-ink"
-            >
-                <input
-                    value={question}
-                    onChange={(event) => setQuestion(event.target.value)}
-                    disabled={pending}
-                    placeholder="Nhập câu hỏi của bạn…"
-                    aria-label="Câu hỏi về tuyển sinh"
-                    className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm placeholder:text-ink-soft focus:outline-none"
-                />
-                <button
-                    type="submit"
-                    disabled={pending || !question.trim()}
-                    className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-paper transition-opacity hover:opacity-90 disabled:opacity-40"
-                >
-                    Hỏi
-                </button>
-            </form>
-
-            {send.error && (
-                <p
-                    role="alert"
-                    className="mt-3 rounded-md border border-lacquer/30 bg-lacquer-soft px-3 py-2 text-sm text-lacquer"
-                >
-                    {send.error.message}
-                </p>
-            )}
-
-            {messages.length === 0 && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                    {SUGGESTIONS.map((suggestion) => (
-                        <button
-                            key={suggestion}
-                            type="button"
-                            disabled={pending}
-                            onClick={() => ask(suggestion)}
-                            className="rounded-full border border-rule px-3 py-1.5 text-xs text-ink-soft transition-colors hover:border-ink hover:text-ink disabled:opacity-40"
-                        >
-                            {suggestion}
-                        </button>
-                    ))}
-                </div>
-            )}
-
             <div ref={endRef} />
+
+            {/* Clears the fixed composer below, so the newest message is never
+                left sitting underneath it. */}
+            <div aria-hidden className="h-40" />
+
+            {/* The composer is fixed to the viewport rather than to the end of the
+                conversation: it is the one control on this page, and scrolling up to
+                re-read an answer should not take it away. Centred on the same
+                measure as the messages so the column does not shift. */}
+            <div className="fixed inset-x-0 bottom-0 z-30 border-t border-rule bg-paper/90 backdrop-blur">
+                <div className="mx-auto w-full max-w-2xl px-5 py-4">
+                    {send.error && (
+                        <p
+                            role="alert"
+                            className="mb-3 rounded-md border border-lacquer/30 bg-lacquer-soft px-3 py-2 text-sm text-lacquer"
+                        >
+                            {send.error.message}
+                        </p>
+                    )}
+
+                    {messages.length === 0 && (
+                        <div className="mb-3 flex flex-wrap gap-2">
+                            {SUGGESTIONS.map((suggestion) => (
+                                <button
+                                    key={suggestion}
+                                    type="button"
+                                    disabled={pending}
+                                    onClick={() => ask(suggestion)}
+                                    className="rounded-full border border-rule px-3 py-1.5 text-xs text-ink-soft transition-colors hover:border-ink hover:text-ink disabled:opacity-40"
+                                >
+                                    {suggestion}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    <form
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            ask(question);
+                        }}
+                        className="flex items-center gap-2 rounded-lg border border-rule bg-white p-2 transition-colors focus-within:border-ink"
+                    >
+                        <input
+                            value={question}
+                            onChange={(event) =>
+                                setQuestion(event.target.value)
+                            }
+                            disabled={pending}
+                            placeholder="Nhập câu hỏi của bạn…"
+                            aria-label="Câu hỏi về tuyển sinh"
+                            className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm placeholder:text-ink-soft focus:outline-none"
+                        />
+                        <button
+                            type="submit"
+                            disabled={pending || !question.trim()}
+                            className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-paper transition-opacity hover:opacity-90 disabled:opacity-40"
+                        >
+                            Hỏi
+                        </button>
+                    </form>
+
+                    <p className="eyebrow mt-2.5 justify-center text-center">
+                        Trả lời chỉ dựa trên tài liệu tuyển sinh đã tải lên
+                    </p>
+                </div>
+            </div>
         </div>
     );
 }
