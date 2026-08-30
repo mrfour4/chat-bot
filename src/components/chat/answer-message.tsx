@@ -1,6 +1,6 @@
 import { CitationList } from "@/components/chat/citation-list";
 import { Markdown } from "@/components/chat/markdown";
-import type { ChatMessage } from "@/components/chat/types";
+import type { ChatMessage } from "@/types/chat";
 import { cn } from "@/lib/utils";
 
 export function AnswerMessage({ message }: { message: ChatMessage }) {

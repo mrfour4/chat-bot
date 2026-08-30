@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { SignInForm } from "@/components/auth/sign-in-form";
-import { SignUpForm } from "@/components/auth/sign-up-form";
+import { SignInForm, SignUpForm } from "@/components/auth";
 import { getSessionUser } from "@/lib/auth";
 
 export const metadata = { title: "Đăng nhập · Cố vấn Tuyển sinh" };

@@ -1,6 +1,6 @@
 import { AnswerMessage } from "@/components/chat/answer-message";
 import { QuestionMessage } from "@/components/chat/question-message";
-import type { ChatMessage } from "@/components/chat/types";
+import type { ChatMessage } from "@/types/chat";
 
 export function MessageList({ messages }: { messages: ChatMessage[] }) {
     if (messages.length === 0) return null;

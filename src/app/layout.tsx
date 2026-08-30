@@ -5,8 +5,8 @@ import {
     JetBrains_Mono,
 } from "next/font/google";
 
-import { Providers } from "@/app/providers";
-import { SiteHeader } from "@/components/layout/site-header";
+import { AppProviders } from "@/providers";
+import { SiteHeader } from "@/components/layout";
 import { getSessionUser } from "@/lib/auth";
 
 import "./globals.css";
@@ -50,10 +50,10 @@ export default async function RootLayout({
             className={`${bricolage.variable} ${beVietnam.variable} ${jetbrains.variable}`}
         >
             <body className="flex min-h-dvh flex-col">
-                <Providers>
+                <AppProviders>
                     <SiteHeader user={user} />
                     <main className="flex-1">{children}</main>
-                </Providers>
+                </AppProviders>
             </body>
         </html>
     );

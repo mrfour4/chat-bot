@@ -34,7 +34,7 @@ function getQueryClient() {
     return browserQueryClient;
 }
 
-export function Providers({ children }: { children: ReactNode }) {
+export function AppProviders({ children }: { children: ReactNode }) {
     return (
         <QueryClientProvider client={getQueryClient()}>
             <Toaster>{children}</Toaster>

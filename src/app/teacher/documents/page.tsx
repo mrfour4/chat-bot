@@ -2,7 +2,7 @@ import { requireTeacher } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { listDocuments } from "@/lib/documents/repo";
 
-import { DocumentsPanel } from "@/components/documents/documents-panel";
+import { DocumentsPanel } from "@/components/documents";
 
 export const metadata = { title: "Tài liệu · Cố vấn Tuyển sinh" };
 

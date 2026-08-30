@@ -1,5 +1,4 @@
-import { AskBox } from "@/components/chat/ask-box";
-import { ForbiddenNotice } from "@/components/chat/forbidden-notice";
+import { AskBox, ForbiddenNotice } from "@/components/chat";
 import { listIndexedDocuments } from "@/lib/documents";
 
 export default async function HomePage({

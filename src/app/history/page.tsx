@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { ConversationList } from "@/components/history/conversation-list";
+import { ConversationList } from "@/components/history";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
 import { listConversationSummaries } from "@/lib/chat/conversations";

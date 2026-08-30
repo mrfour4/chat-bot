@@ -9,7 +9,7 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 **Last completed:** `3.6` — background indexing ✅ · **PHASE 3 COMPLETE**
 **Current phase:** Phase 4 — quality and conventions (§9)
-**State:** 4.7 in progress
+**State:** 4.8 in progress
 **Blocked on:** nothing. 3.1–3.5 need no Gemini calls at all; only 3.6 does.
 
 **Settled:** **D7** = `gemini-3.6-flash`, overridable via `GEMINI_MODEL`.
@@ -414,7 +414,7 @@ want. Nine small phases, same rules. **No Gemini calls in any of them.**
 | 4.4 | Primitives → shadcn | Dialog, Alert, Empty, Spinner; state components split out | [4.4](phases/4.4-components.md) | ✅ |
 | 4.5 | Forms | TanStack Form + Zod + `Field` | [4.5](phases/4.5-forms.md) | ✅ |
 | 4.6 | Toasts | every mutation reports success or failure | [4.6](phases/4.6-toasts.md) | ✅ |
-| 4.7 | Architecture | types/constants/lib split, component folders + `index.ts` | [4.7](phases/4.7-architecture.md) | — |
+| 4.7 | Architecture | types/constants/lib split, component folders + `index.ts` | [4.7](phases/4.7-architecture.md) | ✅ |
 | 4.8 | i18n | next-intl, Vietnamese and English | [4.8](phases/4.8-i18n.md) | — |
 | 4.9 | Conventions | comments stripped, `CONVENTION.md` written | [4.9](phases/4.9-conventions.md) | — |
 
@@ -486,3 +486,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `4.4` primitives replaced and states split out. Six hand-styled buttons and inputs, three copies of a spinning `span`, four notice paragraphs and three hand-built empty states became `Button`, `Input`, `Spinner`, `Alert`, `Empty`, `Separator`, `Dialog`. Base UI composes with `render`, not `asChild`. The 240-line documents panel became eight components; the ask box became an orchestrator of seven. Splitting the upload form introduced a regression and it was caught here: the form no longer knew an upload had succeeded, so the chosen file stayed in the field looking unsent — clearing on submit would have been worse, throwing the file away before we knew it worked, so the panel remounts the form by key on success only.
 - **2026-08-30** — `4.5` forms on TanStack Form. **No official TanStack Form skill exists** either — checked the same way as Query, and the only `skills/` under `@tanstack/` belongs to devtools. Zod needs no adapter: v1 validates against Standard Schema, which Zod 4 implements. Schemas moved to `src/lib/validation/` and are imported by both sides — the composer and `/api/chat` now share one `MAX_QUESTION_LENGTH`, which the route had been declaring separately. The sign-in and sign-up forms split into two components because the type checker made the real objection: one form cannot have two shapes, and sharing it would have meant weakening a schema. 15 new tests, 88 total.
 - **2026-08-30** — `4.6` mutations report their outcome. The `Toaster` had never been mounted, which is why nothing in the app had ever confirmed itself. One wrapper (`notifySuccess`/`notifyError`) so a success cannot arrive styled as an error. The rule settled on: **a toast reports an outcome the screen does not already show** — so a question gets no success toast, because the answer appearing is the feedback, while a failed question keeps its inline message as well, because a toast expires and an unanswered question would then look ignored. The upload form's inline error was removed as the same sentence twice.
+- **2026-08-30** — `4.7` architecture. Five hand-written `fetch` calls came out of two components into `lib/api/`, over one `expectOk` that reads the route's own Vietnamese message — restating those in the client would only produce a vaguer sentence from further away. `useDocuments` and `useChat` took the state: the documents panel went 150 lines → 35, the ask box 160 → 45, both now just layout. Constants, types and providers moved to directories named for what they are. Feature barrels are for consumers only — a folder's own files still import each other directly, because a barrel its members import from is a cycle waiting to happen.

@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { AskBox } from "@/components/chat/ask-box";
+import { AskBox } from "@/components/chat";
 import { Button } from "@/components/ui/button";
-import type { ChatMessage } from "@/components/chat/types";
+import type { ChatMessage } from "@/types/chat";
 import { requireUser } from "@/lib/auth";
 import { getConversation, listMessages } from "@/lib/chat/conversations";
 import { parseCitations } from "@/lib/db";

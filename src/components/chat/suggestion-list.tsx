@@ -1,10 +1,5 @@
+import { SUGGESTED_QUESTIONS } from "@/constants/chat";
 import { Button } from "@/components/ui/button";
-
-const SUGGESTIONS = [
-    "Có những phương thức xét tuyển nào?",
-    "Trường có những ngành nào?",
-    "Đối tượng tuyển sinh là ai?",
-];
 
 export function SuggestionList({
     disabled,
@@ -15,7 +10,7 @@ export function SuggestionList({
 }) {
     return (
         <div className="mb-3 flex flex-wrap gap-2">
-            {SUGGESTIONS.map((suggestion) => (
+            {SUGGESTED_QUESTIONS.map((suggestion) => (
                 <Button
                     key={suggestion}
                     type="button"
