@@ -7,8 +7,8 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `2.2.2` — citation mapping ✅
-**Current small phase:** `2.2.3` — `askDocuments()`
+**Last completed:** `2.2.3` — `askDocuments()` ✅ · **2.2 complete**
+**Current small phase:** `2.3.0` — TanStack AI setup
 **State:** implementing through to the chatbot; you test with a fresh key at the end
 **Blocked on:** nothing
 
@@ -316,7 +316,7 @@ Docs are written just before their review gate, not all upfront.
 | --- | --- | --- | --- | --- |
 | 2.2.1 | The ungrounded guard | `enforceGrounding`, 8 tests, fails closed | [2.2.1](phases/2.2.1-grounding-guard.md) | ✅ |
 | 2.2.2 | Citation mapping | `extractCitations`, dedupes by page, 8 tests | [2.2.2](phases/2.2.2-citations.md) | ✅ |
-| 2.2.3 | `askDocuments()` | system instruction, `fileSearch` tool, guard wired in — **decision D7** | — | ⚪ |
+| 2.2.3 | `askDocuments()` | three grounding layers wired together; **D7 settled** | [2.2.3](phases/2.2.3-ask-documents.md) | ✅ |
 
 ### 2.3 Chatbot
 
@@ -376,3 +376,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `2.1.7` delete, completing 2.1. The Gemini document is removed before the row, deliberately: the reverse order leaves an unreachable orphan on a half-failure, while this order leaves a row the teacher can simply delete again. That self-heal depends on treating a Gemini 404 as success. Inline confirmation rather than `window.confirm`, which browsers let users suppress permanently — silently turning a destructive action into a one-click one.
 - **2026-08-30** — `2.2.1` the ungrounded guard. Checks for *evidence that retrieval happened* rather than inspecting the text for signs of invention, and discards the model's words when that evidence is missing. Fails closed on every unexpected shape. The decisive tests assert the hallucination's text is absent from the output, not merely that a flag is false. **D6 and D7 settled** — see §1.
 - **2026-08-30** — `2.2.2` citation mapping. Reads `documentId` through the same `DOCUMENT_ID_KEY` constant the upload writes, so the two cannot drift apart — a drift that would fail silently, with citations quietly ceasing to resolve while everything still looked fine. One citation per document-and-page; a missing page is `null` rather than a confident guess.
+- **2026-08-30** — `2.2.3` `askDocuments()`. The three grounding layers meet here, with a test asserting `googleSearch` is *absent* from the tools — web grounding would still produce citations, so that mistake would look correct rather than broken. History is passed to the model but never acts as a source: retrieval runs every turn, so a follow-up resolves its pronouns against the conversation while its facts still come only from documents. **D7 settled: `gemini-3.6-flash`.**
