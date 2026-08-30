@@ -1,6 +1,6 @@
 import { requireTeacher } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import type { DocumentRow } from "@/lib/database.types";
+import type { DocumentRow } from "@/lib/db";
 
 export const metadata = { title: "Tài liệu · Cố vấn Tuyển sinh" };
 

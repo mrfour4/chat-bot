@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 
-import type { Database } from "@/lib/database.types";
+import type { Database } from "@/lib/db";
 import { requirePublicEnv } from "@/lib/env";
 
 /**
@@ -12,9 +12,9 @@ export async function createClient() {
   // Awaited first: touching cookies marks the render dynamic, so a build
   // without secrets present skips this path instead of throwing.
   const cookieStore = await cookies();
-  const { supabaseUrl, supabaseAnonKey } = requirePublicEnv();
+  const { supabaseUrl, supabasePublishableKey } = requirePublicEnv();
 
-  return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
+  return createServerClient<Database>(supabaseUrl, supabasePublishableKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();

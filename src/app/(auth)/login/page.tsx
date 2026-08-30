@@ -30,15 +30,15 @@ export default async function LoginPage({
 
         <dl className="mt-8 space-y-3 border-t border-rule pt-6 text-sm">
           <div className="flex gap-3">
-            <dt className="doc-ref w-20 shrink-0 pt-0.5">Khách</dt>
+            <dt className="doc-ref w-20 shrink-0 self-start pt-1">Khách</dt>
             <dd className="text-ink-soft">Hỏi đáp, không lưu lịch sử.</dd>
           </div>
           <div className="flex gap-3">
-            <dt className="doc-ref w-20 shrink-0 pt-0.5">Học sinh</dt>
+            <dt className="doc-ref w-20 shrink-0 self-start pt-1">Học sinh</dt>
             <dd className="text-ink-soft">Hỏi đáp và xem lại lịch sử của mình.</dd>
           </div>
           <div className="flex gap-3">
-            <dt className="doc-ref w-20 shrink-0 pt-0.5">Giáo viên</dt>
+            <dt className="doc-ref w-20 shrink-0 self-start pt-1">Giáo viên</dt>
             <dd className="text-ink-soft">
               Tải lên và quản lý tài liệu tuyển sinh. Quyền này do quản trị viên cấp.
             </dd>

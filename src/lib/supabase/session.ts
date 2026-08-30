@@ -10,9 +10,9 @@ import { requirePublicEnv } from "@/lib/env";
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
-  const { supabaseUrl, supabaseAnonKey } = requirePublicEnv();
+  const { supabaseUrl, supabasePublishableKey } = requirePublicEnv();
 
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+  const supabase = createServerClient(supabaseUrl, supabasePublishableKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();

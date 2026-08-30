@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import type { Profile } from "@/lib/database.types";
+import type { Profile } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 
 export interface SessionUser {

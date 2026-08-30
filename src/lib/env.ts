@@ -15,24 +15,35 @@ function required(name: string, value: string | undefined): string {
   return value;
 }
 
+/**
+ * Supabase renamed its keys: `publishable` / `secret` replace `anon` /
+ * `service_role`. Both spellings are accepted so either generation of project
+ * settings works. NEXT_PUBLIC_* must be referenced literally to be inlined.
+ */
 export const publicEnv = {
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-  supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+  supabasePublishableKey:
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+    "",
 };
 
 export function requirePublicEnv() {
   return {
     supabaseUrl: required("NEXT_PUBLIC_SUPABASE_URL", publicEnv.supabaseUrl),
-    supabaseAnonKey: required("NEXT_PUBLIC_SUPABASE_ANON_KEY", publicEnv.supabaseAnonKey),
+    supabasePublishableKey: required(
+      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+      publicEnv.supabasePublishableKey,
+    ),
   };
 }
 
 export function serverEnv() {
   return {
     ...requirePublicEnv(),
-    supabaseServiceRoleKey: required(
-      "SUPABASE_SERVICE_ROLE_KEY",
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
+    supabaseSecretKey: required(
+      "SUPABASE_SECRET_KEY",
+      process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY,
     ),
     geminiApiKey: required("GEMINI_API_KEY", process.env.GEMINI_API_KEY),
     geminiModel: process.env.GEMINI_MODEL || "gemini-3.7-flash",

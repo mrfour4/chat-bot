@@ -38,10 +38,13 @@ export default async function RootLayout({
   const user = await getSessionUser();
 
   return (
-    <html lang="vi">
-      <body
-        className={`${bricolage.variable} ${beVietnam.variable} ${jetbrains.variable} flex min-h-dvh flex-col`}
-      >
+    // The font variables live on <html>: the base layer applies `font-sans`
+    // there, and a custom property declared lower down would not resolve.
+    <html
+      lang="vi"
+      className={`${bricolage.variable} ${beVietnam.variable} ${jetbrains.variable}`}
+    >
+      <body className="flex min-h-dvh flex-col">
         <SiteHeader user={user} />
         <main className="flex-1">{children}</main>
         <footer className="border-t border-rule">

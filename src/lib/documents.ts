@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { DocumentRow } from "@/lib/database.types";
+import type { DocumentRow } from "@/lib/db";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type PublicDocument = Pick<DocumentRow, "id" | "title" | "created_at">;

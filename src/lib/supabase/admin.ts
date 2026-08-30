@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 
-import type { Database } from "@/lib/database.types";
+import type { Database } from "@/lib/db";
 import { serverEnv } from "@/lib/env";
 
 /**
@@ -11,9 +11,9 @@ import { serverEnv } from "@/lib/env";
  * this from a Client Component, and always check authorization yourself first.
  */
 export function createAdminClient() {
-  const { supabaseUrl, supabaseServiceRoleKey } = serverEnv();
+  const { supabaseUrl, supabaseSecretKey } = serverEnv();
 
-  return createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+  return createClient<Database>(supabaseUrl, supabaseSecretKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }

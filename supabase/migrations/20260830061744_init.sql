@@ -42,8 +42,19 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- Lock this SECURITY DEFINER function down. Postgres grants EXECUTE to PUBLIC on
+-- every new function, and Supabase's default privileges additionally grant it to
+-- anon and authenticated -- so revoking PUBLIC alone leaves it callable. It only
+-- ever needs to run as the trigger above, which does not re-check EXECUTE once
+-- the trigger exists.
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+
 -- Role lookup used by policies. SECURITY DEFINER so that reading a role from
 -- inside a policy does not re-trigger RLS on profiles (infinite recursion).
+--
+-- EXECUTE is deliberately left granted to PUBLIC: RLS policy expressions are
+-- evaluated as the calling role, so revoking it would break every policy below.
+-- Safe to expose — it takes no arguments and reports only on the caller.
 create function public.is_teacher()
 returns boolean
 language sql

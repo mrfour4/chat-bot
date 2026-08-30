@@ -1,36 +1,126 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cố vấn Tuyển sinh — AI Admissions Advisor
 
-## Getting Started
+An admissions Q&A assistant that answers **only** from admissions PDFs uploaded
+by teachers. Retrieval runs on Gemini File Search; there is no custom vector
+database, embedding pipeline, or RAG framework.
 
-First, run the development server:
+- **Guest** — asks questions, no account needed.
+- **Student** — asks questions, keeps conversation history.
+- **Teacher** — uploads and manages the admissions PDFs the assistant reads.
+
+## Stack
+
+| Concern | Choice |
+| --- | --- |
+| App + API | Next.js 16 (App Router), TypeScript |
+| Auth + database | Supabase (hosted), Postgres RLS as the authorization boundary |
+| Retrieval | Gemini File Search (`@google/genai`) |
+| Styling | Tailwind CSS v4 |
+
+## Local setup
+
+### 1. Install
+
+```bash
+npm install
+```
+
+### 2. Create a Supabase project
+
+At [supabase.com](https://supabase.com/dashboard), create a project. Then open
+**SQL Editor**, paste the contents of `supabase/migrations/0001_init.sql`, and
+run it. This creates the tables, the sign-up trigger, and every RLS policy.
+
+For local development, turn **off** email confirmation under
+**Authentication → Sign In / Providers → Email**, so sign-up logs you straight
+in without a mail provider.
+
+### 3. Configure the environment
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in:
+
+| Variable | Where it comes from |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | same page, the publishable key (`sb_publishable_…`) |
+| `SUPABASE_SECRET_KEY` | same page, the secret key (`sb_secret_…`) |
+| `GEMINI_API_KEY` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| `GEMINI_FILE_SEARCH_STORE` | printed by the bootstrap command below |
+
+`.env.local` is gitignored. The secret key and the Gemini key are read
+only on the server and are never sent to the browser.
+
+### 4. Create the File Search store
+
+```bash
+npm run gemini:bootstrap
+```
+
+This creates a store named `admissions-documents` and prints the resource name.
+Copy it into `GEMINI_FILE_SEARCH_STORE`. Re-running is safe — an existing store
+is reported rather than duplicated.
+
+### 5. Run
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open <http://localhost:3000>. Check <http://localhost:3000/api/health> to
+confirm both Supabase and Gemini are reachable; it reports each dependency
+separately so a failure points at one thing.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Granting the teacher role
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Everyone signs up as a student. Promote a teacher by hand in the Supabase SQL
+editor:
 
-## Learn More
+```sql
+update public.profiles set role = 'teacher' where email = 'teacher@example.com';
+```
 
-To learn more about Next.js, take a look at the following resources:
+There is deliberately no self-serve path to the teacher role, and no `UPDATE`
+policy on `profiles`, so a user cannot promote themselves through the client.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+  app/
+    (auth)/            sign-in / sign-up, server actions
+    api/health/        dependency check for local setup
+    auth/confirm/      target of the Supabase confirmation email
+    teacher/           teacher-only routes (guarded in layout.tsx)
+    page.tsx           public chat entry point
+  components/          shared UI
+  lib/
+    auth.ts            session + role helpers
+    database.types.ts  hand-maintained schema types
+    documents.ts       document reads
+    env.ts             environment access, fails loudly when unset
+    gemini/            server-only Gemini client
+    supabase/          browser / server / service-role clients
+  proxy.ts             refreshes the auth session on every request
+supabase/migrations/   SQL schema
+scripts/               one-off setup scripts
+```
 
-## Deploy on Vercel
+## Commands
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run dev              # development server
+npm run build            # production build
+npm run typecheck        # tsc --noEmit
+npm run lint             # eslint
+npm run gemini:bootstrap # create the File Search store
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deployment
+
+Deploy to any Node host (Vercel is the path of least resistance). Set the same
+environment variables in the host's dashboard; the hosted Supabase project and
+the Gemini API are the only infrastructure required.
