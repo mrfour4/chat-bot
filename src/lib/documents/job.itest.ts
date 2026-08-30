@@ -1,15 +1,3 @@
-/**
- * Real end-to-end verification for 3.6: a document row plus a stored PDF, and
- * nothing else, must be enough to index it.
- *
- * Not part of `npm test` -- run deliberately with `npm run test:api`. It costs
- * one Gemini upload, so it uses a single-page file.
- *
- * The point is that `runIndexingJob` takes only an id. If it can index from
- * that alone, then the browser that uploaded the file is genuinely irrelevant:
- * it can be closed, refreshed or navigated away from, and the work still
- * finishes.
- */
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 
@@ -67,8 +55,6 @@ describe("runIndexingJob", () => {
             storage_path: storagePath,
         });
 
-        // Everything the upload request would have held is now gone. This is the
-        // whole claim of the phase.
         await runIndexingJob(documentId);
 
         const document = await getDocument(admin, documentId);
@@ -78,9 +64,6 @@ describe("runIndexingJob", () => {
     }, 180_000);
 
     it("refuses to run twice, so two workers cannot both index it", async () => {
-        // The row is `ready` by now, so the claim must not match. Without this the
-        // sweeper racing an after() job would upload the same PDF twice and the
-        // loser would overwrite the winner's result.
         const before = await getDocument(admin, documentId);
         await runIndexingJob(documentId);
         const after = await getDocument(admin, documentId);
@@ -104,7 +87,7 @@ describe("runIndexingJob", () => {
         await runIndexingJob(orphanId);
 
         const document = await getDocument(admin, orphanId);
-        // "Stuck at indexing" and "failed with a reason" must not look the same.
+
         expect(document?.status).toBe("failed");
         expect(document?.error_message).toContain("tệp PDF");
 

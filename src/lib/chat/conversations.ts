@@ -2,19 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Citation, Conversation, Database, Message } from "@/lib/db";
 
-/**
- * Conversation storage for signed-in users.
- *
- * As in `documents/repo.ts`, the client is injected: these always run as the
- * user, so the `conversations_all_own` and `messages_all_own` policies decide
- * what is visible. A guest never reaches this module at all -- their
- * conversation lives in component state and ends with the tab.
- */
 export type ChatClient = SupabaseClient<Database>;
 
 type MessageInsert = Database["public"]["Tables"]["messages"]["Insert"];
 
-/** A title short enough for a list, taken from the question that started it. */
 export function deriveConversationTitle(question: string): string {
     const clean = question.replace(/\s+/g, " ").trim();
     if (clean.length <= 60) return clean;
@@ -48,8 +39,7 @@ export async function appendMessage(
         conversation_id: input.conversationId,
         role: input.role,
         content: input.content,
-        // jsonb. An empty array rather than null keeps reads uniform, so nothing
-        // downstream has to tell "no sources" apart from "never written".
+
         citations: (input.citations ??
             []) as unknown as MessageInsert["citations"],
     });
@@ -69,13 +59,6 @@ export async function listConversations(
     return data ?? [];
 }
 
-/**
- * One conversation, or null if it is not this user's.
- *
- * RLS does the deciding, so "belongs to someone else" and "does not exist"
- * arrive here identically -- which is the right answer to give back, since
- * distinguishing them would confirm that another user's conversation exists.
- */
 export async function getConversation(
     supabase: ChatClient,
     id: string,
@@ -92,14 +75,6 @@ export async function getConversation(
 
 export type ConversationSummary = Conversation & { messageCount: number };
 
-/**
- * The history list: one row per conversation, with its message count.
- *
- * The count comes back from PostgREST as an embedded aggregate rather than
- * from a query per conversation. The previous history page loaded *every
- * message of every conversation* to render a list -- N+1 round trips to
- * display data it then mostly ignored.
- */
 export async function listConversationSummaries(
     supabase: ChatClient,
 ): Promise<ConversationSummary[]> {

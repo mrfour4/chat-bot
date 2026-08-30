@@ -14,7 +14,6 @@ describe("formatFileSize", () => {
     });
 
     it("switches to MB, with one decimal", () => {
-        // The case that motivated this: previously rendered "4066 KB".
         expect(formatFileSize(4_163_258)).toBe("4.0 MB");
         expect(formatFileSize(20 * 1024 * 1024)).toBe("20.0 MB");
     });

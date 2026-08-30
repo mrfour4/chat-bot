@@ -13,7 +13,7 @@ export async function askQuestion(payload: {
             body: JSON.stringify({
                 question: payload.question,
                 history: payload.history,
-                // Absent for a guest, so the server simply does not persist.
+
                 ...(payload.conversationId
                     ? { conversationId: payload.conversationId }
                     : {}),

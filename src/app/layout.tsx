@@ -47,8 +47,6 @@ export default async function RootLayout({
     const [user, locale] = await Promise.all([getSessionUser(), getLocale()]);
 
     return (
-        // The font variables live on <html>: the base layer applies `font-sans`
-        // there, and a custom property declared lower down would not resolve.
         <html
             lang={locale}
             className={`${bricolage.variable} ${beVietnam.variable} ${jetbrains.variable}`}

@@ -24,9 +24,6 @@ describe("signInSchema", () => {
     });
 
     it("does not impose a length rule on sign-in", () => {
-        // A user whose password predates the current rule must still be able to
-        // sign in. Enforcing the minimum here would lock them out of their own
-        // account for a rule they never agreed to.
         const result = signInSchema.safeParse({
             email: "cu@example.edu.vn",
             password: "short",
@@ -44,13 +41,11 @@ describe("signUpSchema", () => {
         });
 
         expect(result.success).toBe(false);
-        // A key, not a sentence: the same schema runs on both sides and only
-        // the caller knows the reader's language.
+
         expect(result.error?.issues[0]?.message).toBe("passwordTooShort");
     });
 
     it("accepts an empty name", () => {
-        // The name is optional in substance: the action stores null for it.
         expect(
             signUpSchema.safeParse({
                 fullName: "",

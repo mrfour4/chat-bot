@@ -3,11 +3,6 @@ import { LockIcon } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-/**
- * `requireTeacher()` redirects here when a student opens a teacher link.
- * Without this the bounce is silent, and the student is left thinking the page
- * is broken rather than not theirs.
- */
 export function ForbiddenNotice() {
     const t = useTranslations("home");
 

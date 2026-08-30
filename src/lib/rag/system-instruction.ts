@@ -1,15 +1,3 @@
-/**
- * The system instruction — §5.7 layer 2.
- *
- * Layer 1 is the tooling (only `fileSearch`, never Google Search); layer 3 is
- * `enforceGrounding`, which is the actual guarantee. This layer makes the
- * model *want* to behave, so that layer 3 rarely has to fire — a refusal the
- * model writes itself is more useful than one we substitute, because it can
- * say what it did look at.
- *
- * Written in Vietnamese because the model answers in Vietnamese, and mixing
- * instruction and output languages makes the register drift.
- */
 export const SYSTEM_INSTRUCTION = `
 Bạn là cố vấn tuyển sinh, trả lời học sinh và phụ huynh Việt Nam.
 

@@ -27,8 +27,6 @@ export default async function ConversationPage({
     const { id } = await params;
     const supabase = await createClient();
 
-    // RLS scopes this to the signed-in user, so someone else's conversation is
-    // simply absent -- and 404 rather than 403 avoids confirming it exists.
     const conversation = await getConversation(supabase, id);
     if (!conversation) notFound();
 
@@ -37,15 +35,12 @@ export default async function ConversationPage({
         listIndexedDocuments(),
     ]);
 
-    // Stored rows become exactly what the chat holds in state, so a resumed
-    // conversation and a live one are the same thing from here on.
     const initialMessages: ChatMessage[] = messages.map((message) => ({
         id: message.id,
         role: message.role === "assistant" ? "assistant" : "user",
         content: message.content,
         citations: parseCitations(message.citations),
-        // Persisted answers were grounded when they were written -- the guard in
-        // §5.7 is what let them be stored at all.
+
         grounded: true,
     }));
 

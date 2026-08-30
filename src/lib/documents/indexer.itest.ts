@@ -1,11 +1,3 @@
-/**
- * Real Gemini API verification for phase 2.1.5. Not part of `npm test` — run it
- * deliberately with `npm run test:api`.
- *
- * Uses the single-page files so a full run costs a handful of calls. It
- * exercises `indexDocument()` itself rather than a reimplementation, so a
- * passing run says something about the code that actually ships.
- */
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 
@@ -25,7 +17,6 @@ const GROUNDING_RULE =
     "Bạn chỉ được trả lời dựa trên tài liệu được truy xuất. Nếu thông tin không " +
     "có trong tài liệu, hãy trả lời đúng một câu: 'Không có thông tin trong tài liệu hiện có.'";
 
-/** Retries 503/429 so free-tier capacity blips do not read as failures. */
 async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
     for (let attempt = 1; ; attempt += 1) {
         try {
@@ -91,7 +82,6 @@ async function index(key: keyof typeof ids, file: string) {
 
 afterAll(async () => {
     for (const name of uploaded) {
-        // force: true is required -- a non-empty Document refuses deletion (2.1.0).
         await ai.fileSearchStores.documents.delete({
             name,
             config: { force: true },
@@ -125,7 +115,7 @@ describe("indexDocument against the real API", () => {
 
         expect(result.chunkCount).toBeGreaterThan(0);
         expect(result.titles).toEqual(["uit-page-1.pdf"]);
-        // The link that lets 2.2.2 resolve a citation back to a Supabase row.
+
         expect(result.documentIds).toEqual([ids.uit]);
         expect(result.pages.every((p) => typeof p === "number")).toBe(true);
     }, 60_000);
@@ -163,7 +153,6 @@ describe("indexDocument against the real API", () => {
     }, 60_000);
 
     it("refuses a question absent from every document", async () => {
-        // The behaviour the whole product rests on.
         const result = await ask(
             "Học phí ngành Y khoa là bao nhiêu tiền một năm?",
         );

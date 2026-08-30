@@ -22,7 +22,6 @@ describe("checkRateLimit", () => {
     it("keeps callers separate", () => {
         for (let i = 0; i < 9; i += 1) checkRateLimit("1.2.3.4");
 
-        // One noisy visitor must not lock everyone else out of a public page.
         expect(checkRateLimit("5.6.7.8").allowed).toBe(true);
     });
 

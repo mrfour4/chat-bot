@@ -8,10 +8,6 @@ export const dynamic = "force-dynamic";
 
 type Check = { ok: boolean; detail: string };
 
-/**
- * Development smoke test for the two external dependencies.
- * GET /api/health
- */
 export async function GET() {
     const checks: Record<string, Check> = {};
 
@@ -29,8 +25,7 @@ export async function GET() {
             .from("documents")
             .select("id")
             .limit(1);
-        // An RLS denial still proves the connection and schema are live; only a
-        // transport or missing-table error means the setup is broken.
+
         if (error && error.code !== "42501")
             throw new Error(`${error.code}: ${error.message}`);
         checks.supabase = {

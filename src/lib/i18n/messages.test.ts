@@ -22,12 +22,6 @@ function valueAt(messages: Messages, key: string): string {
         ) as string;
 }
 
-/**
- * A missing key does not crash next-intl -- it renders the key itself. So a
- * half-translated catalogue looks like a working page with a stray identifier
- * in it, which is exactly the kind of failure nobody reports. This is the check
- * that turns it into a failing test.
- */
 describe("message catalogues", () => {
     const viKeys = flatten(vi as Messages).sort();
     const enKeys = flatten(en as Messages).sort();
@@ -47,12 +41,6 @@ describe("message catalogues", () => {
     });
 
     it("agree on which placeholders each message takes", () => {
-        // A message translated without its `{count}` renders a sentence with a
-        // hole in it, and only in the locale nobody on the team reads.
-        //
-        // Only ICU *argument* names count: `{count}` and `{count, plural, …}`
-        // are the same argument, and the plural branches inside are English
-        // grammar rather than a placeholder Vietnamese is missing.
         const placeholders = (messages: Messages, key: string) => [
             ...new Set(
                 [...valueAt(messages, key).matchAll(/\{\s*(\w+)\s*[,}]/g)]

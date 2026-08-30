@@ -11,12 +11,6 @@ import { Input } from "@/components/ui/input";
 import { useFieldErrors } from "@/hooks/use-field-errors";
 import { questionSchema } from "@/lib/validation/chat";
 
-/**
- * Fixed to the viewport rather than to the end of the conversation: it is the
- * one control on this page, and scrolling up to re-read an answer should not
- * take it away. Centred on the same measure as the messages, so the column does
- * not shift between them.
- */
 export function ChatComposer({
     pending,
     error,
@@ -62,9 +56,7 @@ export function ChatComposer({
                     <form.Field name="question">
                         {(field) => {
                             const errors = field.state.meta.errors;
-                            // Only once something has been typed and removed, or
-                            // the limit exceeded -- an empty box on arrival is not
-                            // a mistake to report.
+
                             const invalid =
                                 field.state.meta.isDirty && errors.length > 0;
 

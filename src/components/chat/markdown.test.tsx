@@ -3,12 +3,6 @@ import { describe, expect, it } from "vitest";
 
 import { Markdown } from "@/components/chat/markdown";
 
-/**
- * No DOM here, and none needed: `renderToStaticMarkup` returns the HTML string
- * directly. What this suite proves is that the pipeline is wired -- the GFM
- * plugin is loaded, and raw HTML stays inert -- not that a list *looks* right,
- * which stays a job for the browser.
- */
 function render(markdown: string) {
     return renderToStaticMarkup(<Markdown>{markdown}</Markdown>);
 }
@@ -21,7 +15,7 @@ describe("Markdown", () => {
 
         expect(html).toContain("<li>");
         expect(html).toContain("<strong>Phương thức 1:</strong>");
-        // The syntax itself must be gone, not merely styled.
+
         expect(html).not.toContain("* **");
     });
 
@@ -39,7 +33,6 @@ describe("Markdown", () => {
             ),
         );
 
-        // Without remark-gfm this stays a paragraph of pipes.
         expect(html).toContain("<table");
         expect(html).toContain("<th");
         expect(html).toContain("120");
@@ -54,13 +47,8 @@ describe("Markdown", () => {
     });
 
     it("does not render raw HTML from model output", () => {
-        // The security property. `rehype-raw` is deliberately absent, so this is
-        // structural rather than a filter that could be bypassed -- and a test that
-        // fails loudly if someone adds the plugin for a formatting convenience.
         const html = render('Xin chào <img src=x onerror="alert(1)"> bạn');
 
-        // Escaped into visible text, not dropped: the student sees exactly what
-        // the model wrote, and the browser never sees an element.
         expect(html).not.toContain("<img");
         expect(html).toContain("&lt;img");
     });

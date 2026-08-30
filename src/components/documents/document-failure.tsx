@@ -27,8 +27,6 @@ export function DocumentFailure({
                 <p>{document.error_message}</p>
 
                 {document.storage_path ? (
-                    // 2.1.8 said retry *was* re-upload, because we kept no
-                    // bytes. 3.3 changed that premise.
                     <Button
                         variant="outline"
                         size="sm"

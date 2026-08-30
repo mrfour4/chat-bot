@@ -17,31 +17,20 @@ import { isPending, isStale } from "@/lib/documents/status";
 import { notifyError, notifySuccess } from "@/lib/notify";
 import { queryKeys } from "@/lib/query/keys";
 
-/**
- * Everything the documents page does to the server.
- *
- * Lifted out of the panel so the component renders and the hook decides. It
- * also puts the three mutations, their toasts and the sweeper nudge next to one
- * another, where an inconsistency between them is visible.
- */
 export function useDocuments(initial: DocumentRow[]) {
     const t = useTranslations("documents");
     const queryClient = useQueryClient();
     const invalidate = () =>
         queryClient.invalidateQueries({ queryKey: queryKeys.documents });
 
-    // Remounts the upload form after a successful upload, which is what clears
-    // the chosen file. Clearing inside the form on submit would throw the
-    // selection away before we know the upload succeeded.
     const [uploadFormKey, setUploadFormKey] = useState(0);
 
     const { data: documents = [] } = useQuery({
         queryKey: queryKeys.documents,
         queryFn: fetchDocuments,
-        // Keeps the server-rendered first paint; without it the list would
-        // blank on hydration and fill in a moment later.
+
         initialData: initial,
-        // Polls only while something is genuinely in flight, then stops.
+
         refetchInterval: (query) =>
             (query.state.data ?? []).some((doc) => isPending(doc.status))
                 ? DOCUMENTS_POLL_INTERVAL_MS
@@ -79,24 +68,12 @@ export function useDocuments(initial: DocumentRow[]) {
         onError: (error) => notifyError(t("retryFailed"), error.message),
     });
 
-    /**
-     * Nudges the sweeper when something has been in flight too long.
-     *
-     * `after()` is a promise on a process that may not survive, so a crashed
-     * worker would leave a row at "Đang lập chỉ mục" forever -- work in
-     * progress that is not in progress. This turns that into a delay, and it
-     * costs no scheduling infrastructure: the page that shows the stuck row is
-     * the one that asks for it to be re-driven.
-     */
     useEffect(() => {
         if (!documents.some((doc) => isStale(doc))) return;
 
         requestReindex()
             .then(invalidate)
-            .catch(() => {
-                // A failed nudge is not worth showing: the row already says
-                // what state it is in, and the next poll will try again.
-            });
+            .catch(() => {});
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [documents]);
 

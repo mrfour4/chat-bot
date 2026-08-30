@@ -34,8 +34,6 @@ describe("isStale", () => {
     });
 
     it("covers pending as well as indexing", () => {
-        // A row whose worker died before it ever claimed the document looks exactly
-        // like one that was only just created. The clock is what tells them apart.
         expect(
             isStale(
                 { status: "pending", updated_at: ago(STALE_AFTER_MS + 1000) },
@@ -45,7 +43,6 @@ describe("isStale", () => {
     });
 
     it("never reports a settled document as stale", () => {
-        // Re-driving a ready document would re-upload it to Gemini for nothing.
         expect(
             isStale(
                 { status: "ready", updated_at: ago(STALE_AFTER_MS * 100) },
@@ -61,8 +58,6 @@ describe("isStale", () => {
     });
 
     it("does not treat an unreadable timestamp as stale forever", () => {
-        // Otherwise every poll would requeue the row, which looks like activity
-        // and is actually a loop.
         expect(
             isStale({ status: "pending", updated_at: "not a date" }, now),
         ).toBe(false);

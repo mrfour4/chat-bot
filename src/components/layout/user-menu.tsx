@@ -11,13 +11,9 @@ export function UserMenu({ user }: { user: SessionUser }) {
 
     return (
         <>
-            {/* A rule, so "Đăng xuất" reads as an account action rather than as
-                a fourth place to go. */}
             <Separator orientation="vertical" className="h-5" />
 
             <div className="flex items-center gap-2">
-                {/* Below lg there is no room for a name. The role badge stays,
-                    because it is the part that changes what you can do. */}
                 <span className="hidden max-w-[12ch] truncate text-sm text-ink-soft lg:inline">
                     {user.profile.full_name ?? user.email}
                 </span>

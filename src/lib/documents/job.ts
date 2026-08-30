@@ -10,29 +10,10 @@ import {
 import { getPdf } from "@/lib/documents/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-/**
- * Indexing, off the request.
- *
- * Runs from `after()` once the upload has responded, and from the sweeper for
- * anything left behind. It takes only a document id, because that is all a job
- * can rely on surviving: the request that started it may be long gone, and the
- * browser that uploaded the file may be closed. Everything else -- the bytes
- * included -- is re-read from what 3.3 stored.
- *
- * Uses the service-role client: there is no session here to act on behalf of.
- * Authorization was decided before the job was ever queued, by the route that
- * queued it.
- *
- * Never throws. A job that rejects in `after()` has nobody to catch it, and an
- * unhandled rejection in a background task is exactly the kind of failure that
- * leaves a row at `indexing` with no trace of why.
- */
 export async function runIndexingJob(documentId: string): Promise<void> {
     try {
         const supabase = createAdminClient();
 
-        // The claim decides whether this worker proceeds at all. A false here is a
-        // normal outcome, not an error: someone else got there first.
         const claimed = await claimForIndexing(supabase, documentId);
         if (!claimed) return;
 
@@ -73,17 +54,12 @@ export async function runIndexingJob(documentId: string): Promise<void> {
     } catch (error) {
         console.error("[indexing] job failed for", documentId, error);
 
-        // Best-effort: record the failure so the row does not sit at `indexing`
-        // forever looking like work in progress. If even this fails, the sweeper
-        // will find the row stale and try again.
         try {
             await markFailed(
                 createAdminClient(),
                 documentId,
                 "Lập chỉ mục thất bại do lỗi hệ thống. Vui lòng thử lại.",
             );
-        } catch {
-            // Nothing left to do but leave it for the sweeper.
-        }
+        } catch {}
     }
 }

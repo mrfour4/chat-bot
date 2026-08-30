@@ -1,27 +1,6 @@
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-/**
- * Renders an assistant answer.
- *
- * The model writes Markdown, so `whitespace-pre-wrap` was showing students
- * `* **Phương thức 1:**` where a bulleted list belonged.
- *
- * `react-markdown` builds React elements directly and ignores raw HTML unless
- * `rehype-raw` is added — which it deliberately is not. Model output therefore
- * cannot inject markup, rather than being filtered on the way in. It also
- * rewrites dangerous URL schemes (`javascript:`) out of links by default.
- *
- * Synchronous: only the `MarkdownHooks` export uses `useEffect`, so this one
- * component serves the client chat and the server-rendered history alike.
- */
-
-/**
- * Headings are demoted. Every page here already owns its `h1`, and a model
- * that opens an answer with one would give the document two. `h1`–`h3` all
- * land on `h3`, sized to read as emphasis inside a message rather than as
- * page structure.
- */
 const components: Components = {
     h1: ({ children }) => <h3 className="md-heading">{children}</h3>,
     h2: ({ children }) => <h3 className="md-heading">{children}</h3>,
@@ -30,9 +9,6 @@ const components: Components = {
     h5: ({ children }) => <h4 className="md-heading">{children}</h4>,
     h6: ({ children }) => <h4 className="md-heading">{children}</h4>,
 
-    // An answer's link points at something a document mentioned; it should not
-    // replace the conversation. `noopener` keeps the target away from
-    // `window.opener`.
     a: ({ children, href }) => (
         <a
             href={href}
@@ -44,8 +20,6 @@ const components: Components = {
         </a>
     ),
 
-    // Admissions documents are full of tables — quotas by major, fee schedules.
-    // The wrapper scrolls rather than letting a wide table stretch the message.
     table: ({ children }) => (
         <div className="my-3 overflow-x-auto">
             <table className="w-full border-collapse text-left text-[13px]">
@@ -64,9 +38,6 @@ const components: Components = {
         </td>
     ),
 
-    // `inline` was dropped from the props in v9; a fenced block arrives wrapped
-    // in <pre>, an inline span does not. Styling both here and letting <pre>
-    // supply the block frame keeps the distinction without inspecting the node.
     code: ({ children, className }) => (
         <code
             className={

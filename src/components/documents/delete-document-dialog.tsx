@@ -16,12 +16,6 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import type { DocumentRow } from "@/lib/db";
 
-/**
- * Deleting is irreversible and removes the document from the assistant's
- * knowledge, so it is confirmed rather than done on one click. A dialog rather
- * than `window.confirm`, which browsers let users suppress permanently --
- * silently turning a destructive action into a single click.
- */
 export function DeleteDocumentDialog({
     document,
     pending,

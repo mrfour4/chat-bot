@@ -2,19 +2,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database, DocumentRow } from "@/lib/db";
 
-/**
- * Data access for `documents`.
- *
- * Every function takes its client as an argument rather than creating one. A
- * teacher listing documents must go through the *user's* client so RLS applies
- * (§5.4); a write-back after indexing has no session and must use the
- * secret-key client. A module that picked its own would have to pick one of
- * those and be wrong half the time — most likely by reaching for the secret key
- * everywhere, which quietly turns the authorization boundary off.
- *
- * It also keeps `server-only` out of this file, so it stays importable from
- * tests.
- */
 export type DocumentsClient = SupabaseClient<Database>;
 
 export async function listDocuments(
@@ -99,16 +86,6 @@ export async function markIndexing(
     await update(supabase, id, { status: "indexing", error_message: null });
 }
 
-/**
- * Moves a document from `pending` to `indexing`, and reports whether *this*
- * caller is the one that moved it.
- *
- * The `.eq("status", "pending")` is the whole point: it makes the transition a
- * claim rather than an assignment. Two workers can race the same document --
- * an `after()` job and the sweeper -- and exactly one will match a row. Without
- * it both would upload the same PDF to Gemini and the loser would overwrite the
- * winner's result with its own.
- */
 export async function claimForIndexing(
     supabase: DocumentsClient,
     id: string,
@@ -128,14 +105,6 @@ export async function claimForIndexing(
     return (data ?? []).length === 1;
 }
 
-/**
- * Documents left mid-flight for longer than `staleAfterMs`.
- *
- * Staleness is measured on `updated_at`, not on the status alone, so a healthy
- * index that is simply still running is never disturbed. Rows without a stored
- * PDF are excluded: there is nothing to re-read, so re-driving them would only
- * fail again.
- */
 export async function listStale(
     supabase: DocumentsClient,
     staleAfterMs: number,
@@ -153,7 +122,6 @@ export async function listStale(
     return data ?? [];
 }
 
-/** Puts a document back in the queue -- the retry path, and the sweeper's. */
 export async function resetToPending(
     supabase: DocumentsClient,
     id: string,

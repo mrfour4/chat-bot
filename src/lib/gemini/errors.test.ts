@@ -5,7 +5,6 @@ import {
     classifyGeminiError,
 } from "@/lib/gemini/errors";
 
-/** The shape the SDK actually throws: an Error whose message is a JSON string. */
 function apiError(body: unknown, status?: number): Error {
     const error = new Error(JSON.stringify(body));
     if (status !== undefined) {
@@ -14,7 +13,6 @@ function apiError(body: unknown, status?: number): Error {
     return error;
 }
 
-// Copied from a real failure during 2.1.6, trimmed.
 const QUOTA_PAYLOAD = {
     error: {
         code: 429,
@@ -50,8 +48,6 @@ describe("classifyGeminiError", () => {
     });
 
     it("tells the teacher the actual daily limit", () => {
-        // "Quota exceeded" without a number leaves you unable to tell a
-        // misconfiguration from a plan ceiling.
         const failure = classifyGeminiError(apiError(QUOTA_PAYLOAD, 429));
 
         expect(failure.message).toContain(String(FREE_TIER_DAILY_REQUESTS));

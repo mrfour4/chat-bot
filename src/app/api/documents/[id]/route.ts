@@ -27,9 +27,6 @@ export async function DELETE(
     const t = await apiMessages();
     const supabase = await createClient();
 
-    // Read through the user's client, so RLS decides visibility. A document
-    // belonging to another teacher simply is not here -- and answering 404 rather
-    // than 403 avoids confirming that it exists.
     const document = await getDocument(supabase, id);
     if (!document) {
         return NextResponse.json(
@@ -38,14 +35,6 @@ export async function DELETE(
         );
     }
 
-    // Gemini first, then the row. If the row delete fails afterwards, the row
-    // survives and can be deleted again -- and the second attempt finds the
-    // Gemini document already gone, which counts as success. The reverse order
-    // would leave a document in the store that nothing points at and nothing can
-    // ever reach.
-    //
-    // A failed row may carry no gemini_document_name at all, because 2.1.5
-    // discards the upload when indexing fails. Nothing to delete is not an error.
     if (document.gemini_document_name) {
         try {
             await deleteFromStore(document.gemini_document_name);
@@ -60,9 +49,6 @@ export async function DELETE(
         }
     }
 
-    // Then the stored PDF, for the same reason and in the same order: an object
-    // left behind after the row is gone is unreachable and unnoticeable, while a
-    // row left behind can simply be deleted again.
     if (document.storage_path) {
         const removed = await removePdf(supabase, document.storage_path);
         if (!removed.ok) {

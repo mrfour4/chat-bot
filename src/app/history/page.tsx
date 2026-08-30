@@ -13,8 +13,6 @@ export async function generateMetadata() {
 }
 
 export default async function HistoryPage() {
-    // Signed-in only. RLS then narrows to this user's own rows, so the page
-    // cannot show someone else's conversation even if the guard were wrong.
     await requireUser();
     const t = await getTranslations("history");
     const supabase = await createClient();

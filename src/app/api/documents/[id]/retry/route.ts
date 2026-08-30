@@ -9,13 +9,6 @@ import { createClient } from "@/lib/supabase/server";
 
 export const maxDuration = 90;
 
-/**
- * Re-indexes one document from the PDF already stored.
- *
- * 2.1.8 concluded that retry *was* re-upload, because we kept no bytes. 3.3
- * changed that premise, so retrying is now a button rather than a request to
- * go and find the file again.
- */
 export async function POST(
     _request: Request,
     { params }: { params: Promise<{ id: string }> },

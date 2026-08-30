@@ -17,6 +17,6 @@ export type ChatResponse = {
     citations: Citation[];
     grounded: boolean;
     reason: string;
-    /** Present only for a signed-in user; guests are never persisted. */
+
     conversationId: string | null;
 };

@@ -1,19 +1,5 @@
-/**
- * The gate between the browser and the File Search store.
- *
- * Pure by design: no network, no database, no clock. Everything it needs is in
- * its argument, so it can be tested exhaustively and reasoned about in one
- * sitting.
- */
-
-/**
- * Gemini's own limit is 100 MB. Our largest real sample is a 12-page scan at
- * 4.1 MB, so this leaves room for a much longer scanned prospectus while still
- * rejecting anything that is plainly not an admissions document.
- */
 export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 
-/** `%PDF-` — the signature every PDF opens with. */
 const PDF_SIGNATURE = [0x25, 0x50, 0x44, 0x46, 0x2d];
 
 export type UploadRejectionCode =
@@ -35,14 +21,6 @@ function formatMegabytes(bytes: number): string {
     return `${Math.round(bytes / 1024 / 1024)} MB`;
 }
 
-/**
- * Checks run cheapest-and-most-certain first, so an oversized file is rejected
- * on its size rather than after inspecting its content.
- *
- * `mimeType` is only a courtesy check. Browsers derive `File.type` from the
- * file extension, so a renamed executable arrives claiming `application/pdf`
- * and passes it. The signature check is the one that actually decides.
- */
 export function validateUpload(input: {
     fileName: string;
     mimeType: string;

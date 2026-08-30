@@ -10,18 +10,6 @@ import {
 } from "@/components/ui/collapsible";
 import type { Citation } from "@/lib/db";
 
-/**
- * Sources under an answer, rendered as document references.
- *
- * This is the signature element of the design and the reason to trust the
- * answer above it: the claim is that every fact came from an official document,
- * and this is where that claim is made checkable. Deliberately typographic
- * rather than card-like -- it should read as a footnote in a document, not as a
- * row of chips.
- *
- * Collapsed by default. The count stays visible when closed, so the evidence is
- * still *claimed* at a glance even when it is not being read.
- */
 export function CitationList({ citations }: { citations: Citation[] }) {
     const t = useTranslations("chat");
 
@@ -46,9 +34,6 @@ export function CitationList({ citations }: { citations: Citation[] }) {
                         >
                             <p className="doc-ref text-lacquer">
                                 {citation.fileName}
-                                {/* A missing page is simply not claimed. A wrong one would be
-                                    worse than none: a student who checks and finds nothing
-                                    there learns the assistant is unreliable. */}
                                 {citation.page !== null &&
                                     ` · ${t("page", { page: citation.page })}`}
                             </p>

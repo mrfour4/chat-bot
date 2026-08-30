@@ -3,12 +3,6 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import type { DocumentRow } from "@/lib/db";
 
-/**
- * Inline rather than a modal, for the same reason the delete confirmation used
- * to be: the teacher's eyes stay on the row. The viewer is the browser's own --
- * every desktop browser ships a competent one, and pdf.js would be a megabyte
- * of JavaScript to rebuild it.
- */
 export function DocumentPreview({
     document,
     onClose,
@@ -28,11 +22,6 @@ export function DocumentPreview({
                     size="sm"
                     render={<a href={`${href}?download=1`}>{t("download")}</a>}
                 />
-                {/* Always offered, not only as an error path: iOS Safari and
-                    some Android browsers refuse to render a PDF inside an
-                    iframe, and there is no reliable way to detect that before
-                    it fails. A visible link degrades to working rather than to
-                    a blank rectangle. */}
                 <Button
                     variant="link"
                     size="sm"

@@ -4,7 +4,6 @@ import { MAX_UPLOAD_BYTES, validateUpload } from "@/lib/documents/validate";
 
 const PDF_MIME = "application/pdf";
 
-/** Bytes that start with the PDF signature, padded to `size`. */
 function pdfBytes(size = 512): Uint8Array {
     const bytes = new Uint8Array(size);
     bytes.set(new TextEncoder().encode("%PDF-1.7\n"));
@@ -20,7 +19,6 @@ function upload(overrides: Partial<Parameters<typeof validateUpload>[0]> = {}) {
     });
 }
 
-/** Vietnamese-specific letters. Latin-only text cannot match. */
 const VIETNAMESE =
     /[ăâđêôơưàáảãạằắẳẵặầấẩẫậèéẻẽẹềếểễệìíỉĩịòóỏõọồốổỗộờớởỡợùúủũụừứửữựỳýỷỹỵ]/i;
 
@@ -40,7 +38,6 @@ describe("validateUpload", () => {
     });
 
     it("accepts a file exactly at the size cap", () => {
-        // The boundary: an off-by-one here silently rejects a legitimate document.
         expect(upload({ bytes: pdfBytes(MAX_UPLOAD_BYTES) })).toEqual({
             ok: true,
         });
@@ -52,8 +49,6 @@ describe("validateUpload", () => {
     });
 
     it("rejects a file claiming to be a PDF whose bytes are not", () => {
-        // The renamed-executable case. The browser derives File.type from the
-        // extension, so this arrives looking entirely legitimate.
         const result = upload({
             fileName: "tuyen-sinh.pdf",
             bytes: new TextEncoder().encode("MZ\x90\x00 not a pdf at all"),

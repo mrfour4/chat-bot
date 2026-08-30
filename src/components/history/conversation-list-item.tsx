@@ -13,8 +13,6 @@ export function ConversationListItem({
 
     return (
         <li>
-            {/* The whole row is the link. A title that happens to be short
-                should not leave most of the row unclickable. */}
             <Link
                 href={`/chat/${conversation.id}`}
                 className="flex items-baseline justify-between gap-4 py-4 transition-colors hover:bg-panel"

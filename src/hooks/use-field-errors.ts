@@ -8,14 +8,6 @@ import { MAX_QUESTION_LENGTH } from "@/lib/validation/chat";
 
 type FieldIssue = { message?: string } | undefined;
 
-/**
- * Turns the schemas' message keys into sentences.
- *
- * Every parameter any validation message can take is passed on every call.
- * The alternative -- each call site knowing which of its fields needs `min`
- * and which needs `size` -- puts the knowledge in the wrong place and breaks
- * silently when a rule changes.
- */
 export function useFieldErrors() {
     const t = useTranslations("validation");
 

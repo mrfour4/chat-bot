@@ -16,8 +16,6 @@ export default async function TeacherDocumentsPage() {
     const t = await getTranslations("documents");
     const supabase = await createClient();
 
-    // Rendered on the server so the list arrives with the HTML and RLS scopes it.
-    // The panel takes over from here for anything that changes.
     const documents = await listDocuments(supabase);
 
     return (

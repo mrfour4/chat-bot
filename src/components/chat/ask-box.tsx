@@ -13,7 +13,7 @@ export function AskBox({
     initialConversationId = null,
 }: {
     documentCount: number;
-    /** A resumed conversation, loaded on the server. Empty for a new one. */
+
     initialMessages?: ChatMessage[];
     initialConversationId?: string | null;
 }) {
@@ -34,8 +34,6 @@ export function AskBox({
 
             <div ref={endRef} />
 
-            {/* Clears the fixed composer below, so the newest message is never
-                left sitting underneath it. */}
             <div aria-hidden className="h-40" />
 
             <ChatComposer

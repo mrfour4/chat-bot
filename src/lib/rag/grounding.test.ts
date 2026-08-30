@@ -43,7 +43,7 @@ describe("enforceGrounding", () => {
 
         expect(result.grounded).toBe(false);
         expect(result.reason).toBe("no-metadata");
-        // The point: not merely flagged, but gone.
+
         expect(result.answer).not.toContain("55 triệu");
         expect(result.answer).toBe(REFUSAL);
     });
@@ -92,8 +92,6 @@ describe("enforceGrounding", () => {
     });
 
     it("refuses a long, confident, entirely ungrounded answer", () => {
-        // The headline scenario: the model sounds certain and cites nothing. This
-        // is the case the whole product rests on.
         const confident =
             "Trường Đại học Y Dược TP.HCM tuyển sinh 1.200 chỉ tiêu ngành Y khoa năm " +
             "2026, điểm chuẩn dự kiến 27,5 và học phí 55 triệu đồng mỗi năm.";

@@ -16,13 +16,6 @@ import { checkRateLimit } from "@/lib/rag/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { MAX_QUESTION_LENGTH } from "@/lib/validation/chat";
 
-/** Long enough for a real admissions question, short enough to bound cost. */
-
-/**
- * Only the last few turns are sent back to the model. Enough for a follow-up to
- * resolve "còn chỉ tiêu thì sao?", without letting a long conversation quietly
- * grow every request.
- */
 const MAX_HISTORY_TURNS = 6;
 
 const bodySchema = z.object({
@@ -40,8 +33,6 @@ const bodySchema = z.object({
 });
 
 function callerKey(request: Request): string {
-    // Vercel and most proxies set these; locally both are absent and every
-    // caller shares one bucket, which is fine for a dev machine.
     return (
         request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
         request.headers.get("x-real-ip") ||
@@ -84,8 +75,6 @@ export async function POST(request: Request) {
             parts: [{ text: turn.content }],
         }));
 
-    // askDocuments returns rather than throws, including for quota and outages,
-    // so there is no failure here the route has to interpret.
     const result = await askDocuments(question, contents);
 
     const conversationId = await persist({
@@ -97,15 +86,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ ...result, conversationId });
 }
 
-/**
- * Saves the exchange for a signed-in user. Guests keep their conversation in
- * component state and it ends with the tab -- §4 gives history to students, and
- * storing a guest's questions without an account to attach them to would be
- * collecting data we promised not to.
- *
- * Never throws: a storage problem must not turn a good answer into an error the
- * student sees. A lost history entry is a smaller harm than a lost answer.
- */
 async function persist(input: {
     question: string;
     result: Awaited<ReturnType<typeof askDocuments>>;

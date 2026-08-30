@@ -21,8 +21,6 @@ export interface AuthFormState {
 export async function signIn(input: SignInInput): Promise<AuthFormState> {
     const t = await getTranslations("serverAuth");
 
-    // Re-validated here, not trusted from the client. The form runs the same
-    // schema for immediate feedback; this run is the one that decides.
     const parsed = signInSchema.safeParse(input);
     if (!parsed.success) {
         return { error: t("signInFailed") };
@@ -36,7 +34,7 @@ export async function signIn(input: SignInInput): Promise<AuthFormState> {
             email,
             password,
         });
-        // A missing session with no status is a transport failure, not a wrong password.
+
         if (error)
             signInError = error.status
                 ? t("invalidCredentials")
@@ -57,8 +55,6 @@ export async function signUp(input: SignUpInput): Promise<AuthFormState> {
 
     const parsed = signUpSchema.safeParse(input);
     if (!parsed.success) {
-        // The schema speaks in keys, so translate the first one here rather
-        // than handing a raw identifier to the browser.
         const key = parsed.error.issues[0]?.message;
         return {
             error: key
@@ -79,7 +75,6 @@ export async function signUp(input: SignUpInput): Promise<AuthFormState> {
         if (error)
             return { error: error.status ? error.message : t("configError") };
 
-        // With email confirmation on, Supabase returns a user but no session.
         if (!data.session) {
             return { notice: t("confirmEmail") };
         }

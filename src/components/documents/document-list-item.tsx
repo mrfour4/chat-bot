@@ -40,9 +40,6 @@ export function DocumentListItem({
                             {document.title}
                         </Button>
                     ) : (
-                        // Uploaded before the PDF was kept, so there is no file
-                        // to open. Plain text rather than a control that would
-                        // do nothing.
                         <p className="truncate text-sm font-medium">
                             {document.title}
                         </p>

@@ -54,8 +54,6 @@ describe("extractCitations", () => {
     });
 
     it("survives a chunk with no documentId metadata", () => {
-        // Nothing guarantees every chunk carries our key -- a document indexed
-        // before the key existed, or by another tool, still has to render.
         const metadata: GroundingMetadata = {
             groundingChunks: [chunk({ docId: null })],
         };
@@ -75,8 +73,6 @@ describe("extractCitations", () => {
     });
 
     it("collapses repeated chunks from the same document and page", () => {
-        // Retrieval routinely returns several chunks from one page. Rendering
-        // "trang 1" four times under an answer is noise, not provenance.
         const metadata: GroundingMetadata = {
             groundingChunks: [
                 chunk({ page: 1, text: "đoạn một" }),

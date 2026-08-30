@@ -57,7 +57,6 @@ describe("askDocuments", () => {
     });
 
     it("attaches no citations to a refusal", async () => {
-        // Sources under a refusal would imply we found something and did not say so.
         generateContent.mockResolvedValue({
             text: "Học phí ngành Y khoa là 55 triệu đồng.",
             candidates: [{}],
@@ -71,8 +70,6 @@ describe("askDocuments", () => {
     });
 
     it("offers the model only file search, never Google Search", async () => {
-        // Layer 1 of §5.7. Web grounding would still produce citations, so this
-        // would fail silently rather than loudly.
         generateContent.mockResolvedValue(groundedResponse);
 
         await askDocuments("Mã trường?");
@@ -82,17 +79,6 @@ describe("askDocuments", () => {
         expect(tools[0]).toHaveProperty("fileSearch");
         expect(JSON.stringify(tools)).not.toContain("googleSearch");
     });
-
-    // The API-failure path is deliberately not tested here. Vitest 4 surfaces
-    // anything thrown from a vi.fn() implementation as a test failure, even when
-    // the code under test catches it -- so this cannot be asserted without
-    // enabling `dangerouslyIgnoreUnhandledErrors` for the whole suite, which
-    // would hide real unhandled errors everywhere to cover six lines.
-    //
-    // The pieces are covered elsewhere: classifyGeminiError has its own tests
-    // against real 429 and 503 payloads, and the path was exercised in
-    // production during 2.1.6, where a live 429 produced the expected Vietnamese
-    // message on the row.
 
     it("passes history to the model but still retrieves on every turn", async () => {
         generateContent.mockResolvedValue(groundedResponse);

@@ -1,8 +1,3 @@
-/**
- * The product mark: a stamped document — the two rings of an official seal
- * around three lines of text. Reused at small sizes to flag an answer that
- * carries a citation.
- */
 export function SealMark({ size = 28 }: { size?: number }) {
     return (
         <svg

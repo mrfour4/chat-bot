@@ -12,13 +12,6 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
-/**
- * One field, wired to TanStack Form.
- *
- * `data-invalid` on the Field and `aria-invalid` on the control, both driven by
- * the same condition -- so the visible state and the state a screen reader is
- * told cannot disagree.
- */
 export function AuthField({
     field,
     label,

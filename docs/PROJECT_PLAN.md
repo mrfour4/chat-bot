@@ -7,9 +7,9 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `3.6` — background indexing ✅ · **PHASE 3 COMPLETE**
-**Current phase:** Phase 4 — quality and conventions (§9)
-**State:** 4.9 in progress — the last phase
+**Last completed:** `4.9` — conventions ✅ · **PHASE 4 COMPLETE**
+**Current phase:** Phase 5 — testing, yours
+**State:** Phase 4 complete. Conventions are in `CONVENTION.md`.
 **Blocked on:** nothing. 3.1–3.5 need no Gemini calls at all; only 3.6 does.
 
 **Settled:** **D7** = `gemini-3.6-flash`, overridable via `GEMINI_MODEL`.
@@ -416,7 +416,7 @@ want. Nine small phases, same rules. **No Gemini calls in any of them.**
 | 4.6 | Toasts | every mutation reports success or failure | [4.6](phases/4.6-toasts.md) | ✅ |
 | 4.7 | Architecture | types/constants/lib split, component folders + `index.ts` | [4.7](phases/4.7-architecture.md) | ✅ |
 | 4.8 | i18n | next-intl, Vietnamese and English | [4.8](phases/4.8-i18n.md) | ✅ |
-| 4.9 | Conventions | comments stripped, `CONVENTION.md` written | [4.9](phases/4.9-conventions.md) | — |
+| 4.9 | Conventions | comments stripped, `CONVENTION.md` written | [4.9](phases/4.9-conventions.md) | ✅ |
 
 **Why this order.** 4.1 first, so every later diff is already in the target
 format — otherwise the reformat would swallow real changes in its noise. 4.3
@@ -488,3 +488,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `4.6` mutations report their outcome. The `Toaster` had never been mounted, which is why nothing in the app had ever confirmed itself. One wrapper (`notifySuccess`/`notifyError`) so a success cannot arrive styled as an error. The rule settled on: **a toast reports an outcome the screen does not already show** — so a question gets no success toast, because the answer appearing is the feedback, while a failed question keeps its inline message as well, because a toast expires and an unanswered question would then look ignored. The upload form's inline error was removed as the same sentence twice.
 - **2026-08-30** — `4.7` architecture. Five hand-written `fetch` calls came out of two components into `lib/api/`, over one `expectOk` that reads the route's own Vietnamese message — restating those in the client would only produce a vaguer sentence from further away. `useDocuments` and `useChat` took the state: the documents panel went 150 lines → 35, the ask box 160 → 45, both now just layout. Constants, types and providers moved to directories named for what they are. Feature barrels are for consumers only — a folder's own files still import each other directly, because a barrel its members import from is a cycle waiting to happen.
 - **2026-08-30** — `4.8` Vietnamese and English via next-intl, **without locale routing**: a `[locale]` segment would have meant rewriting every route, `Link`, redirect and guard bounce for an audience that is almost entirely Vietnamese. Three tests guard the catalogues, because a missing key renders as the key itself — a half-translated page looks like a working one with a stray identifier in it. The placeholder test caught a real subtlety: English pluralises where Vietnamese does not, and only ICU *argument names* are comparable. Two lines drawn deliberately: a message produced **while someone is waiting** is translated, one a background job *persists* is not (there is no reader to have a language); and **the assistant keeps answering in Vietnamese**, because an English answer would be an unverified translation of a Vietnamese regulation, which is the exact transformation this product exists to avoid.
+- **2026-08-30** — `4.9` comments removed and `CONVENTION.md` written, **completing Phase 4**. The stripper parses with the TypeScript compiler rather than matching text, because a regex that removes `//` also removes it from strings, URLs and JSX, silently. It was wrong twice before it was right: `createScanner` returns no trivia in this version, so the first run quietly removed only JSX comment blocks while appearing to work; and a comment alone in an empty `catch` belongs to no node. `CONVENTION.md` carries the conventions and, more importantly, the facts that cost something to learn — lowercase metadata keys, deletion order, the un-backdatable `updated_at`, why streaming is impossible — each of which looks like something a later reader could simplify away.

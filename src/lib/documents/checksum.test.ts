@@ -5,8 +5,6 @@ import { sha256Hex } from "@/lib/documents/checksum";
 const encode = (text: string) => new TextEncoder().encode(text);
 
 describe("sha256Hex", () => {
-    // Published vectors, not snapshots of our own output: these would catch a
-    // wrong algorithm or a wrong encoding, which a self-snapshot cannot.
     it("matches the known digest of the empty input", async () => {
         await expect(sha256Hex(new Uint8Array(0))).resolves.toBe(
             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",

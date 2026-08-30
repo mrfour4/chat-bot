@@ -17,7 +17,5 @@ export async function setLocale(value: string) {
         sameSite: "lax",
     });
 
-    // Every page renders its own strings on the server, so the whole tree has
-    // to be rebuilt -- not just the switcher that was clicked.
     revalidatePath("/", "layout");
 }

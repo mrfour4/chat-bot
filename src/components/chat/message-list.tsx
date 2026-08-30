@@ -7,8 +7,6 @@ export function MessageList({ messages }: { messages: ChatMessage[] }) {
 
     return (
         <ol
-            // Answers arrive all at once (§5.15), so there is a single moment to
-            // announce. "polite" waits for a pause rather than cutting in.
             aria-live="polite"
             aria-atomic="false"
             className="flex flex-col gap-6"

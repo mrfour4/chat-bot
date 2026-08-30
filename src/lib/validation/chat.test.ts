@@ -18,8 +18,6 @@ describe("questionSchema", () => {
     });
 
     it("rejects a question past the limit the route also enforces", () => {
-        // Same constant on both sides. If they drifted, the composer would
-        // happily send something the route rejects.
         expect(
             questionSchema.safeParse({
                 question: "a".repeat(MAX_QUESTION_LENGTH + 1),
