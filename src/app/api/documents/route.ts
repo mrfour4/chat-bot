@@ -1,21 +1,27 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 
 import { getSessionUser, getTeacher } from "@/lib/auth";
 import { sha256Hex } from "@/lib/documents/checksum";
-import { indexDocument } from "@/lib/documents/indexer";
+import { runIndexingJob } from "@/lib/documents/job";
 import {
   createDocument,
   findByChecksum,
   listDocuments,
   markFailed,
-  markIndexing,
-  markReady,
+  resetToPending,
   setStoragePath,
 } from "@/lib/documents/repo";
 import { objectPath, putPdf } from "@/lib/documents/storage";
 import { deriveTitle } from "@/lib/documents/title";
 import { validateUpload } from "@/lib/documents/validate";
 import { createClient } from "@/lib/supabase/server";
+
+/**
+ * `after()` work counts against the route's duration, and indexing was measured
+ * at 10-15s with a 60s cap inside `indexDocument`. Named here so a platform
+ * default of 10s does not cut the job off mid-upload to Gemini.
+ */
+export const maxDuration = 90;
 
 function fail(status: number, code: string, message: string) {
   return NextResponse.json({ code, message }, { status });
@@ -115,40 +121,23 @@ export async function POST(request: Request) {
 
   await setStoragePath(supabase, document.id, path);
 
-  // Synchronous indexing (decision D5). 2.1.0 measured 10.0-14.6s, comfortably
-  // inside a request, and the alternative -- returning early and continuing in
-  // the background -- is not guaranteed to run on serverless without a queue.
-  // The 60s cap inside indexDocument is what keeps this bounded.
-  await markIndexing(supabase, document.id);
-
-  const outcome = await indexDocument({
-    documentId: document.id,
-    fileName: file.name,
-    bytes,
-  });
-
-  if (!outcome.ok) {
-    await markFailed(supabase, document.id, outcome.message);
-    return NextResponse.json(
-      {
-        ...document,
-        status: "failed",
-        storage_path: path,
-        error_message: outcome.message,
-      },
-      { status: 201 },
-    );
+  // D5 reversed (3.6). Indexing no longer happens inside this request: it takes
+  // 10-15s, and a teacher who navigated away, refreshed or closed the tab used
+  // to interrupt it. The two things that made synchronous the right call in
+  // 2.1.0 have both changed -- 3.3 keeps the PDF, so a worker can re-read it,
+  // and `after()` runs work once the response is sent.
+  //
+  // A reused `failed` row is put back to `pending` so the job can claim it.
+  if (document.status !== "pending") {
+    await resetToPending(supabase, document.id);
   }
 
-  await markReady(supabase, document.id, outcome.geminiDocumentName);
+  after(() => runIndexingJob(document.id));
 
+  // 201 now, while the work is still ahead. The row is `pending`, the panel
+  // polls, and nothing about the outcome depends on this browser staying open.
   return NextResponse.json(
-    {
-      ...document,
-      status: "ready",
-      storage_path: path,
-      gemini_document_name: outcome.geminiDocumentName,
-    },
+    { ...document, status: "pending", storage_path: path, error_message: null },
     { status: 201 },
   );
 }

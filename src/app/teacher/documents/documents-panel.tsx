@@ -1,24 +1,25 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { DocumentRow } from "@/lib/db";
 import { formatFileSize } from "@/lib/documents/format";
-import { isPending } from "@/lib/documents/status";
+import { isPending, isStale } from "@/lib/documents/status";
 import { queryKeys } from "@/lib/query/keys";
 
 const STATUS: Record<
   DocumentRow["status"],
   { text: string; className: string }
 > = {
-  pending: { text: "Chờ xử lý", className: "text-pending" },
+  pending: { text: "Chờ lập chỉ mục", className: "text-pending" },
   indexing: { text: "Đang lập chỉ mục", className: "text-pending" },
   ready: { text: "Sẵn sàng", className: "text-verified" },
   failed: { text: "Thất bại", className: "text-lacquer" },
 };
 
 const POLL_INTERVAL_MS = 3000;
+
 
 /** Reads the API's Vietnamese message, rather than restating it less usefully. */
 async function messageFrom(response: Response, fallback: string) {
@@ -93,7 +94,42 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
     },
   });
 
-  const error = upload.error ?? remove.error;
+  const retry = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/documents/${id}/retry`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error(
+          await messageFrom(response, "Không thử lại được. Vui lòng thử lại."),
+        );
+      }
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.documents }),
+  });
+
+  /**
+   * Nudges the sweeper when something has been in flight too long.
+   *
+   * `after()` is a promise on a process that may not survive, so a crashed
+   * worker would leave a row at "Đang lập chỉ mục" forever -- work in progress
+   * that is not in progress. This turns that into a delay, and it costs no
+   * scheduling infrastructure: the page that shows the stuck row is the one
+   * that asks for it to be re-driven.
+   */
+  useEffect(() => {
+    if (!documents.some((doc) => isStale(doc))) return;
+
+    fetch("/api/documents/reindex", { method: "POST" })
+      .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.documents }))
+      .catch(() => {
+        // A failed nudge is not worth showing: the row already says what state
+        // it is in, and the next poll will try again.
+      });
+  }, [documents, queryClient]);
+
+  const error = upload.error ?? remove.error ?? retry.error;
 
   return (
     <>
@@ -126,8 +162,9 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
         </div>
 
         {upload.isPending && (
-          // Indexing is synchronous, so this request genuinely takes 10-15s.
-          // Naming the duration turns an apparent hang into a wait.
+          // Only the upload now. Indexing is queued when this returns, so the
+          // wait is however long the file takes to travel -- not 10-15s of
+          // Gemini work the teacher used to have to sit through.
           <p
             aria-live="polite"
             className="mt-3 flex items-center gap-2 text-sm text-ink-soft"
@@ -136,7 +173,7 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
               aria-hidden
               className="size-3 shrink-0 animate-spin rounded-full border-2 border-rule border-t-ink motion-reduce:animate-none"
             />
-            Đang tải lên và lập chỉ mục… việc này mất khoảng 10–15 giây.
+            Đang tải tệp lên…
           </p>
         )}
 
@@ -151,7 +188,8 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
 
         {!upload.isPending && !error && (
           <p className="mt-3 text-sm text-ink-soft">
-            Chỉ nhận tệp PDF, tối đa 20 MB.
+            Chỉ nhận tệp PDF, tối đa 20 MB. Sau khi tải lên xong, việc lập chỉ
+            mục chạy nền — bạn có thể rời khỏi trang hoặc đóng trình duyệt.
           </p>
         )}
       </form>
@@ -285,9 +323,22 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
                   <p className="text-sm leading-relaxed text-lacquer">
                     {doc.error_message}
                   </p>
-                  <p className="mt-1.5 text-sm text-ink-soft">
-                    Tải lên lại chính tệp này để thử lập chỉ mục lần nữa.
-                  </p>
+                  {doc.storage_path ? (
+                    // 2.1.8 said retry *was* re-upload, because we kept no
+                    // bytes. 3.3 changed that premise.
+                    <button
+                      type="button"
+                      onClick={() => retry.mutate(doc.id)}
+                      disabled={retry.isPending}
+                      className="mt-2 rounded-md border border-lacquer/40 bg-paper px-2.5 py-1.5 text-sm font-medium text-lacquer transition-colors hover:border-lacquer disabled:opacity-40"
+                    >
+                      {retry.isPending ? "Đang thử lại…" : "Thử lập chỉ mục lại"}
+                    </button>
+                  ) : (
+                    <p className="mt-1.5 text-sm text-ink-soft">
+                      Tải lên lại chính tệp này để thử lập chỉ mục lần nữa.
+                    </p>
+                  )}
                 </div>
               )}
             </li>

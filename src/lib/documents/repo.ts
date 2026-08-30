@@ -99,6 +99,68 @@ export async function markIndexing(
   await update(supabase, id, { status: "indexing", error_message: null });
 }
 
+/**
+ * Moves a document from `pending` to `indexing`, and reports whether *this*
+ * caller is the one that moved it.
+ *
+ * The `.eq("status", "pending")` is the whole point: it makes the transition a
+ * claim rather than an assignment. Two workers can race the same document --
+ * an `after()` job and the sweeper -- and exactly one will match a row. Without
+ * it both would upload the same PDF to Gemini and the loser would overwrite the
+ * winner's result with its own.
+ */
+export async function claimForIndexing(
+  supabase: DocumentsClient,
+  id: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("documents")
+    .update({
+      status: "indexing",
+      error_message: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .eq("status", "pending")
+    .select("id");
+
+  if (error) throw error;
+  return (data ?? []).length === 1;
+}
+
+/**
+ * Documents left mid-flight for longer than `staleAfterMs`.
+ *
+ * Staleness is measured on `updated_at`, not on the status alone, so a healthy
+ * index that is simply still running is never disturbed. Rows without a stored
+ * PDF are excluded: there is nothing to re-read, so re-driving them would only
+ * fail again.
+ */
+export async function listStale(
+  supabase: DocumentsClient,
+  staleAfterMs: number,
+): Promise<DocumentRow[]> {
+  const cutoff = new Date(Date.now() - staleAfterMs).toISOString();
+
+  const { data, error } = await supabase
+    .from("documents")
+    .select("*")
+    .in("status", ["pending", "indexing"])
+    .not("storage_path", "is", null)
+    .lt("updated_at", cutoff);
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** Puts a document back in the queue -- the retry path, and the sweeper's. */
+export async function resetToPending(
+  supabase: DocumentsClient,
+  id: string,
+): Promise<void> {
+  await update(supabase, id, { status: "pending", error_message: null });
+}
+
 export async function markReady(
   supabase: DocumentsClient,
   id: string,

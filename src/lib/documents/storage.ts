@@ -61,6 +61,24 @@ export async function putPdf(
   return { ok: true };
 }
 
+/**
+ * Reads a stored PDF back.
+ *
+ * This is what makes indexing re-drivable: the worker does not need the request
+ * that uploaded the file, only the object it left behind.
+ */
+export async function getPdf(
+  supabase: StorageClient,
+  path: string,
+): Promise<Uint8Array | null> {
+  const { data, error } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .download(path);
+
+  if (error || !data) return null;
+  return new Uint8Array(await data.arrayBuffer());
+}
+
 /** Treats "already gone" as success, so a repeated delete can self-heal. */
 export async function removePdf(
   supabase: StorageClient,
