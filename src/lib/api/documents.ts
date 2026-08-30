@@ -28,6 +28,35 @@ export async function deleteDocument(id: string): Promise<void> {
     );
 }
 
+export async function renameDocument(input: {
+    id: string;
+    title: string;
+}): Promise<DocumentRow> {
+    const response = await expectOk(
+        await fetch(`/api/documents/${input.id}`, {
+            method: "PATCH",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ title: input.title }),
+        }),
+        "Không đổi được tên tài liệu.",
+    );
+    return (await response.json()) as DocumentRow;
+}
+
+export async function archiveDocument(id: string): Promise<void> {
+    await expectOk(
+        await fetch(`/api/documents/${id}/archive`, { method: "POST" }),
+        "Không lưu trữ được tài liệu.",
+    );
+}
+
+export async function unarchiveDocument(id: string): Promise<void> {
+    await expectOk(
+        await fetch(`/api/documents/${id}/archive`, { method: "DELETE" }),
+        "Không khôi phục được tài liệu.",
+    );
+}
+
 export async function retryDocument(id: string): Promise<void> {
     await expectOk(
         await fetch(`/api/documents/${id}/retry`, { method: "POST" }),

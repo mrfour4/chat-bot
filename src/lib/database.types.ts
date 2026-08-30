@@ -65,8 +65,10 @@ export type Database = {
       }
       documents: {
         Row: {
+          archived_at: string | null
           checksum: string | null
           created_at: string
+          deleted_at: string | null
           error_message: string | null
           file_name: string
           file_size: number
@@ -76,11 +78,14 @@ export type Database = {
           storage_path: string | null
           title: string
           updated_at: string
+          updated_by: string | null
           uploaded_by: string
         }
         Insert: {
+          archived_at?: string | null
           checksum?: string | null
           created_at?: string
+          deleted_at?: string | null
           error_message?: string | null
           file_name: string
           file_size: number
@@ -90,11 +95,14 @@ export type Database = {
           storage_path?: string | null
           title: string
           updated_at?: string
+          updated_by?: string | null
           uploaded_by: string
         }
         Update: {
+          archived_at?: string | null
           checksum?: string | null
           created_at?: string
+          deleted_at?: string | null
           error_message?: string | null
           file_name?: string
           file_size?: number
@@ -104,9 +112,17 @@ export type Database = {
           storage_path?: string | null
           title?: string
           updated_at?: string
+          updated_by?: string | null
           uploaded_by?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "documents_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "documents_uploaded_by_fkey"
             columns: ["uploaded_by"]
@@ -320,3 +336,4 @@ export const Constants = {
     },
   },
 } as const
+

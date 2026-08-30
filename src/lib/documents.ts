@@ -12,6 +12,8 @@ export async function listIndexedDocuments(): Promise<PublicDocument[]> {
             .from("documents")
             .select("id, title, created_at")
             .eq("status", "ready")
+            .is("archived_at", null)
+            .is("deleted_at", null)
             .order("created_at", { ascending: false });
 
         if (error) throw error;

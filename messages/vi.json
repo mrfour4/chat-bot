@@ -121,7 +121,9 @@
         "questionTooLong": "Câu hỏi tối đa {max} ký tự.",
         "fileRequired": "Chọn một tệp PDF.",
         "fileEmpty": "Tệp rỗng.",
-        "fileTooLarge": "Tệp vượt quá {size} MB."
+        "fileTooLarge": "Tệp vượt quá {size} MB.",
+        "titleRequired": "Vui lòng nhập tên tài liệu.",
+        "titleTooLong": "Tên tài liệu quá dài."
     },
     "serverAuth": {
         "signInFailed": "Nhập email và mật khẩu để đăng nhập.",
@@ -149,7 +151,9 @@
         "uploadEmpty": "Tệp rỗng. Vui lòng chọn tệp PDF khác.",
         "uploadTooLarge": "Tệp vượt quá dung lượng cho phép ({size} MB).",
         "uploadWrongMime": "Chỉ chấp nhận tệp PDF.",
-        "uploadNotAPdf": "Tệp này không phải là PDF hợp lệ."
+        "uploadNotAPdf": "Tệp này không phải là PDF hợp lệ.",
+        "invalidTitle": "Tên tài liệu không hợp lệ.",
+        "archivedDuplicate": "Tài liệu này đang được lưu trữ với tên “{title}”. Hãy khôi phục thay vì tải lên lại."
     },
     "theme": {
         "label": "Giao diện",

@@ -67,3 +67,39 @@ values (
   '{"full_name":"Học sinh thử nghiệm"}'
 )
 on conflict (id) do nothing;
+
+-- A second teacher. The knowledge base is shared, so several policies are only
+-- meaningful with two of them: one teacher renaming another's document is
+-- allowed, deleting it is not, and "updated by" only ever differs from
+-- "uploaded by" when two people exist.
+insert into auth.users (
+  instance_id,
+  id,
+  aud,
+  role,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  created_at,
+  updated_at,
+  raw_app_meta_data,
+  raw_user_meta_data
+)
+values (
+  '00000000-0000-0000-0000-000000000000',
+  '33333333-3333-3333-3333-333333333333',
+  'authenticated',
+  'authenticated',
+  'teacher2@example.com',
+  crypt('password123', gen_salt('bf')),
+  now(),
+  now(),
+  now(),
+  '{"provider":"email","providers":["email"]}',
+  '{"full_name":"Giáo viên thứ hai"}'
+)
+on conflict (id) do nothing;
+
+update public.profiles
+set role = 'teacher'
+where email = 'teacher2@example.com';

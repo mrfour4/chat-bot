@@ -76,6 +76,17 @@ export async function POST(request: Request) {
 
     const existing = await findByChecksum(supabase, checksum);
 
+    if (existing?.archived_at) {
+        return NextResponse.json(
+            {
+                code: "archived-duplicate",
+                message: t("archivedDuplicate", { title: existing.title }),
+                existing: { id: existing.id, title: existing.title },
+            },
+            { status: 409 },
+        );
+    }
+
     if (existing && existing.status !== "failed") {
         return NextResponse.json(
             {

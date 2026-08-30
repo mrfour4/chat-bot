@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { INDEXING_TIMEOUT_MS } from "@/lib/documents/indexer";
-import { isPending, isStale, STALE_AFTER_MS } from "@/lib/documents/status";
+import {
+    displayStatus,
+    isPending,
+    isRetrievable,
+    isStale,
+    STALE_AFTER_MS,
+} from "@/lib/documents/status";
 
 describe("isPending", () => {
     it("is true while the document is still being indexed", () => {
@@ -77,5 +83,47 @@ describe("isStale", () => {
 describe("the sweeper's relationship to the indexing deadline", () => {
     it("waits longer than a job is allowed to run", () => {
         expect(STALE_AFTER_MS).toBeGreaterThan(INDEXING_TIMEOUT_MS);
+    });
+});
+
+describe("displayStatus", () => {
+    const base = {
+        status: "ready" as const,
+        archived_at: null,
+        deleted_at: null,
+    };
+
+    it("renames pending to what the teacher is actually watching", () => {
+        expect(displayStatus({ ...base, status: "pending" })).toBe("uploading");
+    });
+
+    it("passes the indexing states through", () => {
+        expect(displayStatus({ ...base, status: "indexing" })).toBe("indexing");
+        expect(displayStatus({ ...base, status: "ready" })).toBe("ready");
+        expect(displayStatus({ ...base, status: "failed" })).toBe("failed");
+    });
+
+    it("lets archived cover the indexing state without erasing it", () => {
+        const archived = { ...base, archived_at: "2026-08-30T00:00:00Z" };
+        expect(displayStatus(archived)).toBe("archived");
+        expect(archived.status).toBe("ready");
+    });
+
+    it("lets deleted win over archived", () => {
+        expect(
+            displayStatus({
+                ...base,
+                archived_at: "2026-08-30T00:00:00Z",
+                deleted_at: "2026-08-30T01:00:00Z",
+            }),
+        ).toBe("deleted");
+    });
+
+    it("only calls a document retrievable when Gemini can actually reach it", () => {
+        expect(isRetrievable(base)).toBe(true);
+        expect(
+            isRetrievable({ ...base, archived_at: "2026-08-30T00:00:00Z" }),
+        ).toBe(false);
+        expect(isRetrievable({ ...base, status: "failed" })).toBe(false);
     });
 });

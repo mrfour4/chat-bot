@@ -121,7 +121,9 @@
         "questionTooLong": "Questions are limited to {max} characters.",
         "fileRequired": "Choose a PDF file.",
         "fileEmpty": "That file is empty.",
-        "fileTooLarge": "That file is larger than {size} MB."
+        "fileTooLarge": "That file is larger than {size} MB.",
+        "titleRequired": "Enter a document name.",
+        "titleTooLong": "That document name is too long."
     },
     "serverAuth": {
         "signInFailed": "Enter an email and password to sign in.",
@@ -149,7 +151,9 @@
         "uploadEmpty": "That file is empty. Choose another PDF.",
         "uploadTooLarge": "That file is over the size limit ({size} MB).",
         "uploadWrongMime": "PDF files only.",
-        "uploadNotAPdf": "That file is not a valid PDF."
+        "uploadNotAPdf": "That file is not a valid PDF.",
+        "invalidTitle": "That document name is not valid.",
+        "archivedDuplicate": "This document is archived as “{title}”. Restore it instead of uploading it again."
     },
     "theme": {
         "label": "Theme",

@@ -11,6 +11,7 @@ import {
     createConversation,
     deriveConversationTitle,
 } from "@/lib/chat/conversations";
+import { resolveCitationTitles } from "@/lib/documents/titles";
 import { askDocuments } from "@/lib/rag/ask";
 import { checkRateLimit } from "@/lib/rag/rate-limit";
 import { createClient } from "@/lib/supabase/server";
@@ -75,7 +76,11 @@ export async function POST(request: Request) {
             parts: [{ text: turn.content }],
         }));
 
-    const result = await askDocuments(question, contents);
+    const answered = await askDocuments(question, contents);
+    const result = {
+        ...answered,
+        citations: await resolveCitationTitles(answered.citations),
+    };
 
     const conversationId = await persist({
         question,

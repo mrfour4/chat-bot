@@ -20,6 +20,7 @@ create temporary table rls_results (
 do $$
 declare
   teacher constant uuid := '11111111-1111-1111-1111-111111111111';
+  teacher2 constant uuid := '33333333-3333-3333-3333-333333333333';
   student constant uuid := '22222222-2222-2222-2222-222222222222';
   doc_id  constant uuid := '99999999-9999-9999-9999-999999999999';
   conv_id constant uuid := '88888888-8888-8888-8888-888888888888';
@@ -229,6 +230,131 @@ begin
   -- fixture can clear it without weakening anything at runtime.
   perform set_config('storage.allow_delete_query', 'true', true);
   delete from storage.objects where bucket_id = 'documents';
+
+  ---------------------------------------------------------------- 13
+  -- 5.3 lifecycle. The knowledge base is shared, so a second teacher may
+  -- rename a colleague's document. This is the permissive half of the pair;
+  -- check 14 is the half that has to hold.
+  update public.documents set deleted_at = null, updated_by = null where id = doc_id;
+
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', teacher2, 'role', 'authenticated')::text, true);
+  update public.documents
+    set title = 'Đổi tên bởi giáo viên khác', updated_by = teacher2
+    where id = doc_id;
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.documents
+    where id = doc_id and updated_by = teacher2;
+  insert into rls_results values
+    ('a teacher CAN rename another teacher''s document', n = 1,
+     case when n = 1 then '' else 'the rename was refused' end);
+
+  ---------------------------------------------------------------- 14
+  -- Deleting stays the uploader's. A soft delete is an UPDATE, so the old
+  -- DELETE policy no longer covers it -- this is the check that the
+  -- replacement actually holds that line.
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', teacher2, 'role', 'authenticated')::text, true);
+  begin
+    update public.documents
+      set deleted_at = now(), updated_by = teacher2
+      where id = doc_id;
+    blocked := false;
+    detail := 'the soft delete was allowed';
+  exception
+    when insufficient_privilege then blocked := true; detail := '';
+    when others then blocked := false; detail := 'unexpected: ' || sqlerrm;
+  end;
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.documents
+    where id = doc_id and deleted_at is not null;
+  insert into rls_results values
+    ('a teacher cannot soft-delete another teacher''s document',
+     blocked and n = 0,
+     case when n > 0 then 'deleted_at was set' else detail end);
+
+  ---------------------------------------------------------------- 15
+  -- WITH CHECK sees only the new row, so it cannot express "the uploader is
+  -- immutable". Without the trigger, a teacher could take ownership of a
+  -- colleague's document and then delete it, passing every policy on the way.
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', teacher2, 'role', 'authenticated')::text, true);
+  begin
+    update public.documents
+      set uploaded_by = teacher2, updated_by = teacher2
+      where id = doc_id;
+    blocked := false;
+    detail := 'ownership was reassigned';
+  exception
+    when others then blocked := true; detail := '';
+  end;
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.documents
+    where id = doc_id and uploaded_by = teacher;
+  insert into rls_results values
+    ('a teacher cannot take over another teacher''s document',
+     blocked and n = 1, detail);
+
+  ---------------------------------------------------------------- 16
+  -- updated_by has to be the caller, or attribution is a field anyone can
+  -- forge and the "updated by" column is decoration.
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', teacher2, 'role', 'authenticated')::text, true);
+  begin
+    update public.documents
+      set title = 'giả mạo', updated_by = teacher
+      where id = doc_id;
+    blocked := false;
+    detail := 'updated_by was forged';
+  exception
+    when insufficient_privilege then blocked := true; detail := '';
+    when others then blocked := false; detail := 'unexpected: ' || sqlerrm;
+  end;
+  perform set_config('role', 'postgres', true);
+  insert into rls_results values
+    ('a teacher cannot attribute an edit to someone else', blocked, detail);
+
+  ---------------------------------------------------------------- 17
+  -- The profile directory was widened for the table's attribution columns.
+  -- Widened for teachers only.
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', teacher2, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.profiles where id = teacher;
+  perform set_config('role', 'postgres', true);
+  insert into rls_results values
+    ('a teacher CAN read another profile', n = 1, n || ' rows visible');
+
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', student, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.profiles where id <> student;
+  perform set_config('role', 'postgres', true);
+  insert into rls_results values
+    ('a student still cannot read another profile', n = 0, n || ' rows visible');
+
+  perform set_config('role', 'anon', true);
+  select count(*) into n from public.profiles;
+  perform set_config('role', 'postgres', true);
+  insert into rls_results values
+    ('anon cannot read profiles', n = 0, n || ' rows visible');
+
+  ---------------------------------------------------------------- 18
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', student, 'role', 'authenticated')::text, true);
+  update public.documents set title = 'học sinh sửa' where id = doc_id;
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.documents
+    where id = doc_id and title = 'học sinh sửa';
+  insert into rls_results values
+    ('a student cannot rename a document', n = 0,
+     case when n = 0 then '' else 'the rename succeeded' end);
+
   perform set_config('storage.allow_delete_query', 'false', true);
 
   delete from public.documents where id = doc_id;

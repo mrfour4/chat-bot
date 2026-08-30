@@ -10,6 +10,7 @@ export async function listDocuments(
     const { data, error } = await supabase
         .from("documents")
         .select("*")
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -38,6 +39,7 @@ export async function findByChecksum(
         .from("documents")
         .select("*")
         .eq("checksum", checksum)
+        .is("deleted_at", null)
         .maybeSingle();
 
     if (error) throw error;
@@ -115,6 +117,8 @@ export async function listStale(
         .from("documents")
         .select("*")
         .in("status", ["pending", "indexing"])
+        .is("deleted_at", null)
+        .is("archived_at", null)
         .not("storage_path", "is", null)
         .lt("updated_at", cutoff);
 
@@ -149,12 +153,54 @@ export async function markFailed(
     await update(supabase, id, { status: "failed", error_message: message });
 }
 
-export async function deleteDocument(
+export async function renameDocument(
     supabase: DocumentsClient,
     id: string,
+    input: { title: string; actorId: string },
 ): Promise<void> {
-    const { error } = await supabase.from("documents").delete().eq("id", id);
-    if (error) throw error;
+    await update(supabase, id, {
+        title: input.title,
+        updated_by: input.actorId,
+    });
+}
+
+export async function archiveDocument(
+    supabase: DocumentsClient,
+    id: string,
+    actorId: string,
+): Promise<void> {
+    await update(supabase, id, {
+        archived_at: new Date().toISOString(),
+        gemini_document_name: null,
+        updated_by: actorId,
+    });
+}
+
+export async function unarchiveDocument(
+    supabase: DocumentsClient,
+    id: string,
+    actorId: string,
+): Promise<void> {
+    await update(supabase, id, {
+        archived_at: null,
+        status: "pending",
+        error_message: null,
+        updated_by: actorId,
+    });
+}
+
+export async function softDeleteDocument(
+    supabase: DocumentsClient,
+    id: string,
+    actorId: string,
+): Promise<void> {
+    await update(supabase, id, {
+        deleted_at: new Date().toISOString(),
+        archived_at: null,
+        gemini_document_name: null,
+        storage_path: null,
+        updated_by: actorId,
+    });
 }
 
 type DocumentUpdate = Database["public"]["Tables"]["documents"]["Update"];

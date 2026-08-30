@@ -9,6 +9,7 @@ import { requireUser } from "@/lib/auth";
 import { getConversation, listMessages } from "@/lib/chat/conversations";
 import { parseCitations } from "@/lib/db";
 import { listIndexedDocuments } from "@/lib/documents";
+import { resolveCitationTitles } from "@/lib/documents/titles";
 import { createClient } from "@/lib/supabase/server";
 
 export async function generateMetadata() {
@@ -35,14 +36,21 @@ export default async function ConversationPage({
         listIndexedDocuments(),
     ]);
 
-    const initialMessages: ChatMessage[] = messages.map((message) => ({
-        id: message.id,
-        role: message.role === "assistant" ? "assistant" : "user",
-        content: message.content,
-        citations: parseCitations(message.citations),
+    const initialMessages: ChatMessage[] = await Promise.all(
+        messages.map(async (message) => ({
+            id: message.id,
+            role:
+                message.role === "assistant"
+                    ? ("assistant" as const)
+                    : ("user" as const),
+            content: message.content,
+            citations: await resolveCitationTitles(
+                parseCitations(message.citations),
+            ),
 
-        grounded: true,
-    }));
+            grounded: true,
+        })),
+    );
 
     return (
         <div className="mx-auto max-w-2xl px-5 py-10 md:py-14">
