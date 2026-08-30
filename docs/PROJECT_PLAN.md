@@ -8,9 +8,9 @@ its own doc in `docs/phases/`; this file says where we are and why.
 ## 1. Status
 
 **Last completed:** `2.5` — polish ✅ · **PHASE 2 COMPLETE**
-**Current phase:** Phase 3 — testing, yours
-**State:** waiting for a working Gemini key so I can run the live checks first
-**Blocked on:** the API key
+**Current phase:** Phase 3 — the feedback round (§8), six small phases
+**State:** 3.2 in progress
+**Blocked on:** nothing. 3.1–3.5 need no Gemini calls at all; only 3.6 does.
 
 **Settled:** **D7** = `gemini-3.6-flash`, overridable via `GEMINI_MODEL`.
 **D6** = **no TanStack AI** — reversed in 2.3.0, because the grounding guarantee
@@ -359,7 +359,34 @@ Docs are written just before their review gate, not all upfront.
 
 ---
 
-## 8. Phase 3 — Test
+## 8. Phase 3 — the feedback round
+
+Six small phases from your review of the working app, same rules as Phase 2:
+one doc, one commit, one review gate each. Ordered so that **point 4
+(background indexing) comes last**, at your request — and because it depends on
+3.3.
+
+| # | Small phase | Deliverable | Doc | State |
+| --- | --- | --- | --- | --- |
+| 3.1 | Markdown in chat | model output rendered, not printed as syntax | [3.1](phases/3.1-markdown.md) | ✅ |
+| 3.2 | Header | active page, identity, wrapping, sticky | [3.2](phases/3.2-header.md) | — |
+| 3.3 | Keep the PDF | private Storage bucket, RLS policies, upload writes it | [3.3](phases/3.3-file-storage.md) | — |
+| 3.4 | Preview + download | in-app viewer, signed URL, mobile fallback | [3.4](phases/3.4-preview.md) | — |
+| 3.5 | Conversations | `/chat/[id]`, history as a list, resume a conversation | [3.5](phases/3.5-conversations.md) | — |
+| 3.6 | Background indexing | upload returns at once, work survives the tab | [3.6](phases/3.6-background-indexing.md) | — |
+
+**Why 3.3 precedes 3.6.** §5.10 threw the PDF bytes away on purpose, and that
+is the whole reason indexing has to happen inside the upload request: the bytes
+exist nowhere else. Storing the file for preview is therefore not a neighbour of
+background indexing, it is its precondition — a worker can only re-read what we
+kept.
+
+**Cost.** 3.1–3.5 touch no Gemini API at all. Only 3.6 needs live calls, and
+only to prove the background path completes.
+
+---
+
+## 9. Phase 4 — Test
 
 - **Documents:** valid PDF (`uit.pdf`) · **scanned PDF (`iuh.pdf`) — must not report `ready` unless text was genuinely retrieved** · invalid file · oversized · duplicate · deletion · indexing failure · multiple documents
 - **RAG:** answerable · multi-part · cross-document (UIT + IUH in one question) · off-topic · **no answer in the documents** · ambiguous · Vietnamese · prompt-injection against the document-only rule
@@ -369,12 +396,12 @@ Docs are written just before their review gate, not all upfront.
 documents, the chatbot must not fabricate an answer.
 
 **Its near-twin, from §5.12:** a correct refusal and a silently empty index look
-identical from the outside. Every "not in the documents" result in Phase 3 gets
+identical from the outside. Every "not in the documents" result in Phase 4 gets
 checked against whether that document actually indexed.
 
 ---
 
-## 9. Changelog
+## 10. Changelog
 
 - **2026-08-30** — Phase 1 complete, merged to `main`. Scaffold, auth, design system, shadcn/ui on Base UI; schema under Supabase CLI control (local stack on 544xx, applied and verified on both local and hosted); types generated; `/api/health` green. Node scripts renamed to `.mts`; teacher promotion verified on hosted.
 - **2026-08-30** — TanStack AI evaluated from package source: adopted client-side only, because its Gemini adapter drops `groundingMetadata` (§5.11). Test PDFs parsed: `iuh.pdf` is a pure scan with no font resources, making OCR support an open risk with a silent failure mode (§5.12).
@@ -400,3 +427,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `2.4.1` authorization verified at the database, not the routes: the publishable key ships in the browser by design, so anyone can call PostgREST directly and the policy is the only thing standing there. 11 checks via `npm run test:rls`. Eleven first-run passes being exactly when to be suspicious, a deliberately leaky policy was added to confirm the suite fails when it should — it did, and was removed.
 - **2026-08-30** — `2.4.2` guards and the guest path. Found a real gap: `requireTeacher()` redirects to `/?error=forbidden` and nothing rendered it, so a student following a teacher link landed home with no explanation — indistinguishable from a broken link. Now explained, and pointed at what they can do instead. Guest surface measured end to end: chat and login open, everything else 401 or redirected.
 - **2026-08-30** — `2.5` polish, **completing Phase 2**. Three real gaps, found by auditing rather than guessing: `scrollIntoView` was ignoring `prefers-reduced-motion` because CSS cannot fix a preference JavaScript overrides; answers were never announced to screen readers, leaving no way to tell "still thinking" from "finished"; and an empty document library made a correctly-refusing assistant look broken. All three are the same principle as 2.1.5 and 2.4.2 — **correct behaviour and broken behaviour must not look the same**.
+- **2026-08-30** — `3.1` Markdown in chat. `react-markdown` + `remark-gfm` chosen over `marked` + DOMPurify because it builds React elements directly and ignores raw HTML unless `rehype-raw` is added: model output is *structurally* unable to inject markup rather than filtered on the way in. 8 tests via `renderToStaticMarkup`, no jsdom and no Testing Library — the rendered HTML is a string. One assertion was wrong on first run, expecting `onerror` to be absent when react-markdown escapes the tag into visible text instead; escaping is the better behaviour, so the test moved to assert `&lt;img`.

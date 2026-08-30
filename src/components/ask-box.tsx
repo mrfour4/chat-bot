@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import type { Citation } from "@/lib/db";
 import { CitationList } from "@/components/citation-list";
+import { Markdown } from "@/components/markdown";
 
 const SUGGESTIONS = [
   "Có những phương thức xét tuyển nào?",
@@ -180,9 +181,7 @@ export function AskBox({ documentCount }: { documentCount: number }) {
                         "border-pending/40 bg-panel"
                   }`}
                 >
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                    {message.content}
-                  </p>
+                  <Markdown>{message.content}</Markdown>
                   <CitationList citations={message.citations} />
                 </div>
               </li>

@@ -74,6 +74,82 @@
     text-transform: uppercase;
     color: var(--color-ink-soft);
   }
+
+  /* An assistant answer, rendered from Markdown.
+     Element selectors rather than a component map: these are the ordinary
+     shapes of prose, and mapping ten of them one by one in TSX would say
+     nothing the stylesheet does not. Tailwind Typography is skipped for the
+     same reason it is not installed -- its scale is tuned for articles, and a
+     message is not an article.
+
+     `:first-child` / `:last-child` trim the outer margins so the rendered
+     block sits flush inside the message frame it is given. */
+  .markdown > :first-child {
+    margin-top: 0;
+  }
+
+  .markdown > :last-child {
+    margin-bottom: 0;
+  }
+
+  .markdown p {
+    margin-block: 0.75em;
+  }
+
+  .markdown ul,
+  .markdown ol {
+    margin-block: 0.75em;
+    padding-inline-start: 1.4em;
+  }
+
+  .markdown ul {
+    list-style: disc;
+  }
+
+  .markdown ol {
+    list-style: decimal;
+  }
+
+  .markdown li {
+    margin-block: 0.3em;
+  }
+
+  /* A list nested in a list should read as a sub-point, not a new list. */
+  .markdown li > ul,
+  .markdown li > ol {
+    margin-block: 0.3em;
+  }
+
+  .markdown strong {
+    font-weight: 600;
+  }
+
+  .markdown em {
+    font-style: italic;
+  }
+
+  .markdown .md-heading {
+    margin-block: 1.1em 0.5em;
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  /* Quoted regulation text, which is what a blockquote nearly always is here.
+     The lacquer rule is the same mark citations use. */
+  .markdown blockquote {
+    margin-block: 0.9em;
+    border-inline-start: 2px solid var(--color-lacquer);
+    padding-inline-start: 0.9em;
+    color: var(--color-ink-soft);
+  }
+
+  .markdown hr {
+    margin-block: 1.2em;
+    border: 0;
+    border-top: 1px solid var(--color-rule);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

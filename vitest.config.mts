@@ -8,7 +8,9 @@ export default defineConfig({
     environment: "node",
     // `.itest.ts` files call the real Gemini API and are excluded here; run
     // them deliberately with `npm run test:api`.
-    include: ["src/**/*.test.ts"],
+    // `.tsx` included so the Markdown renderer can be asserted through
+    // `renderToStaticMarkup`, which needs no DOM.
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
   },
   resolve: {
     // Mirrors the single `@/*` alias in tsconfig.json. Kept by hand rather than

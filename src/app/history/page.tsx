@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { CitationList } from "@/components/citation-list";
+import { Markdown } from "@/components/markdown";
 import { requireUser } from "@/lib/auth";
 import {
   listConversations,
@@ -67,9 +68,7 @@ export default async function HistoryPage() {
                       <p className="text-sm font-medium">{message.content}</p>
                     ) : (
                       <div className="rounded-lg border border-rule bg-white px-4 py-3">
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                          {message.content}
-                        </p>
+                        <Markdown>{message.content}</Markdown>
                         <CitationList
                           citations={parseCitations(message.citations)}
                         />
