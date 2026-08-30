@@ -1,0 +1,153 @@
+-- Authorization checks, run against the DATABASE rather than the routes.
+--
+-- Route guards are UX; RLS is the enforcement boundary (§5.4). A test that
+-- exercises a route proves the guard, not the policy -- and the policy is what
+-- still holds when someone calls PostgREST directly with a stolen publishable
+-- key, which is a public value by design.
+--
+--   npm run test:rls        (local database only)
+--
+-- Each case assumes an identity, attempts something that must not work, and
+-- asserts on what the database actually allowed.
+
+-- Not ON COMMIT DROP: psql runs each statement in its own transaction, which
+-- would drop the table before the DO block below could write to it.
+drop table if exists rls_results;
+create temporary table rls_results (
+  name text, passed boolean, detail text
+);
+
+do $$
+declare
+  teacher constant uuid := '11111111-1111-1111-1111-111111111111';
+  student constant uuid := '22222222-2222-2222-2222-222222222222';
+  doc_id  constant uuid := '99999999-9999-9999-9999-999999999999';
+  conv_id constant uuid := '88888888-8888-8888-8888-888888888888';
+  n int;
+  current_role_name text;
+begin
+  -- Fixtures, created as the owner so RLS does not interfere with setup.
+  insert into public.documents (id, title, file_name, file_size, uploaded_by, status)
+  values (doc_id, 'Đề án tuyển sinh', 'dean.pdf', 1024, teacher, 'ready')
+  on conflict (id) do nothing;
+
+  insert into public.conversations (id, user_id, title)
+  values (conv_id, student, 'Câu hỏi của học sinh')
+  on conflict (id) do nothing;
+
+  ---------------------------------------------------------------- 1
+  perform set_config('role', 'anon', true);
+  select count(*) into n from public.documents;
+  perform set_config('role', 'postgres', true);
+  insert into rls_results values
+    ('anon cannot read documents', n = 0, n || ' rows visible');
+
+  ---------------------------------------------------------------- 2
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', student, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.documents;
+  perform set_config('role', 'postgres', true);
+  insert into rls_results values
+    ('student cannot read documents', n = 0, n || ' rows visible');
+
+  ---------------------------------------------------------------- 3
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', teacher, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.documents;
+  perform set_config('role', 'postgres', true);
+  insert into rls_results values
+    ('teacher CAN read documents', n > 0, n || ' rows visible');
+
+  ---------------------------------------------------------------- 4
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', student, 'role', 'authenticated')::text, true);
+  begin
+    insert into public.documents (title, file_name, file_size, uploaded_by)
+    values ('lén tải lên', 'x.pdf', 1, student);
+    perform set_config('role', 'postgres', true);
+    insert into rls_results values
+      ('student cannot upload a document', false, 'the insert succeeded');
+  exception when others then
+    perform set_config('role', 'postgres', true);
+    insert into rls_results values
+      ('student cannot upload a document', true, sqlerrm);
+  end;
+
+  ---------------------------------------------------------------- 5
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', student, 'role', 'authenticated')::text, true);
+  delete from public.documents where id = doc_id;
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.documents where id = doc_id;
+  insert into rls_results values
+    ('student cannot delete a teacher document', n = 1,
+     case when n = 1 then '' else 'the row was deleted' end);
+
+  ---------------------------------------------------------------- 6
+  -- `profiles` deliberately has no UPDATE policy, so nobody self-promotes.
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', student, 'role', 'authenticated')::text, true);
+  update public.profiles set role = 'teacher' where id = student;
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.profiles
+    where id = student and role = 'student';
+  insert into rls_results values
+    ('student cannot self-promote to teacher', n = 1,
+     case when n = 1 then '' else 'the role was changed' end);
+
+  ---------------------------------------------------------------- 7
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', teacher, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.conversations where id = conv_id;
+  perform set_config('role', 'postgres', true);
+  insert into rls_results values
+    ('a teacher cannot read a student conversation', n = 0, n || ' rows visible');
+
+  ---------------------------------------------------------------- 8
+  perform set_config('role', 'anon', true);
+  select count(*) into n from public.conversations;
+  perform set_config('role', 'postgres', true);
+  insert into rls_results values
+    ('anon cannot read conversations', n = 0, n || ' rows visible');
+
+  ---------------------------------------------------------------- 9
+  -- Supabase grants EXECUTE to anon and authenticated by default, so a plain
+  -- `revoke ... from public` leaves a SECURITY DEFINER function callable (§5.5).
+  insert into rls_results values
+    ('anon cannot execute handle_new_user',
+     not has_function_privilege('anon', 'public.handle_new_user()', 'execute'), '');
+  insert into rls_results values
+    ('authenticated cannot execute handle_new_user',
+     not has_function_privilege('authenticated', 'public.handle_new_user()', 'execute'), '');
+
+  ---------------------------------------------------------------- 10
+  select count(*) into n from pg_tables
+    where schemaname = 'public' and rowsecurity = false;
+  insert into rls_results values
+    ('RLS is enabled on every public table', n = 0, n || ' tables without RLS');
+
+  -- Leave the fixtures behind so a rerun is idempotent, not cumulative.
+  delete from public.documents where id = doc_id;
+  delete from public.conversations where id = conv_id;
+
+  select current_user into current_role_name;
+  raise notice 'finished as %', current_role_name;
+end $$;
+
+select
+  case when passed then 'PASS  ' else 'FAIL  ' end || name ||
+  case when not passed and detail <> '' then '   [' || detail || ']' else '' end
+  as check
+from rls_results
+order by passed asc, name asc;
+
+select
+  count(*) filter (where passed) || ' passed, ' ||
+  count(*) filter (where not passed) || ' failed' as summary
+from rls_results;

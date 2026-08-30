@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:api": "node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run --config vitest.api.config.mts",
+    "test:rls": "docker exec -i supabase_db_admissions-advisor psql -U postgres -d postgres -q < supabase/tests/rls.sql",
     "typecheck": "tsc --noEmit",
     "gemini:bootstrap": "node --env-file-if-exists=.env.local scripts/bootstrap-file-search.mts",
     "db:new": "supabase migration new",

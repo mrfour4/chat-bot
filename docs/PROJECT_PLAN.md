@@ -7,8 +7,8 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `2.3.5` — TanStack Query ✅
-**Current small phase:** `2.4.1` — RLS verification
+**Last completed:** `2.4.1` — RLS verification ✅
+**Current small phase:** `2.4.2` — guards and the guest path
 **State:** finishing Phase 2; you test in Phase 3
 **Blocked on:** a working Gemini key for the live checks (today's quota is spent)
 
@@ -348,7 +348,7 @@ Docs are written just before their review gate, not all upfront.
 
 | # | Small phase | Deliverable | Doc | State |
 | --- | --- | --- | --- | --- |
-| 2.4.1 | RLS verification | prove the boundary at the database, not the route | — | ⚪ |
+| 2.4.1 | RLS verification | 11 database-level checks, `npm run test:rls` | [2.4.1](phases/2.4.1-rls-verification.md) | ✅ |
 | 2.4.2 | Guards + guest path | route guards, guest chat without an account | — | ⚪ |
 
 ### 2.5 UX polish
@@ -398,3 +398,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `2.3.2`/`2.3.3` chat UI with citations, built together because an answer without its sources is not testable as this product. A refusal is rendered on a different ground from an answer, so it cannot be mistaken for a quiet confident reply when skimmed. Citations read as footnotes rather than chips, and a page number appears only when we actually have one.
 - **2026-08-30** — `2.3.4` conversation history, completing 2.3. Guests are never persisted: storing their questions with no account to attach them to would be collecting data we said we would not. Persisting never fails the request — a lost history entry is a far smaller harm than a lost answer, so `persist()` swallows storage errors to the log and returns null. **The chatbot is complete and ready to test.**
 - **2026-08-30** — `2.3.5` TanStack Query adopted for the documents panel, where it replaced a hand-rolled `setInterval`, a manual refresh callback, three `setDocuments` calls and three state flags with `refetchInterval` and `invalidateQueries`. Not adopted for the chat message list, which is append-only client state with nothing to invalidate. **There is no official TanStack Query agent skill** — `intent list` finds the package is not intent-enabled and the docs page 404s — so the official SSR guide was followed instead.
+- **2026-08-30** — `2.4.1` authorization verified at the database, not the routes: the publishable key ships in the browser by design, so anyone can call PostgREST directly and the policy is the only thing standing there. 11 checks via `npm run test:rls`. Eleven first-run passes being exactly when to be suspicious, a deliberately leaky policy was added to confirm the suite fails when it should — it did, and was removed.
