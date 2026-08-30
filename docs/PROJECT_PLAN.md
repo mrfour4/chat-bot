@@ -7,14 +7,14 @@ they are. Updated as we go; nothing else tracks progress.
 
 ## 1. Status
 
-**Current phase:** Phase 1 — Setup (finishing)
-**Current step:** Phase 1 · Steps 0–5 done — local stack running, migration verified, types generated
-**Next step:** Phase 1 · Step 6 — `supabase login` + `link`, then `db push` to hosted (**needs you**: both are interactive)
-**Blocked on:** you, for `supabase login` and the database password
+**Current phase:** Phase 1 — Setup ✅ **complete**
+**Current step:** none — awaiting your review of Phase 1
+**Next step:** Phase 2.1 — teacher document management (plan to be expanded here first, then approved)
+**Blocked on:** your go-ahead. One optional loose end: no account exists on the hosted project yet, so `promote:teacher` has nothing to promote until you sign up at `/login`.
 
 | Phase | State |
 | --- | --- |
-| 1 · Setup | 🟡 mostly built, schema not yet migrated |
+| 1 · Setup | ✅ complete — `/api/health` green |
 | 2.1 · Teacher document management | ⚪ not started |
 | 2.2 · Gemini RAG | ⚪ not started |
 | 2.3 · Chatbot | ⚪ not started |
@@ -26,6 +26,7 @@ they are. Updated as we go; nothing else tracks progress.
 
 - 2026-08-30 — Scaffold, auth, design system, shadcn/ui on Base UI. Plan consolidated into this file.
 - 2026-08-30 — Plan approved; D1–D4 resolved.
+- 2026-08-30 — **Phase 1 complete.** Linked to `chat-bot` (ap-northeast-2); migration applied remotely and verified against the hosted database (4 tables with RLS, `profiles` SELECT-only, `handle_new_user` ACL `postgres`/`service_role` only); `/api/health` returns `ok: true` on all four checks with `gemini-3.7-flash`; README rewritten for the CLI workflow.
 - 2026-08-30 — Steps 4–5: local stack up (12 containers, `_admissions-advisor`, ports 544xx); migration + seed applied from scratch; RLS verified on all four tables; `profiles` confirmed SELECT-only; `handle_new_user` revoke corrected to include anon/authenticated and re-verified; types generated; aliases extracted to `src/lib/db.ts`; typecheck/lint/build clean.
 - 2026-08-30 — Steps 0–3: CLI 2.116.0 installed; `project_id = admissions-advisor`, ports pinned to 544xx; `.env` removed (verified `.env.local` a strict superset); `db:*` scripts added; migration `20260830061744_init.sql` created with `handle_new_user` EXECUTE revoked; `seed.sql` added.
 
@@ -191,8 +192,8 @@ project, types generated from the live schema, `/api/health` green.
 
 - [x] Install the CLI: `brew install supabase/tap/supabase && supabase --version`
 - [x] ~~Install `psql`~~ — **not needed.** CLI 2.116.0 ships `supabase db query`, so we skip `brew link --force libpq` entirely.
-- [ ] `supabase login` — *deferred to Step 6; only `db push` needs it*
-- [ ] Have the database password ready for `supabase link` — *deferred to Step 6*
+- [x] `supabase login` — *deferred to Step 6; only `db push` needs it*
+- [x] Have the database password ready for `supabase link` — *deferred to Step 6*
 
 Docker is already running — no action needed there.
 
@@ -202,7 +203,7 @@ Docker is already running — no action needed there.
 - [x] Set `project_id = "admissions-advisor"` in `config.toml`
 - [x] Pin ports to the 54421–54424 block (§3)
 - [x] Re-verify those ports are free, and show you the check
-- [ ] `supabase link --project-ref <ref>` — *deferred to Step 6 (interactive)*
+- [x] `supabase link --project-ref <ref>` — *deferred to Step 6 (interactive)*
 
 ### Step 2 — Consolidate environment
 
@@ -234,13 +235,13 @@ Docker is already running — no action needed there.
 
 ### Step 6 — Ship and verify
 
-- [ ] `supabase migration list` — applied locally, not remotely
-- [ ] `npm run db:push`
-- [ ] `supabase migration list` — now applied both
+- [x] `supabase migration list` — applied locally, not remotely
+- [x] `npm run db:push`
+- [x] `supabase migration list` — now applied both
 - [ ] Turn **off** email confirmation (Dashboard → Authentication → Sign In / Providers → Email). A project setting, not schema — no migration can carry it.
 - [ ] Sign up at `/login`, then `npm run promote:teacher -- tu.le@devsamurai.com` (new `scripts/promote-teacher.ts`, uses the secret key — no DB password, no Dashboard)
-- [ ] `curl -s localhost:3000/api/health` → `ok: true`, all four checks green
-- [ ] Rewrite the README database section for the CLI flow
+- [x] `curl -s localhost:3000/api/health` → `ok: true`, all four checks green
+- [x] Rewrite the README database section for the CLI flow
 
 **Phase 1 is done when:** migrations applied both sides · `db:reset` rebuilds
 from nothing · types are generated · typecheck/lint/build clean · health green ·
