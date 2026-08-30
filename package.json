@@ -8,13 +8,13 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "gemini:bootstrap": "node --env-file-if-exists=.env.local scripts/bootstrap-file-search.ts",
+    "gemini:bootstrap": "node --env-file-if-exists=.env.local scripts/bootstrap-file-search.mts",
     "db:new": "supabase migration new",
     "db:reset": "supabase db reset",
     "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --local > src/lib/database.types.ts",
     "db:diff": "supabase db diff",
-    "promote:teacher": "node --env-file-if-exists=.env.local scripts/promote-teacher.ts"
+    "promote:teacher": "node --env-file-if-exists=.env.local scripts/promote-teacher.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
