@@ -2,10 +2,14 @@ import { NextResponse } from "next/server";
 
 import { getSessionUser, getTeacher } from "@/lib/auth";
 import { sha256Hex } from "@/lib/documents/checksum";
+import { indexDocument } from "@/lib/documents/indexer";
 import {
   createDocument,
   findByChecksum,
   listDocuments,
+  markFailed,
+  markIndexing,
+  markReady,
 } from "@/lib/documents/repo";
 import { deriveTitle } from "@/lib/documents/title";
 import { validateUpload } from "@/lib/documents/validate";
@@ -85,6 +89,34 @@ export async function POST(request: Request) {
     uploadedBy: teacher.id,
   });
 
-  // Stops at `pending`. 2.1.5 takes it from here.
-  return NextResponse.json(document, { status: 201 });
+  // Synchronous indexing (decision D5). 2.1.0 measured 10.0-14.6s, comfortably
+  // inside a request, and the alternative -- returning early and continuing in
+  // the background -- is not guaranteed to run on serverless without a queue.
+  // The 60s cap inside indexDocument is what keeps this bounded.
+  await markIndexing(supabase, document.id);
+
+  const outcome = await indexDocument({
+    documentId: document.id,
+    fileName: file.name,
+    bytes,
+  });
+
+  if (!outcome.ok) {
+    await markFailed(supabase, document.id, outcome.message);
+    return NextResponse.json(
+      { ...document, status: "failed", error_message: outcome.message },
+      { status: 201 },
+    );
+  }
+
+  await markReady(supabase, document.id, outcome.geminiDocumentName);
+
+  return NextResponse.json(
+    {
+      ...document,
+      status: "ready",
+      gemini_document_name: outcome.geminiDocumentName,
+    },
+    { status: 201 },
+  );
 }

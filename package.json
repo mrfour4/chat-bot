@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:api": "node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run --config vitest.api.config.mts",
     "typecheck": "tsc --noEmit",
     "gemini:bootstrap": "node --env-file-if-exists=.env.local scripts/bootstrap-file-search.mts",
     "db:new": "supabase migration new",

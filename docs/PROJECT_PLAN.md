@@ -7,10 +7,10 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `2.1.4` — upload route ✅
-**Current small phase:** `2.1.5` — indexing + post-index check
-**State:** implementing
-**Blocked on:** nothing
+**Last completed:** `2.1.5` — indexing + post-index check ✅ (3 API checks pending quota)
+**Current small phase:** `2.1.6` — documents list UI
+**State:** ready to plan
+**Blocked on:** nothing — the pending API checks need a fresh daily quota, not a decision
 
 **Open decisions:** **D6** TanStack AI (§5.11) · **D7** default model (§5.13)
 **Settled:** **D5** = synchronous indexing with a ~60s cap, on the 10.0–14.6s
@@ -102,7 +102,14 @@ response.candidates[0].groundingMetadata
 > `ai.interactions.create`, shown in some Gemini docs, **does not exist** in
 > this SDK version. Do not use it.
 
-**5.3 Citations map back to rows.** Upload stamps the Supabase document id into
+**5.3 Citations map back to rows.** **The metadata key must be lowercase.**
+`metadataFilter` silently matches nothing when the stored key contains an
+uppercase letter — `documentId` fails under both `documentId=` and
+`documentid=`, while the identical value under `docid` matches. Hyphens in
+values are fine. Undocumented; found in 2.1.5. The key lives in one place,
+`DOCUMENT_ID_KEY` in `indexer.ts`.
+
+ Upload stamps the Supabase document id into
 `customMetadata`, so a citation resolves to a real row.
 `documents.gemini_document_name` covers the reverse direction (deletion).
 
@@ -201,6 +208,27 @@ retrieval query and not a metadata lookup — and there is no cheaper option:
 `sizeBytes` reports the raw uploaded byte count, not extracted text, and
 `state` reads `STATE_ACTIVE` regardless.
 
+**5.14 The free tier is 20 requests per day, per model.** Discovered by hitting
+it in 2.1.5:
+
+```
+limit: 20, model: gemini-3.6-flash
+quotaId: GenerateRequestsPerDayPerProjectPerModel-FreeTier
+```
+
+Twenty `generateContent` calls, per model, per **day**. What it changes:
+
+- **The post-index check costs one call per upload.** Still worth it — it is
+  paid once at upload rather than per question, and it is the only thing
+  standing between a silently empty index and a lie. But uploading five
+  documents now costs a quarter of the day's budget.
+- **Verification is rationed.** Integration tests live in `*.itest.ts`, run only
+  via `npm run test:api`, never in `npm test`, and use the single-page files.
+- **Quota is per model**, so development can move to another flash model when
+  one window is exhausted — but `gemini-2.5-flash` now 404s for new users, so
+  the choices are narrower than `models.list` suggests.
+- **D7 gains urgency.** A student meeting the day's 21st question gets nothing.
+
 **5.13 The newest model is not the most available.** `gemini-3.7-flash` (our
 default) returned `503 UNAVAILABLE` on six consecutive attempts over ~75s
 during 2.1.0, twice. The model exists — confirmed via `models.list` — it is
@@ -210,6 +238,11 @@ A student asking about an admissions deadline should not meet a dead chatbot
 because we picked the newest model. **Decision D7**, landing in 2.2.3: pin
 `gemini-3.6-flash` · keep 3.7 with fallback on 503/429 · or use
 `gemini-flash-latest`.
+
+2.1.5 added evidence: `gemini-2.5-flash` now 404s with *"no longer available to
+new users. Please update your code to use models/gemini-3.6-flash"*. Google is
+pointing at 3.6 as the current default, which is also where the indexing probe
+already sits.
 
 **Resolved decisions:** app runs against the **hosted** project (local Docker is
 the migration proving ground) · single `.env.local` · `zod` (4.5.4, installed)
@@ -264,7 +297,7 @@ Docs are written just before their review gate, not all upfront.
 | 2.1.2 | Upload validation | `validateUpload()` pure fn, 8 tests, test-first | [2.1.2](phases/2.1.2-upload-validation.md) | ✅ |
 | 2.1.3 | Documents repository | typed CRUD with injected client, + `sha256Hex` / `describeError` | [2.1.3](phases/2.1.3-documents-repository.md) | ✅ |
 | 2.1.4 | Upload route | `POST`/`GET /api/documents`, teacher-only, dedupe on checksum | [2.1.4](phases/2.1.4-upload-route.md) | ✅ |
-| 2.1.5 | Indexing + post-index check | File Search upload, poll, `ready`/`failed`; check must be a **scoped retrieval query** (§5.12). **D5 = synchronous, ~60s cap** | — | ⚪ |
+| 2.1.5 | Indexing + post-index check | Synchronous, 60s cap, scoped post-index check; both PDF kinds verified indexing | [2.1.5](phases/2.1.5-indexing.md) | ✅ |
 | 2.1.6 | Documents list UI | list, upload form, status polling | — | ⚪ |
 | 2.1.7 | Delete | `DELETE /api/documents/[id]`, Gemini doc + row — needs `config: { force: true }` (2.1.0 finding 5) | — | ⚪ |
 | 2.1.8 | Retry + failure UX | retry action, reconcile stuck rows | — | ⚪ |
@@ -328,3 +361,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `2.1.2` upload validation. Pure `validateUpload()`, 8 tests written before the implementation and observed failing. MIME is treated as a hint and the `%PDF-` signature as the gate, because browsers derive `File.type` from the extension and a renamed executable arrives claiming `application/pdf`.
 - **2026-08-30** — `2.1.3` documents repository. Client is injected rather than imported, so RLS still applies to user reads while indexing write-backs can use the secret key — and so the module stays free of `server-only` and testable. Tests cover `sha256Hex` (published vectors) and `describeError`; the PostgREST wrappers are covered by typecheck against generated schema types instead of mocks.
 - **2026-08-30** — `2.1.4` upload route. `getTeacher()` added as the non-redirecting sibling of `requireTeacher()`, because a route that redirects answers a JSON fetch with an HTML login page and a 200. Confirmed by real request: 401 with a JSON body. Dedupe is on checksum, not filename. Row stops at `pending` so 2.1.5's indexing can fail on its own terms.
+- **2026-08-30** — `2.1.5` indexing. Both a text PDF and a pure scan verified indexing through the real API. Three findings, each from a failure: **`metadataFilter` only matches lowercase metadata keys** (`documentId` silently matches nothing, `docid` works — hyphens were innocent); two orphan paths leaving documents in the store after a failed index, confirmed by finding real orphans; and **the free tier is 20 requests/day/model** (§5.14). Three answer-quality checks remain, blocked on quota, not on code.
