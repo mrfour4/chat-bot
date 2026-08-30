@@ -1,11 +1,31 @@
 import { AskBox } from "@/components/ask-box";
 import { listIndexedDocuments } from "@/lib/documents";
 
-export default async function HomePage() {
-  const documents = await listIndexedDocuments();
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const [documents, { error }] = await Promise.all([
+    listIndexedDocuments(),
+    searchParams,
+  ]);
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-16 md:py-24">
+      {/* requireTeacher() redirects here when a student opens a teacher link.
+          Without this the bounce is silent, and the student is left thinking
+          the page is broken rather than not theirs. */}
+      {error === "forbidden" && (
+        <p
+          role="status"
+          className="mb-8 rounded-md border border-pending/40 bg-panel px-4 py-3 text-sm leading-relaxed"
+        >
+          Trang quản lý tài liệu chỉ dành cho giáo viên. Bạn vẫn có thể đặt câu
+          hỏi về tuyển sinh ở ngay bên dưới.
+        </p>
+      )}
+
       <section className="max-w-2xl">
         <p className="eyebrow">Hỏi đáp tuyển sinh</p>
         <h1 className="mt-3 font-display text-4xl leading-[1.1] font-semibold tracking-tight text-balance md:text-5xl">
