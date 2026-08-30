@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Design tokens
+   The product's promise is "this came from the official document", so the
+   palette borrows from Vietnamese administrative paperwork: office-paper
+   neutrals, ink black, and a lacquer red reserved for the seal and citations.
+--------------------------------------------------------------------------- */
+@theme {
+  --color-paper: #fafaf8;
+  --color-panel: #f1f0ea;
+  --color-rule: #dedcd3;
+  --color-ink: #191a17;
+  --color-ink-soft: #6b6c63;
+  --color-lacquer: #a32a1c;
+  --color-lacquer-soft: #f4e8e5;
+  --color-verified: #1f5f4b;
+  --color-pending: #96690b;
+
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-be-vietnam), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background-color: var(--color-lacquer);
+    color: var(--color-paper);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-lacquer);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* The signature element: a document reference, set like one.
+     Used for citations in answers and for status lines in the teacher view. */
+  .doc-ref {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--color-ink-soft);
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-ink-soft);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
