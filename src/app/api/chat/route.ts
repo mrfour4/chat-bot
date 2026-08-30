@@ -12,9 +12,9 @@ import {
 import { askDocuments } from "@/lib/rag/ask";
 import { checkRateLimit } from "@/lib/rag/rate-limit";
 import { createClient } from "@/lib/supabase/server";
+import { MAX_QUESTION_LENGTH } from "@/lib/validation/chat";
 
 /** Long enough for a real admissions question, short enough to bound cost. */
-const MAX_QUESTION_LENGTH = 1000;
 
 /**
  * Only the last few turns are sent back to the model. Enough for a follow-up to

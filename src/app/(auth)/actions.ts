@@ -4,6 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import {
+    signInSchema,
+    signUpSchema,
+    type SignInInput,
+    type SignUpInput,
+} from "@/lib/validation/auth";
 
 export interface AuthFormState {
     error?: string;
@@ -13,22 +19,14 @@ export interface AuthFormState {
 const CONFIG_ERROR =
     "Không kết nối được máy chủ xác thực. Kiểm tra cấu hình Supabase trong .env.local.";
 
-function readCredentials(formData: FormData) {
-    return {
-        email: String(formData.get("email") ?? "").trim(),
-        password: String(formData.get("password") ?? ""),
-        fullName: String(formData.get("fullName") ?? "").trim(),
-    };
-}
-
-export async function signIn(
-    _prev: AuthFormState,
-    formData: FormData,
-): Promise<AuthFormState> {
-    const { email, password } = readCredentials(formData);
-    if (!email || !password) {
+export async function signIn(input: SignInInput): Promise<AuthFormState> {
+    // Re-validated here, not trusted from the client. The form runs the same
+    // schema for immediate feedback; this run is the one that decides.
+    const parsed = signInSchema.safeParse(input);
+    if (!parsed.success) {
         return { error: "Nhập email và mật khẩu để đăng nhập." };
     }
+    const { email, password } = parsed.data;
 
     let signInError: string | null = null;
     try {
@@ -52,17 +50,16 @@ export async function signIn(
     redirect("/");
 }
 
-export async function signUp(
-    _prev: AuthFormState,
-    formData: FormData,
-): Promise<AuthFormState> {
-    const { email, password, fullName } = readCredentials(formData);
-    if (!email || !password) {
-        return { error: "Nhập email và mật khẩu để tạo tài khoản." };
+export async function signUp(input: SignUpInput): Promise<AuthFormState> {
+    const parsed = signUpSchema.safeParse(input);
+    if (!parsed.success) {
+        return {
+            error:
+                parsed.error.issues[0]?.message ??
+                "Thông tin đăng ký chưa hợp lệ.",
+        };
     }
-    if (password.length < 8) {
-        return { error: "Mật khẩu cần ít nhất 8 ký tự." };
-    }
+    const { email, password, fullName } = parsed.data;
 
     try {
         const supabase = await createClient();

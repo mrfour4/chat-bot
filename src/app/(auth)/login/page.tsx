@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { AuthForm } from "@/app/(auth)/login/auth-form";
+import { SignInForm } from "@/components/auth/sign-in-form";
+import { SignUpForm } from "@/components/auth/sign-up-form";
 import { getSessionUser } from "@/lib/auth";
 
 export const metadata = { title: "Đăng nhập · Cố vấn Tuyển sinh" };
@@ -61,7 +62,7 @@ export default async function LoginPage({
             </div>
 
             <div className="md:pt-11">
-                <AuthForm mode={isSignUp ? "signup" : "signin"} />
+                {isSignUp ? <SignUpForm /> : <SignInForm />}
                 <p className="mt-6 text-center text-sm text-ink-soft">
                     {isSignUp ? "Đã có tài khoản? " : "Chưa có tài khoản? "}
                     <Link
