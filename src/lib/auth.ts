@@ -4,9 +4,9 @@ import type { Profile } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 
 export interface SessionUser {
-  id: string;
-  email: string;
-  profile: Profile;
+    id: string;
+    email: string;
+    profile: Profile;
 }
 
 /**
@@ -16,34 +16,34 @@ export interface SessionUser {
  * without verifying it, which is not a basis for authorization.
  */
 export async function getSessionUser(): Promise<SessionUser | null> {
-  try {
-    const supabase = await createClient();
+    try {
+        const supabase = await createClient();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return null;
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return null;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
+        const { data: profile } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .single();
 
-    if (!profile) return null;
+        if (!profile) return null;
 
-    return { id: user.id, email: user.email ?? profile.email, profile };
-  } catch {
-    // Misconfigured or unreachable Supabase must not take the guest chat down.
-    return null;
-  }
+        return { id: user.id, email: user.email ?? profile.email, profile };
+    } catch {
+        // Misconfigured or unreachable Supabase must not take the guest chat down.
+        return null;
+    }
 }
 
 /** Redirects guests to the login page. Returns the user otherwise. */
 export async function requireUser(redirectTo = "/login"): Promise<SessionUser> {
-  const user = await getSessionUser();
-  if (!user) redirect(redirectTo);
-  return user;
+    const user = await getSessionUser();
+    if (!user) redirect(redirectTo);
+    return user;
 }
 
 /**
@@ -55,13 +55,13 @@ export async function requireUser(redirectTo = "/login"): Promise<SessionUser> {
  * "forbidden" from "here is a login page".
  */
 export async function getTeacher(): Promise<SessionUser | null> {
-  const user = await getSessionUser();
-  return user?.profile.role === "teacher" ? user : null;
+    const user = await getSessionUser();
+    return user?.profile.role === "teacher" ? user : null;
 }
 
 /** Redirects anyone who is not a teacher. The RLS policies are the real guard. */
 export async function requireTeacher(): Promise<SessionUser> {
-  const user = await requireUser();
-  if (user.profile.role !== "teacher") redirect("/?error=forbidden");
-  return user;
+    const user = await requireUser();
+    if (user.profile.role !== "teacher") redirect("/?error=forbidden");
+    return user;
 }

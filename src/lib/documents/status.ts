@@ -8,7 +8,7 @@ import type { DocumentStatus } from "@/lib/db";
  * Both settle on their own, and neither is something the teacher can act on.
  */
 export function isPending(status: DocumentStatus): boolean {
-  return status === "pending" || status === "indexing";
+    return status === "pending" || status === "indexing";
 }
 
 /**
@@ -29,15 +29,15 @@ export const STALE_AFTER_MS = 3 * 60 * 1000;
  * the clock.
  */
 export function isStale(
-  document: { status: DocumentStatus; updated_at: string },
-  now: number = Date.now(),
+    document: { status: DocumentStatus; updated_at: string },
+    now: number = Date.now(),
 ): boolean {
-  if (!isPending(document.status)) return false;
+    if (!isPending(document.status)) return false;
 
-  const updatedAt = new Date(document.updated_at).getTime();
-  // An unparseable timestamp must not read as "stale forever", which would
-  // requeue the row on every poll.
-  if (Number.isNaN(updatedAt)) return false;
+    const updatedAt = new Date(document.updated_at).getTime();
+    // An unparseable timestamp must not read as "stale forever", which would
+    // requeue the row on every poll.
+    if (Number.isNaN(updatedAt)) return false;
 
-  return now - updatedAt > STALE_AFTER_MS;
+    return now - updatedAt > STALE_AFTER_MS;
 }

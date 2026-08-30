@@ -15,16 +15,16 @@ const FALLBACK = "Lỗi không xác định trong quá trình lập chỉ mục.
  * tells them nothing and tells us nothing either.
  */
 export function describeError(error: unknown): string {
-  const raw =
-    error instanceof Error
-      ? error.message
-      : typeof error === "string"
-        ? error
-        : "";
+    const raw =
+        error instanceof Error
+            ? error.message
+            : typeof error === "string"
+              ? error
+              : "";
 
-  const message = raw.trim() || FALLBACK;
+    const message = raw.trim() || FALLBACK;
 
-  return message.length > MAX_ERROR_MESSAGE
-    ? `${message.slice(0, MAX_ERROR_MESSAGE - 1)}…`
-    : message;
+    return message.length > MAX_ERROR_MESSAGE
+        ? `${message.slice(0, MAX_ERROR_MESSAGE - 1)}…`
+        : message;
 }

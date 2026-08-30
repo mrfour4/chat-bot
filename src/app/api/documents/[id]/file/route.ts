@@ -18,65 +18,74 @@ import { createClient } from "@/lib/supabase/server";
  * what the preview wants.
  */
 export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
+    request: Request,
+    { params }: { params: Promise<{ id: string }> },
 ) {
-  const teacher = await getTeacher();
-  if (!teacher) {
-    const user = await getSessionUser();
-    return NextResponse.json(
-      user
-        ? { code: "forbidden", message: "Chỉ giáo viên mới xem được tài liệu." }
-        : { code: "unauthenticated", message: "Vui lòng đăng nhập để tiếp tục." },
-      { status: user ? 403 : 401 },
-    );
-  }
+    const teacher = await getTeacher();
+    if (!teacher) {
+        const user = await getSessionUser();
+        return NextResponse.json(
+            user
+                ? {
+                      code: "forbidden",
+                      message: "Chỉ giáo viên mới xem được tài liệu.",
+                  }
+                : {
+                      code: "unauthenticated",
+                      message: "Vui lòng đăng nhập để tiếp tục.",
+                  },
+            { status: user ? 403 : 401 },
+        );
+    }
 
-  const { id } = await params;
-  const supabase = await createClient();
+    const { id } = await params;
+    const supabase = await createClient();
 
-  // Through the user's client, so RLS decides. A document belonging to a
-  // teacher this one cannot see simply is not here.
-  const document = await getDocument(supabase, id);
-  if (!document) {
-    return NextResponse.json(
-      { code: "not-found", message: "Không tìm thấy tài liệu." },
-      { status: 404 },
-    );
-  }
+    // Through the user's client, so RLS decides. A document belonging to a
+    // teacher this one cannot see simply is not here.
+    const document = await getDocument(supabase, id);
+    if (!document) {
+        return NextResponse.json(
+            { code: "not-found", message: "Không tìm thấy tài liệu." },
+            { status: 404 },
+        );
+    }
 
-  // Rows created before 3.3 have no object. Saying so is the point: "the file
-  // was never kept" and "something is broken" must not look the same.
-  if (!document.storage_path) {
-    return NextResponse.json(
-      {
-        code: "no-file",
-        message:
-          "Tệp PDF của tài liệu này không được lưu lại (tải lên trước khi hệ " +
-          "thống bắt đầu giữ tệp). Hãy tải lên lại để xem và tải xuống.",
-      },
-      { status: 404 },
-    );
-  }
+    // Rows created before 3.3 have no object. Saying so is the point: "the file
+    // was never kept" and "something is broken" must not look the same.
+    if (!document.storage_path) {
+        return NextResponse.json(
+            {
+                code: "no-file",
+                message:
+                    "Tệp PDF của tài liệu này không được lưu lại (tải lên trước khi hệ " +
+                    "thống bắt đầu giữ tệp). Hãy tải lên lại để xem và tải xuống.",
+            },
+            { status: 404 },
+        );
+    }
 
-  const wantsDownload =
-    new URL(request.url).searchParams.get("download") === "1";
+    const wantsDownload =
+        new URL(request.url).searchParams.get("download") === "1";
 
-  const url = await signedUrlFor(supabase, document.storage_path, {
-    ...(wantsDownload ? { download: document.file_name } : {}),
-  });
+    const url = await signedUrlFor(supabase, document.storage_path, {
+        ...(wantsDownload ? { download: document.file_name } : {}),
+    });
 
-  if (!url) {
-    return NextResponse.json(
-      { code: "sign-failed", message: "Không mở được tệp. Vui lòng thử lại." },
-      { status: 502 },
-    );
-  }
+    if (!url) {
+        return NextResponse.json(
+            {
+                code: "sign-failed",
+                message: "Không mở được tệp. Vui lòng thử lại.",
+            },
+            { status: 502 },
+        );
+    }
 
-  // 302, not 307: this is a redirect to a different resource, and it must never
-  // be cached -- the URL it points at is dead in a minute.
-  return NextResponse.redirect(url, {
-    status: 302,
-    headers: { "cache-control": "no-store" },
-  });
+    // 302, not 307: this is a redirect to a different resource, and it must never
+    // be cached -- the URL it points at is dead in a minute.
+    return NextResponse.redirect(url, {
+        status: 302,
+        headers: { "cache-control": "no-store" },
+    });
 }

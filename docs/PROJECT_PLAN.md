@@ -8,8 +8,8 @@ its own doc in `docs/phases/`; this file says where we are and why.
 ## 1. Status
 
 **Last completed:** `3.6` — background indexing ✅ · **PHASE 3 COMPLETE**
-**Current phase:** Phase 4 — testing, yours
-**State:** Phase 3 complete. Ready for your browser testing (Phase 4).
+**Current phase:** Phase 4 — quality and conventions (§9)
+**State:** 4.2 in progress
 **Blocked on:** nothing. 3.1–3.5 need no Gemini calls at all; only 3.6 does.
 
 **Settled:** **D7** = `gemini-3.6-flash`, overridable via `GEMINI_MODEL`.
@@ -401,7 +401,38 @@ which is why neither is here yet.
 
 ---
 
-## 9. Phase 4 — Test
+## 9. Phase 4 — quality and conventions
+
+Your second review: the app works, the code does not yet hold the shape you
+want. Nine small phases, same rules. **No Gemini calls in any of them.**
+
+| # | Small phase | Deliverable | Doc | State |
+| --- | --- | --- | --- | --- |
+| 4.1 | Prettier, 4 spaces | one formatter, whole repo reformatted | [4.1](phases/4.1-formatting.md) | ✅ |
+| 4.2 | shadcn inventory | the missing components, installed once | [4.2](phases/4.2-shadcn-inventory.md) | — |
+| 4.3 | Chat UX | fixed composer, no document list, collapsed citations | [4.3](phases/4.3-chat-ux.md) | — |
+| 4.4 | Primitives → shadcn | Dialog, Alert, Empty, Spinner; state components split out | [4.4](phases/4.4-components.md) | — |
+| 4.5 | Forms | TanStack Form + Zod + `Field` | [4.5](phases/4.5-forms.md) | — |
+| 4.6 | Toasts | every mutation reports success or failure | [4.6](phases/4.6-toasts.md) | — |
+| 4.7 | Architecture | types/constants/lib split, component folders + `index.ts` | [4.7](phases/4.7-architecture.md) | — |
+| 4.8 | i18n | next-intl, Vietnamese and English | [4.8](phases/4.8-i18n.md) | — |
+| 4.9 | Conventions | comments stripped, `CONVENTION.md` written | [4.9](phases/4.9-conventions.md) | — |
+
+**Why this order.** 4.1 first, so every later diff is already in the target
+format — otherwise the reformat would swallow real changes in its noise. 4.3
+early, because those three are things to feel in the browser and should not
+wait behind a refactor. 4.9 last, so `CONVENTION.md` describes what was built
+rather than what was intended.
+
+**Where the reasoning goes.** 4.9 strips explanatory comments from source. The
+ones that record a *constraint discovered the hard way* — the Gemini metadata
+key must be lowercase, Gemini is deleted before the row, a 403 means a rotated
+key — move into `CONVENTION.md` and the phase docs rather than disappearing.
+The code gets clean; the knowledge stays findable.
+
+---
+
+## 10. Phase 5 — Test
 
 - **Documents:** valid PDF (`uit.pdf`) · **scanned PDF (`iuh.pdf`) — must not report `ready` unless text was genuinely retrieved** · invalid file · oversized · duplicate · deletion · indexing failure · multiple documents
 - **RAG:** answerable · multi-part · cross-document (UIT + IUH in one question) · off-topic · **no answer in the documents** · ambiguous · Vietnamese · prompt-injection against the document-only rule
@@ -411,12 +442,12 @@ which is why neither is here yet.
 documents, the chatbot must not fabricate an answer.
 
 **Its near-twin, from §5.12:** a correct refusal and a silently empty index look
-identical from the outside. Every "not in the documents" result in Phase 4 gets
+identical from the outside. Every "not in the documents" result in Phase 5 gets
 checked against whether that document actually indexed.
 
 ---
 
-## 10. Changelog
+## 11. Changelog
 
 - **2026-08-30** — Phase 1 complete, merged to `main`. Scaffold, auth, design system, shadcn/ui on Base UI; schema under Supabase CLI control (local stack on 544xx, applied and verified on both local and hosted); types generated; `/api/health` green. Node scripts renamed to `.mts`; teacher promotion verified on hosted.
 - **2026-08-30** — TanStack AI evaluated from package source: adopted client-side only, because its Gemini adapter drops `groundingMetadata` (§5.11). Test PDFs parsed: `iuh.pdf` is a pure scan with no font resources, making OCR support an open risk with a silent failure mode (§5.12).
@@ -449,3 +480,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `3.5` conversations. **No migration:** the model asked for already existed, so this was navigation. The history page had been rendering a transcript rather than a list — every message of every conversation, one query each, to display a title and a date; now one query with an embedded count. `/chat/[id]` reads through the user's client so RLS decides, and answers 404 rather than 403 because 403 confirms existence. Asking on `/` now rewrites the URL to `/chat/<id>` via `window.history.replaceState`, so a refresh keeps the thread: it was always saved, but the app looked like it had forgotten. Eight checks against hosted; the one failure was the fixture's, not the app's — a bulk insert with differing keys makes PostgREST send NULL for the missing ones.
 - **2026-08-30** — `3.6` background indexing, **completing Phase 3**. **D5 reversed:** synchronous indexing was right in 2.1.0 for two reasons that have both since changed — §5.10 kept no PDF, so the request was the only place the bytes existed, and background work needed a queue. 3.3 keeps the bytes and Next ships `after()`. Durability rests on two things beyond `after()`: an **atomic claim** (`.eq("status", "pending")` on the transition, so two racing workers cannot both index one document and overwrite each other) and a **sweeper** that re-drives anything stale. A failing fixture revealed that `documents_touch_updated_at` makes `updated_at` unforgeable — which is what makes it a trustworthy liveness signal. Retry finally became a button, reversing 2.1.8's "retry *is* re-upload", which was only true while we kept no bytes. Verified with 6 database checks, 6 unit tests and 3 against the real Gemini API; the store was left with 0 documents.
 - **2026-08-30** — post-3.6 data check found a real bug. The one surviving document row reads `ready` while pointing at a File Search store the rotated API key can no longer see: it retrieves nothing, and `deleteFromStore` let the resulting 403 throw, so the row could never be deleted through the UI either. 403 is now treated like 404 — this key can never reach that document, so retrying cannot succeed, and a permanently undeletable row is the worse of the two outcomes. **The row is still there and should be deleted and re-uploaded before Phase 4 testing.**
+- **2026-08-30** — `4.1` Prettier at four spaces, landed alone so no later diff hides inside reformatting noise. Generated files, applied migrations and Markdown are excluded — Prettier rewraps prose, which would rewrite every doc for nothing. The lockfile's reformat came from npm, not Prettier: npm mirrors `package.json`'s indentation into it, so four-space there made four-space there too. Full suite green afterwards, which is how we know a formatter did only formatting.

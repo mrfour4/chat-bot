@@ -28,13 +28,13 @@ export type DocumentStatus = Enums["document_status"];
  * generates as `Json` — narrow it with `parseCitations` at the read boundary.
  */
 export type Citation = {
-  /** Supabase `documents.id`, when the citation resolves to a known row. */
-  documentId: string | null;
-  fileName: string;
-  page: number | null;
-  snippet: string | null;
+    /** Supabase `documents.id`, when the citation resolves to a known row. */
+    documentId: string | null;
+    fileName: string;
+    page: number | null;
+    snippet: string | null;
 };
 
 export function parseCitations(value: Json): Citation[] {
-  return Array.isArray(value) ? (value as unknown as Citation[]) : [];
+    return Array.isArray(value) ? (value as unknown as Citation[]) : [];
 }

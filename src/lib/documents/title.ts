@@ -9,11 +9,11 @@ const FALLBACK_TITLE = "Tài liệu chưa đặt tên";
  * listing. Vietnamese characters are left alone.
  */
 export function deriveTitle(fileName: string): string {
-  const title = fileName
-    .replace(/\.pdf$/i, "")
-    .replace(/[-_]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+    const title = fileName
+        .replace(/\.pdf$/i, "")
+        .replace(/[-_]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
 
-  return title || FALLBACK_TITLE;
+    return title || FALLBACK_TITLE;
 }

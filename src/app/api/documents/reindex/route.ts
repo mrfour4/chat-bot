@@ -31,36 +31,42 @@ export const maxDuration = 90;
  */
 
 export async function POST(request: Request) {
-  const secret = process.env.REINDEX_SECRET;
-  const presented = request.headers.get("x-reindex-secret");
-  const authorizedByCron = Boolean(secret) && presented === secret;
+    const secret = process.env.REINDEX_SECRET;
+    const presented = request.headers.get("x-reindex-secret");
+    const authorizedByCron = Boolean(secret) && presented === secret;
 
-  if (!authorizedByCron) {
-    const teacher = await getTeacher();
-    if (!teacher) {
-      const user = await getSessionUser();
-      return NextResponse.json(
-        user
-          ? { code: "forbidden", message: "Chỉ giáo viên mới có quyền." }
-          : { code: "unauthenticated", message: "Vui lòng đăng nhập." },
-        { status: user ? 403 : 401 },
-      );
+    if (!authorizedByCron) {
+        const teacher = await getTeacher();
+        if (!teacher) {
+            const user = await getSessionUser();
+            return NextResponse.json(
+                user
+                    ? {
+                          code: "forbidden",
+                          message: "Chỉ giáo viên mới có quyền.",
+                      }
+                    : {
+                          code: "unauthenticated",
+                          message: "Vui lòng đăng nhập.",
+                      },
+                { status: user ? 403 : 401 },
+            );
+        }
     }
-  }
 
-  // Service-role: a cron caller has no session, and the sweeper has to see
-  // every teacher's stuck documents rather than only the caller's.
-  const supabase = createAdminClient();
-  const stale = await listStale(supabase, STALE_AFTER_MS);
+    // Service-role: a cron caller has no session, and the sweeper has to see
+    // every teacher's stuck documents rather than only the caller's.
+    const supabase = createAdminClient();
+    const stale = await listStale(supabase, STALE_AFTER_MS);
 
-  for (const document of stale) {
-    // Back to `pending` first, so the job's claim has something to claim. A row
-    // stuck at `indexing` would be skipped by its own worker otherwise.
-    await resetToPending(supabase, document.id);
-    after(() => runIndexingJob(document.id));
-  }
+    for (const document of stale) {
+        // Back to `pending` first, so the job's claim has something to claim. A row
+        // stuck at `indexing` would be skipped by its own worker otherwise.
+        await resetToPending(supabase, document.id);
+        after(() => runIndexingJob(document.id));
+    }
 
-  return NextResponse.json({
-    requeued: stale.map((document) => document.id),
-  });
+    return NextResponse.json({
+        requeued: stale.map((document) => document.id),
+    });
 }

@@ -9,26 +9,26 @@ import { requirePublicEnv } from "@/lib/env";
  * Acts as the signed-in user, so RLS is the authorization boundary.
  */
 export async function createClient() {
-  // Awaited first: touching cookies marks the render dynamic, so a build
-  // without secrets present skips this path instead of throwing.
-  const cookieStore = await cookies();
-  const { supabaseUrl, supabasePublishableKey } = requirePublicEnv();
+    // Awaited first: touching cookies marks the render dynamic, so a build
+    // without secrets present skips this path instead of throwing.
+    const cookieStore = await cookies();
+    const { supabaseUrl, supabasePublishableKey } = requirePublicEnv();
 
-  return createServerClient<Database>(supabaseUrl, supabasePublishableKey, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
-      },
-      setAll(cookiesToSet) {
-        try {
-          for (const { name, value, options } of cookiesToSet) {
-            cookieStore.set(name, value, options);
-          }
-        } catch {
-          // Called from a Server Component, where cookies are read-only.
-          // The middleware refreshes the session instead.
-        }
-      },
-    },
-  });
+    return createServerClient<Database>(supabaseUrl, supabasePublishableKey, {
+        cookies: {
+            getAll() {
+                return cookieStore.getAll();
+            },
+            setAll(cookiesToSet) {
+                try {
+                    for (const { name, value, options } of cookiesToSet) {
+                        cookieStore.set(name, value, options);
+                    }
+                } catch {
+                    // Called from a Server Component, where cookies are read-only.
+                    // The middleware refreshes the session instead.
+                }
+            },
+        },
+    });
 }

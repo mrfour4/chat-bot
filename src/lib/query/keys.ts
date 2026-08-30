@@ -4,5 +4,5 @@
  * data on screen with nothing in the console.
  */
 export const queryKeys = {
-  documents: ["documents"] as const,
+    documents: ["documents"] as const,
 };

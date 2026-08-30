@@ -5,10 +5,10 @@ import { requireTeacher } from "@/lib/auth";
  * user experience; RLS on the documents table is the actual enforcement.
  */
 export default async function TeacherLayout({
-  children,
+    children,
 }: {
-  children: React.ReactNode;
+    children: React.ReactNode;
 }) {
-  await requireTeacher();
-  return <>{children}</>;
+    await requireTeacher();
+    return <>{children}</>;
 }

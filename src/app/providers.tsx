@@ -4,17 +4,17 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
 function makeQueryClient() {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        // Above zero on purpose: pages here render their first data on the
-        // server, and a zero stale time would refetch all of it immediately on
-        // hydration, undoing the point of rendering it there.
-        staleTime: 60_000,
-        retry: 1,
-      },
-    },
-  });
+    return new QueryClient({
+        defaultOptions: {
+            queries: {
+                // Above zero on purpose: pages here render their first data on the
+                // server, and a zero stale time would refetch all of it immediately on
+                // hydration, undoing the point of rendering it there.
+                staleTime: 60_000,
+                retry: 1,
+            },
+        },
+    });
 }
 
 let browserQueryClient: QueryClient | undefined;
@@ -27,15 +27,15 @@ let browserQueryClient: QueryClient | undefined;
  * user's page.
  */
 function getQueryClient() {
-  if (typeof window === "undefined") return makeQueryClient();
-  browserQueryClient ??= makeQueryClient();
-  return browserQueryClient;
+    if (typeof window === "undefined") return makeQueryClient();
+    browserQueryClient ??= makeQueryClient();
+    return browserQueryClient;
 }
 
 export function Providers({ children }: { children: ReactNode }) {
-  return (
-    <QueryClientProvider client={getQueryClient()}>
-      {children}
-    </QueryClientProvider>
-  );
+    return (
+        <QueryClientProvider client={getQueryClient()}>
+            {children}
+        </QueryClientProvider>
+    );
 }

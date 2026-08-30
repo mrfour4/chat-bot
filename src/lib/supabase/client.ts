@@ -5,6 +5,6 @@ import { requirePublicEnv } from "@/lib/env";
 
 /** Supabase client for Client Components. Uses the anon key; RLS applies. */
 export function createClient() {
-  const { supabaseUrl, supabasePublishableKey } = requirePublicEnv();
-  return createBrowserClient<Database>(supabaseUrl, supabasePublishableKey);
+    const { supabaseUrl, supabasePublishableKey } = requirePublicEnv();
+    return createBrowserClient<Database>(supabaseUrl, supabasePublishableKey);
 }

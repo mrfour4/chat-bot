@@ -11,9 +11,9 @@ import { serverEnv } from "@/lib/env";
  * this from a Client Component, and always check authorization yourself first.
  */
 export function createAdminClient() {
-  const { supabaseUrl, supabaseSecretKey } = serverEnv();
+    const { supabaseUrl, supabaseSecretKey } = serverEnv();
 
-  return createClient<Database>(supabaseUrl, supabaseSecretKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+    return createClient<Database>(supabaseUrl, supabaseSecretKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+    });
 }

@@ -11,10 +11,10 @@ import { enforceGrounding, type GroundingReason } from "@/lib/rag/grounding";
 import { SYSTEM_INSTRUCTION } from "@/lib/rag/system-instruction";
 
 export type AskResult = {
-  answer: string;
-  citations: Citation[];
-  grounded: boolean;
-  reason: GroundingReason | "error";
+    answer: string;
+    citations: Citation[];
+    grounded: boolean;
+    reason: GroundingReason | "error";
 };
 
 /**
@@ -30,54 +30,58 @@ export type AskResult = {
  * something the assistant said earlier.
  */
 export async function askDocuments(
-  question: string,
-  history: Content[] = [],
+    question: string,
+    history: Content[] = [],
 ): Promise<AskResult> {
-  const contents: Content[] = [
-    ...history,
-    { role: "user", parts: [{ text: question }] },
-  ];
+    const contents: Content[] = [
+        ...history,
+        { role: "user", parts: [{ text: question }] },
+    ];
 
-  try {
-    const response = await getGemini().models.generateContent({
-      model: serverEnv().geminiModel,
-      contents,
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        // Layer 1. `googleSearch` is never added here, deliberately: it would
-        // let the model answer from the open web and the citations would still
-        // look correct.
-        tools: [
-          { fileSearch: { fileSearchStoreNames: [getFileSearchStore()] } },
-        ],
-      },
-    });
+    try {
+        const response = await getGemini().models.generateContent({
+            model: serverEnv().geminiModel,
+            contents,
+            config: {
+                systemInstruction: SYSTEM_INSTRUCTION,
+                // Layer 1. `googleSearch` is never added here, deliberately: it would
+                // let the model answer from the open web and the citations would still
+                // look correct.
+                tools: [
+                    {
+                        fileSearch: {
+                            fileSearchStoreNames: [getFileSearchStore()],
+                        },
+                    },
+                ],
+            },
+        });
 
-    const candidate = response.candidates?.[0];
-    const check = enforceGrounding({
-      text: response.text,
-      groundingMetadata: candidate?.groundingMetadata,
-    });
+        const candidate = response.candidates?.[0];
+        const check = enforceGrounding({
+            text: response.text,
+            groundingMetadata: candidate?.groundingMetadata,
+        });
 
-    return {
-      answer: check.answer,
-      // Citations only accompany an answer we are actually returning. Attaching
-      // sources to a refusal would imply we found something.
-      citations: check.grounded
-        ? extractCitations(candidate?.groundingMetadata)
-        : [],
-      grounded: check.grounded,
-      reason: check.reason,
-    };
-  } catch (error) {
-    const failure = classifyGeminiError(error);
-    console.error(`[ask] ${failure.kind}: ${failure.detail}`);
+        return {
+            answer: check.answer,
+            // Citations only accompany an answer we are actually returning. Attaching
+            // sources to a refusal would imply we found something.
+            citations: check.grounded
+                ? extractCitations(candidate?.groundingMetadata)
+                : [],
+            grounded: check.grounded,
+            reason: check.reason,
+        };
+    } catch (error) {
+        const failure = classifyGeminiError(error);
+        console.error(`[ask] ${failure.kind}: ${failure.detail}`);
 
-    return {
-      answer: failure.message,
-      citations: [],
-      grounded: false,
-      reason: "error",
-    };
-  }
+        return {
+            answer: failure.message,
+            citations: [],
+            grounded: false,
+            reason: "error",
+        };
+    }
 }

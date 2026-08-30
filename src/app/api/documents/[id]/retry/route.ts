@@ -15,44 +15,44 @@ export const maxDuration = 90;
  * go and find the file again.
  */
 export async function POST(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> },
+    _request: Request,
+    { params }: { params: Promise<{ id: string }> },
 ) {
-  const teacher = await getTeacher();
-  if (!teacher) {
-    const user = await getSessionUser();
-    return NextResponse.json(
-      user
-        ? { code: "forbidden", message: "Chỉ giáo viên mới có quyền." }
-        : { code: "unauthenticated", message: "Vui lòng đăng nhập." },
-      { status: user ? 403 : 401 },
-    );
-  }
+    const teacher = await getTeacher();
+    if (!teacher) {
+        const user = await getSessionUser();
+        return NextResponse.json(
+            user
+                ? { code: "forbidden", message: "Chỉ giáo viên mới có quyền." }
+                : { code: "unauthenticated", message: "Vui lòng đăng nhập." },
+            { status: user ? 403 : 401 },
+        );
+    }
 
-  const { id } = await params;
-  const supabase = await createClient();
+    const { id } = await params;
+    const supabase = await createClient();
 
-  const document = await getDocument(supabase, id);
-  if (!document) {
-    return NextResponse.json(
-      { code: "not-found", message: "Không tìm thấy tài liệu." },
-      { status: 404 },
-    );
-  }
+    const document = await getDocument(supabase, id);
+    if (!document) {
+        return NextResponse.json(
+            { code: "not-found", message: "Không tìm thấy tài liệu." },
+            { status: 404 },
+        );
+    }
 
-  if (!document.storage_path) {
-    return NextResponse.json(
-      {
-        code: "no-file",
-        message:
-          "Tệp PDF của tài liệu này không được lưu lại. Hãy tải lên lại tệp.",
-      },
-      { status: 409 },
-    );
-  }
+    if (!document.storage_path) {
+        return NextResponse.json(
+            {
+                code: "no-file",
+                message:
+                    "Tệp PDF của tài liệu này không được lưu lại. Hãy tải lên lại tệp.",
+            },
+            { status: 409 },
+        );
+    }
 
-  await resetToPending(supabase, id);
-  after(() => runIndexingJob(id));
+    await resetToPending(supabase, id);
+    after(() => runIndexingJob(id));
 
-  return NextResponse.json({ ...document, status: "pending" });
+    return NextResponse.json({ ...document, status: "pending" });
 }

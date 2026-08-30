@@ -39,33 +39,33 @@ const MAX_QUOTA_WAIT_MS = 10_000;
  * backoff curve.
  */
 async function withTransientRetry<T>(fn: () => Promise<T>): Promise<T> {
-  for (let attempt = 1; ; attempt += 1) {
-    try {
-      return await fn();
-    } catch (error) {
-      const failure = classifyGeminiError(error);
+    for (let attempt = 1; ; attempt += 1) {
+        try {
+            return await fn();
+        } catch (error) {
+            const failure = classifyGeminiError(error);
 
-      const limit =
-        failure.kind === "unavailable"
-          ? MAX_UNAVAILABLE_ATTEMPTS
-          : failure.kind === "quota"
-            ? MAX_QUOTA_ATTEMPTS
-            : 0;
+            const limit =
+                failure.kind === "unavailable"
+                    ? MAX_UNAVAILABLE_ATTEMPTS
+                    : failure.kind === "quota"
+                      ? MAX_QUOTA_ATTEMPTS
+                      : 0;
 
-      const wait = failure.retryAfterMs ?? 3_000 * attempt;
-      const worthWaiting =
-        failure.kind !== "quota" || wait <= MAX_QUOTA_WAIT_MS;
+            const wait = failure.retryAfterMs ?? 3_000 * attempt;
+            const worthWaiting =
+                failure.kind !== "quota" || wait <= MAX_QUOTA_WAIT_MS;
 
-      if (attempt >= limit || !worthWaiting) throw error;
+            if (attempt >= limit || !worthWaiting) throw error;
 
-      await new Promise((resolve) => setTimeout(resolve, wait));
+            await new Promise((resolve) => setTimeout(resolve, wait));
+        }
     }
-  }
 }
 
 export type IndexOutcome =
-  | { ok: true; geminiDocumentName: string; chunkCount: number }
-  | { ok: false; message: string };
+    | { ok: true; geminiDocumentName: string; chunkCount: number }
+    | { ok: false; message: string };
 
 /**
  * A short prompt whose only job is to make retrieval run. We read the grounding
@@ -91,97 +91,102 @@ const PROBE_MODEL = process.env.GEMINI_PROBE_MODEL ?? "gemini-3.6-flash";
  * is the same.
  */
 export async function indexDocument(input: {
-  documentId: string;
-  fileName: string;
-  bytes: Uint8Array;
+    documentId: string;
+    fileName: string;
+    bytes: Uint8Array;
 }): Promise<IndexOutcome> {
-  const ai = getGemini();
-  const store = getFileSearchStore();
+    const ai = getGemini();
+    const store = getFileSearchStore();
 
-  // Tracked outside the try so a failure *after* a successful upload can still
-  // clean up. Without this, any throw between upload and success leaves a
-  // document in the store with nothing in Postgres pointing at it.
-  let uploadedName: string | undefined;
+    // Tracked outside the try so a failure *after* a successful upload can still
+    // clean up. Without this, any throw between upload and success leaves a
+    // document in the store with nothing in Postgres pointing at it.
+    let uploadedName: string | undefined;
 
-  try {
-    let operation = await ai.fileSearchStores.uploadToFileSearchStore({
-      fileSearchStoreName: store,
-      file: new Blob([input.bytes as BufferSource], {
-        type: "application/pdf",
-      }),
-      config: {
-        mimeType: "application/pdf",
-        displayName: input.fileName,
-        // An array of {key, stringValue} -- not a plain object. This is what
-        // makes the scoped check below possible and what lets a citation
-        // resolve back to a Supabase row.
-        //
-        // The key MUST be lowercase. Verified the hard way in 2.1.5: with the
-        // key stored as `documentId`, a metadataFilter of `documentId=<value>`
-        // returns zero chunks, and so does `documentid=<value>` -- while the
-        // identical value under the key `docid` matches. Hyphens in the value
-        // are fine; the uppercase letter in the key is not.
-        customMetadata: [
-          { key: DOCUMENT_ID_KEY, stringValue: input.documentId },
-        ],
-      },
-    });
+    try {
+        let operation = await ai.fileSearchStores.uploadToFileSearchStore({
+            fileSearchStoreName: store,
+            file: new Blob([input.bytes as BufferSource], {
+                type: "application/pdf",
+            }),
+            config: {
+                mimeType: "application/pdf",
+                displayName: input.fileName,
+                // An array of {key, stringValue} -- not a plain object. This is what
+                // makes the scoped check below possible and what lets a citation
+                // resolve back to a Supabase row.
+                //
+                // The key MUST be lowercase. Verified the hard way in 2.1.5: with the
+                // key stored as `documentId`, a metadataFilter of `documentId=<value>`
+                // returns zero chunks, and so does `documentid=<value>` -- while the
+                // identical value under the key `docid` matches. Hyphens in the value
+                // are fine; the uppercase letter in the key is not.
+                customMetadata: [
+                    { key: DOCUMENT_ID_KEY, stringValue: input.documentId },
+                ],
+            },
+        });
 
-    const deadline = Date.now() + INDEXING_TIMEOUT_MS;
-    while (!operation.done) {
-      if (Date.now() > deadline) {
-        return {
-          ok: false,
-          message:
-            `Quá thời gian chờ lập chỉ mục (${INDEXING_TIMEOUT_MS / 1000} giây). ` +
-            "Vui lòng thử lại.",
-        };
-      }
-      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-      operation = await ai.operations.get({ operation });
+        const deadline = Date.now() + INDEXING_TIMEOUT_MS;
+        while (!operation.done) {
+            if (Date.now() > deadline) {
+                return {
+                    ok: false,
+                    message:
+                        `Quá thời gian chờ lập chỉ mục (${INDEXING_TIMEOUT_MS / 1000} giây). ` +
+                        "Vui lòng thử lại.",
+                };
+            }
+            await new Promise((resolve) =>
+                setTimeout(resolve, POLL_INTERVAL_MS),
+            );
+            operation = await ai.operations.get({ operation });
+        }
+
+        if (operation.error) {
+            return {
+                ok: false,
+                message: describeError(operation.error.message),
+            };
+        }
+
+        const geminiDocumentName = operation.response?.documentName;
+        uploadedName = geminiDocumentName;
+        if (!geminiDocumentName) {
+            return {
+                ok: false,
+                message: "Gemini không trả về mã tài liệu sau khi lập chỉ mục.",
+            };
+        }
+
+        // The point of this function. There is no metadata field that reveals an
+        // empty index -- sizeBytes reports raw uploaded bytes and state reads
+        // STATE_ACTIVE either way -- so the only way to know the document is
+        // genuinely retrievable is to retrieve from it.
+        const chunkCount = await countRetrievableChunks(input.documentId);
+        if (chunkCount === 0) {
+            await discard(geminiDocumentName);
+            return {
+                ok: false,
+                message:
+                    "Không đọc được nội dung từ tệp này. Tài liệu đã tải lên nhưng không " +
+                    "trích xuất được văn bản nào, nên trợ lý sẽ không thể trả lời dựa trên nó.",
+            };
+        }
+
+        return { ok: true, geminiDocumentName, chunkCount };
+    } catch (error) {
+        if (uploadedName) await discard(uploadedName);
+
+        // Raw SDK errors are JSON blobs about quota metrics. `describeError` makes
+        // them short and safe, but only this makes them mean something to the
+        // teacher reading the row.
+        const failure = classifyGeminiError(error);
+        if (failure.kind !== "other") {
+            console.error(`[indexing] ${failure.kind}: ${failure.detail}`);
+        }
+        return { ok: false, message: failure.message };
     }
-
-    if (operation.error) {
-      return { ok: false, message: describeError(operation.error.message) };
-    }
-
-    const geminiDocumentName = operation.response?.documentName;
-    uploadedName = geminiDocumentName;
-    if (!geminiDocumentName) {
-      return {
-        ok: false,
-        message: "Gemini không trả về mã tài liệu sau khi lập chỉ mục.",
-      };
-    }
-
-    // The point of this function. There is no metadata field that reveals an
-    // empty index -- sizeBytes reports raw uploaded bytes and state reads
-    // STATE_ACTIVE either way -- so the only way to know the document is
-    // genuinely retrievable is to retrieve from it.
-    const chunkCount = await countRetrievableChunks(input.documentId);
-    if (chunkCount === 0) {
-      await discard(geminiDocumentName);
-      return {
-        ok: false,
-        message:
-          "Không đọc được nội dung từ tệp này. Tài liệu đã tải lên nhưng không " +
-          "trích xuất được văn bản nào, nên trợ lý sẽ không thể trả lời dựa trên nó.",
-      };
-    }
-
-    return { ok: true, geminiDocumentName, chunkCount };
-  } catch (error) {
-    if (uploadedName) await discard(uploadedName);
-
-    // Raw SDK errors are JSON blobs about quota metrics. `describeError` makes
-    // them short and safe, but only this makes them mean something to the
-    // teacher reading the row.
-    const failure = classifyGeminiError(error);
-    if (failure.kind !== "other") {
-      console.error(`[indexing] ${failure.kind}: ${failure.detail}`);
-    }
-    return { ok: false, message: failure.message };
-  }
 }
 
 /**
@@ -192,26 +197,27 @@ export async function indexDocument(input: {
  * that nearly sent the 2.1.0 spike to the wrong conclusion.
  */
 async function countRetrievableChunks(documentId: string): Promise<number> {
-  const response = await withTransientRetry(() =>
-    getGemini().models.generateContent({
-      model: PROBE_MODEL,
-      contents: PROBE_PROMPT,
-      config: {
-        tools: [
-          {
-            fileSearch: {
-              fileSearchStoreNames: [getFileSearchStore()],
-              metadataFilter: `${DOCUMENT_ID_KEY}=${documentId}`,
+    const response = await withTransientRetry(() =>
+        getGemini().models.generateContent({
+            model: PROBE_MODEL,
+            contents: PROBE_PROMPT,
+            config: {
+                tools: [
+                    {
+                        fileSearch: {
+                            fileSearchStoreNames: [getFileSearchStore()],
+                            metadataFilter: `${DOCUMENT_ID_KEY}=${documentId}`,
+                        },
+                    },
+                ],
             },
-          },
-        ],
-      },
-    }),
-  );
+        }),
+    );
 
-  return (
-    response.candidates?.[0]?.groundingMetadata?.groundingChunks?.length ?? 0
-  );
+    return (
+        response.candidates?.[0]?.groundingMetadata?.groundingChunks?.length ??
+        0
+    );
 }
 
 /**
@@ -225,27 +231,29 @@ async function countRetrievableChunks(documentId: string): Promise<number> {
  * and it already is not. Treating "already gone" as an error would break the
  * retry that makes a half-completed deletion self-healing.
  */
-export async function deleteFromStore(geminiDocumentName: string): Promise<void> {
-  try {
-    await getGemini().fileSearchStores.documents.delete({
-      name: geminiDocumentName,
-      config: { force: true },
-    });
-  } catch (error) {
-    const status = (error as { status?: number }).status;
+export async function deleteFromStore(
+    geminiDocumentName: string,
+): Promise<void> {
+    try {
+        await getGemini().fileSearchStores.documents.delete({
+            name: geminiDocumentName,
+            config: { force: true },
+        });
+    } catch (error) {
+        const status = (error as { status?: number }).status;
 
-    // 404: already gone, which is the outcome we wanted -- this is what lets a
-    // half-failed delete self-heal on a second attempt (2.1.7).
-    //
-    // 403: the document belongs to a File Search store this API key cannot
-    // reach, which happens when the key is rotated -- the old store goes with
-    // the old key. Retrying can never succeed, so treating it as an error would
-    // leave a row that is impossible to delete through the UI forever. The
-    // unreachable document is unreachable either way; the stuck row is the only
-    // part we can still fix.
-    if (status === 404 || status === 403) return;
-    throw error;
-  }
+        // 404: already gone, which is the outcome we wanted -- this is what lets a
+        // half-failed delete self-heal on a second attempt (2.1.7).
+        //
+        // 403: the document belongs to a File Search store this API key cannot
+        // reach, which happens when the key is rotated -- the old store goes with
+        // the old key. Retrying can never succeed, so treating it as an error would
+        // leave a row that is impossible to delete through the UI forever. The
+        // unreachable document is unreachable either way; the stuck row is the only
+        // part we can still fix.
+        if (status === 404 || status === 403) return;
+        throw error;
+    }
 }
 
 /**
@@ -260,10 +268,10 @@ export async function deleteFromStore(geminiDocumentName: string): Promise<void>
  * Failure to clean up must not mask the original problem, so this never throws.
  */
 async function discard(geminiDocumentName: string): Promise<void> {
-  try {
-    await deleteFromStore(geminiDocumentName);
-  } catch {
-    // Leaving an orphan is worse than nothing, but it is not what the teacher
-    // needs to hear about.
-  }
+    try {
+        await deleteFromStore(geminiDocumentName);
+    } catch {
+        // Leaving an orphan is worse than nothing, but it is not what the teacher
+        // needs to hear about.
+    }
 }

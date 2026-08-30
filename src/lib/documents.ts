@@ -13,17 +13,17 @@ export type PublicDocument = Pick<DocumentRow, "id" | "title" | "created_at">;
  * Returns an empty list if the environment is not configured yet.
  */
 export async function listIndexedDocuments(): Promise<PublicDocument[]> {
-  try {
-    const supabase = createAdminClient();
-    const { data, error } = await supabase
-      .from("documents")
-      .select("id, title, created_at")
-      .eq("status", "ready")
-      .order("created_at", { ascending: false });
+    try {
+        const supabase = createAdminClient();
+        const { data, error } = await supabase
+            .from("documents")
+            .select("id, title, created_at")
+            .eq("status", "ready")
+            .order("created_at", { ascending: false });
 
-    if (error) throw error;
-    return data ?? [];
-  } catch {
-    return [];
-  }
+        if (error) throw error;
+        return data ?? [];
+    } catch {
+        return [];
+    }
 }

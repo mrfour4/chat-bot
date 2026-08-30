@@ -16,56 +16,57 @@ type MessageInsert = Database["public"]["Tables"]["messages"]["Insert"];
 
 /** A title short enough for a list, taken from the question that started it. */
 export function deriveConversationTitle(question: string): string {
-  const clean = question.replace(/\s+/g, " ").trim();
-  if (clean.length <= 60) return clean;
-  return `${clean.slice(0, 59).trimEnd()}…`;
+    const clean = question.replace(/\s+/g, " ").trim();
+    if (clean.length <= 60) return clean;
+    return `${clean.slice(0, 59).trimEnd()}…`;
 }
 
 export async function createConversation(
-  supabase: ChatClient,
-  input: { userId: string; title: string },
+    supabase: ChatClient,
+    input: { userId: string; title: string },
 ): Promise<Conversation> {
-  const { data, error } = await supabase
-    .from("conversations")
-    .insert({ user_id: input.userId, title: input.title })
-    .select("*")
-    .single();
+    const { data, error } = await supabase
+        .from("conversations")
+        .insert({ user_id: input.userId, title: input.title })
+        .select("*")
+        .single();
 
-  if (error) throw error;
-  return data;
+    if (error) throw error;
+    return data;
 }
 
 export async function appendMessage(
-  supabase: ChatClient,
-  input: {
-    conversationId: string;
-    role: "user" | "assistant";
-    content: string;
-    citations?: Citation[];
-  },
+    supabase: ChatClient,
+    input: {
+        conversationId: string;
+        role: "user" | "assistant";
+        content: string;
+        citations?: Citation[];
+    },
 ): Promise<void> {
-  const { error } = await supabase.from("messages").insert({
-    conversation_id: input.conversationId,
-    role: input.role,
-    content: input.content,
-    // jsonb. An empty array rather than null keeps reads uniform, so nothing
-    // downstream has to tell "no sources" apart from "never written".
-    citations: (input.citations ?? []) as unknown as MessageInsert["citations"],
-  });
+    const { error } = await supabase.from("messages").insert({
+        conversation_id: input.conversationId,
+        role: input.role,
+        content: input.content,
+        // jsonb. An empty array rather than null keeps reads uniform, so nothing
+        // downstream has to tell "no sources" apart from "never written".
+        citations: (input.citations ??
+            []) as unknown as MessageInsert["citations"],
+    });
 
-  if (error) throw error;
+    if (error) throw error;
 }
 
 export async function listConversations(
-  supabase: ChatClient,
+    supabase: ChatClient,
 ): Promise<Conversation[]> {
-  const { data, error } = await supabase
-    .from("conversations")
-    .select("*")
-    .order("created_at", { ascending: false });
+    const { data, error } = await supabase
+        .from("conversations")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-  if (error) throw error;
-  return data ?? [];
+    if (error) throw error;
+    return data ?? [];
 }
 
 /**
@@ -76,17 +77,17 @@ export async function listConversations(
  * distinguishing them would confirm that another user's conversation exists.
  */
 export async function getConversation(
-  supabase: ChatClient,
-  id: string,
+    supabase: ChatClient,
+    id: string,
 ): Promise<Conversation | null> {
-  const { data, error } = await supabase
-    .from("conversations")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
+    const { data, error } = await supabase
+        .from("conversations")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
 
-  if (error) throw error;
-  return data;
+    if (error) throw error;
+    return data;
 }
 
 export type ConversationSummary = Conversation & { messageCount: number };
@@ -100,31 +101,31 @@ export type ConversationSummary = Conversation & { messageCount: number };
  * display data it then mostly ignored.
  */
 export async function listConversationSummaries(
-  supabase: ChatClient,
+    supabase: ChatClient,
 ): Promise<ConversationSummary[]> {
-  const { data, error } = await supabase
-    .from("conversations")
-    .select("*, messages(count)")
-    .order("created_at", { ascending: false });
+    const { data, error } = await supabase
+        .from("conversations")
+        .select("*, messages(count)")
+        .order("created_at", { ascending: false });
 
-  if (error) throw error;
+    if (error) throw error;
 
-  return (data ?? []).map(({ messages, ...conversation }) => ({
-    ...conversation,
-    messageCount: messages?.[0]?.count ?? 0,
-  }));
+    return (data ?? []).map(({ messages, ...conversation }) => ({
+        ...conversation,
+        messageCount: messages?.[0]?.count ?? 0,
+    }));
 }
 
 export async function listMessages(
-  supabase: ChatClient,
-  conversationId: string,
+    supabase: ChatClient,
+    conversationId: string,
 ): Promise<Message[]> {
-  const { data, error } = await supabase
-    .from("messages")
-    .select("*")
-    .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: true });
+    const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
 
-  if (error) throw error;
-  return data ?? [];
+    if (error) throw error;
+    return data ?? [];
 }

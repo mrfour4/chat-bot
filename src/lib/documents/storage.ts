@@ -29,36 +29,36 @@ export const DOCUMENTS_BUCKET = "documents";
  * object rather than accumulate a second one.
  */
 export function objectPath(uploaderId: string, documentId: string): string {
-  return `${uploaderId}/${documentId}.pdf`;
+    return `${uploaderId}/${documentId}.pdf`;
 }
 
 export type StorageOutcome = { ok: true } | { ok: false; message: string };
 
 export async function putPdf(
-  supabase: StorageClient,
-  input: { path: string; bytes: Uint8Array },
+    supabase: StorageClient,
+    input: { path: string; bytes: Uint8Array },
 ): Promise<StorageOutcome> {
-  const { error } = await supabase.storage
-    .from(DOCUMENTS_BUCKET)
-    .upload(input.path, input.bytes, {
-      contentType: "application/pdf",
-      // Re-uploading a failed document reuses its row, and therefore its path.
-      // Without this the second attempt collides with the first attempt's
-      // object and the retry fails for a reason that has nothing to do with
-      // the retry.
-      upsert: true,
-    });
+    const { error } = await supabase.storage
+        .from(DOCUMENTS_BUCKET)
+        .upload(input.path, input.bytes, {
+            contentType: "application/pdf",
+            // Re-uploading a failed document reuses its row, and therefore its path.
+            // Without this the second attempt collides with the first attempt's
+            // object and the retry fails for a reason that has nothing to do with
+            // the retry.
+            upsert: true,
+        });
 
-  if (error) {
-    return {
-      ok: false,
-      message:
-        "Không lưu được tệp PDF. Vui lòng thử lại. " +
-        `(Chi tiết: ${error.message})`,
-    };
-  }
+    if (error) {
+        return {
+            ok: false,
+            message:
+                "Không lưu được tệp PDF. Vui lòng thử lại. " +
+                `(Chi tiết: ${error.message})`,
+        };
+    }
 
-  return { ok: true };
+    return { ok: true };
 }
 
 /**
@@ -68,28 +68,28 @@ export async function putPdf(
  * that uploaded the file, only the object it left behind.
  */
 export async function getPdf(
-  supabase: StorageClient,
-  path: string,
+    supabase: StorageClient,
+    path: string,
 ): Promise<Uint8Array | null> {
-  const { data, error } = await supabase.storage
-    .from(DOCUMENTS_BUCKET)
-    .download(path);
+    const { data, error } = await supabase.storage
+        .from(DOCUMENTS_BUCKET)
+        .download(path);
 
-  if (error || !data) return null;
-  return new Uint8Array(await data.arrayBuffer());
+    if (error || !data) return null;
+    return new Uint8Array(await data.arrayBuffer());
 }
 
 /** Treats "already gone" as success, so a repeated delete can self-heal. */
 export async function removePdf(
-  supabase: StorageClient,
-  path: string,
+    supabase: StorageClient,
+    path: string,
 ): Promise<StorageOutcome> {
-  const { error } = await supabase.storage
-    .from(DOCUMENTS_BUCKET)
-    .remove([path]);
+    const { error } = await supabase.storage
+        .from(DOCUMENTS_BUCKET)
+        .remove([path]);
 
-  if (error) return { ok: false, message: error.message };
-  return { ok: true };
+    if (error) return { ok: false, message: error.message };
+    return { ok: true };
 }
 
 /**
@@ -102,14 +102,14 @@ export async function removePdf(
 export const SIGNED_URL_TTL_SECONDS = 60;
 
 export async function signedUrlFor(
-  supabase: StorageClient,
-  path: string,
-  options: { download?: string } = {},
+    supabase: StorageClient,
+    path: string,
+    options: { download?: string } = {},
 ): Promise<string | null> {
-  const { data, error } = await supabase.storage
-    .from(DOCUMENTS_BUCKET)
-    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS, options);
+    const { data, error } = await supabase.storage
+        .from(DOCUMENTS_BUCKET)
+        .createSignedUrl(path, SIGNED_URL_TTL_SECONDS, options);
 
-  if (error || !data) return null;
-  return data.signedUrl;
+    if (error || !data) return null;
+    return data.signedUrl;
 }

@@ -9,23 +9,23 @@ import { defineConfig } from "vitest/config";
  * API run.
  */
 export default defineConfig({
-  test: {
-    environment: "node",
-    include: ["src/**/*.itest.ts"],
-    // A single upload polls for up to 60s, then runs a retrieval query.
-    testTimeout: 180_000,
-    hookTimeout: 60_000,
-    // Serial: these share one File Search store, so parallel uploads would make
-    // the scoped-retrieval assertions ambiguous.
-    fileParallelism: false,
-    sequence: { concurrent: false },
-  },
-  resolve: {
-    alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url)),
-      "server-only": fileURLToPath(
-        new URL("./src/test/server-only-stub.ts", import.meta.url),
-      ),
+    test: {
+        environment: "node",
+        include: ["src/**/*.itest.ts"],
+        // A single upload polls for up to 60s, then runs a retrieval query.
+        testTimeout: 180_000,
+        hookTimeout: 60_000,
+        // Serial: these share one File Search store, so parallel uploads would make
+        // the scoped-retrieval assertions ambiguous.
+        fileParallelism: false,
+        sequence: { concurrent: false },
     },
-  },
+    resolve: {
+        alias: {
+            "@": fileURLToPath(new URL("./src", import.meta.url)),
+            "server-only": fileURLToPath(
+                new URL("./src/test/server-only-stub.ts", import.meta.url),
+            ),
+        },
+    },
 });
