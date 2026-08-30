@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRef, useState } from "react";
 
 import type { DocumentRow } from "@/lib/db";
 import { formatFileSize } from "@/lib/documents/format";
 import { isPending } from "@/lib/documents/status";
+import { queryKeys } from "@/lib/query/keys";
 
 const STATUS: Record<
   DocumentRow["status"],
@@ -18,100 +20,87 @@ const STATUS: Record<
 
 const POLL_INTERVAL_MS = 3000;
 
+/** Reads the API's Vietnamese message, rather than restating it less usefully. */
+async function messageFrom(response: Response, fallback: string) {
+  const body = await response.json().catch(() => null);
+  return body?.message ?? fallback;
+}
+
+async function fetchDocuments(): Promise<DocumentRow[]> {
+  const response = await fetch("/api/documents");
+  if (!response.ok) {
+    throw new Error(await messageFrom(response, "Không tải được danh sách."));
+  }
+  const body: { documents: DocumentRow[] } = await response.json();
+  return body.documents;
+}
+
 export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
-  const [documents, setDocuments] = useState(initial);
+  const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const refresh = useCallback(async () => {
-    try {
-      const response = await fetch("/api/documents");
-      if (!response.ok) return;
-      const body: { documents: DocumentRow[] } = await response.json();
-      setDocuments(body.documents);
-    } catch {
-      // A failed poll is not worth interrupting the page for; the next one runs.
-    }
-  }, []);
+  const { data: documents = [] } = useQuery({
+    queryKey: queryKeys.documents,
+    queryFn: fetchDocuments,
+    // Keeps the server-rendered first paint; without it the list would blank
+    // on hydration and fill in a moment later.
+    initialData: initial,
+    // Polls only while something is genuinely in flight, then stops. With
+    // synchronous indexing this is usually redundant -- it covers a request
+    // interrupted after the row was created, which would otherwise leave the
+    // list permanently stale.
+    refetchInterval: (query) =>
+      (query.state.data ?? []).some((doc) => isPending(doc.status))
+        ? POLL_INTERVAL_MS
+        : false,
+  });
 
-  // Only while something is actually in flight. With synchronous indexing this
-  // is usually redundant -- it exists for the case where a request is
-  // interrupted after the row is created, which would otherwise leave the list
-  // permanently stale.
-  const waiting = documents.some((doc) => isPending(doc.status));
-  useEffect(() => {
-    if (!waiting) return;
-    const timer = setInterval(refresh, POLL_INTERVAL_MS);
-    return () => clearInterval(timer);
-  }, [waiting, refresh]);
-
-  async function upload(event: React.FormEvent) {
-    event.preventDefault();
-    if (!file || uploading) return;
-
-    setUploading(true);
-    setError(null);
-
-    try {
+  const upload = useMutation({
+    mutationFn: async (selected: File) => {
       const body = new FormData();
-      body.append("file", file);
+      body.append("file", selected);
 
       const response = await fetch("/api/documents", { method: "POST", body });
-      const result = await response.json();
-
       if (!response.ok) {
-        // Every rejection already carries a Vietnamese message; showing ours
-        // instead would only be less specific.
-        setError(result.message ?? "Tải lên thất bại. Vui lòng thử lại.");
-        return;
+        throw new Error(
+          await messageFrom(response, "Tải lên thất bại. Vui lòng thử lại."),
+        );
       }
-
+      return (await response.json()) as DocumentRow;
+    },
+    onSuccess: () => {
       setFile(null);
       if (inputRef.current) inputRef.current.value = "";
-      await refresh();
-    } catch {
-      setError(
-        "Không kết nối được tới máy chủ. Vui lòng kiểm tra mạng và thử lại.",
-      );
-    } finally {
-      setUploading(false);
-    }
-  }
+      return queryClient.invalidateQueries({ queryKey: queryKeys.documents });
+    },
+  });
 
-  async function remove(id: string) {
-    setDeletingId(id);
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/documents/${id}`, {
-        method: "DELETE",
-      });
-
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/documents/${id}`, { method: "DELETE" });
       if (!response.ok) {
-        const result = await response.json().catch(() => null);
-        setError(
-          result?.message ?? "Không xoá được tài liệu. Vui lòng thử lại.",
+        throw new Error(
+          await messageFrom(response, "Không xoá được tài liệu."),
         );
-        return;
       }
-
-      setDocuments((current) => current.filter((doc) => doc.id !== id));
+    },
+    onSuccess: () => {
       setConfirmingId(null);
-    } catch {
-      setError("Không kết nối được tới máy chủ. Vui lòng thử lại.");
-    } finally {
-      setDeletingId(null);
-    }
-  }
+      return queryClient.invalidateQueries({ queryKey: queryKeys.documents });
+    },
+  });
+
+  const error = upload.error ?? remove.error;
 
   return (
     <>
       <form
-        onSubmit={upload}
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (file) upload.mutate(file);
+        }}
         className="mt-8 rounded-lg border border-rule bg-panel/60 p-5"
       >
         <div className="flex flex-wrap items-center gap-3">
@@ -119,23 +108,23 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
             ref={inputRef}
             type="file"
             accept="application/pdf,.pdf"
-            disabled={uploading}
+            disabled={upload.isPending}
             onChange={(event) => {
               setFile(event.target.files?.[0] ?? null);
-              setError(null);
+              upload.reset();
             }}
             className="min-w-0 flex-1 text-sm text-ink-soft file:mr-3 file:cursor-pointer file:rounded-md file:border file:border-rule file:bg-paper file:px-3 file:py-2 file:text-sm file:font-medium file:text-ink hover:file:bg-panel"
           />
           <button
             type="submit"
-            disabled={!file || uploading}
+            disabled={!file || upload.isPending}
             className="rounded-md bg-ink px-4 py-2.5 text-sm font-medium text-paper transition-opacity disabled:opacity-40"
           >
-            {uploading ? "Đang xử lý…" : "Tải lên"}
+            {upload.isPending ? "Đang xử lý…" : "Tải lên"}
           </button>
         </div>
 
-        {uploading && (
+        {upload.isPending && (
           // Indexing is synchronous, so this request genuinely takes 10-15s.
           // Naming the duration turns an apparent hang into a wait.
           <p
@@ -155,11 +144,11 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
             role="alert"
             className="mt-3 rounded-md border border-lacquer/30 bg-lacquer-soft px-3 py-2 text-sm text-lacquer"
           >
-            {error}
+            {error.message}
           </p>
         )}
 
-        {!uploading && !error && (
+        {!upload.isPending && !error && (
           <p className="mt-3 text-sm text-ink-soft">
             Chỉ nhận tệp PDF, tối đa 20 MB.
           </p>
@@ -168,12 +157,10 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
 
       {documents.length === 0 ? (
         <div className="mt-10 rounded-lg border border-dashed border-rule p-10 text-center">
-          <p className="font-display text-lg font-medium">
-            Chưa có tài liệu nào.
-          </p>
+          <p className="font-display text-lg font-medium">Chưa có tài liệu nào.</p>
           <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-ink-soft">
-            Tải lên thông báo tuyển sinh dạng PDF. Sau khi lập chỉ mục, trợ lý
-            sẽ dùng chính văn bản đó để trả lời học sinh.
+            Tải lên thông báo tuyển sinh dạng PDF. Sau khi lập chỉ mục, trợ lý sẽ
+            dùng chính văn bản đó để trả lời học sinh.
           </p>
         </div>
       ) : (
@@ -188,6 +175,7 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
                     {new Date(doc.created_at).toLocaleDateString("vi-VN")}
                   </p>
                 </div>
+
                 <div className="flex shrink-0 items-center gap-3">
                   <span className={`doc-ref ${STATUS[doc.status].className}`}>
                     {STATUS[doc.status].text}
@@ -199,21 +187,19 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
                     // browsers let users suppress it permanently, which would
                     // silently turn a destructive action into a one-click one.
                     <span className="flex items-center gap-2">
-                      <span className="text-sm text-ink-soft">
-                        Xoá tài liệu này?
-                      </span>
+                      <span className="text-sm text-ink-soft">Xoá tài liệu này?</span>
                       <button
                         type="button"
-                        onClick={() => remove(doc.id)}
-                        disabled={deletingId === doc.id}
+                        onClick={() => remove.mutate(doc.id)}
+                        disabled={remove.isPending}
                         className="rounded-md bg-lacquer px-2.5 py-1.5 text-sm font-medium text-paper disabled:opacity-40"
                       >
-                        {deletingId === doc.id ? "Đang xoá…" : "Xoá"}
+                        {remove.isPending ? "Đang xoá…" : "Xoá"}
                       </button>
                       <button
                         type="button"
                         onClick={() => setConfirmingId(null)}
-                        disabled={deletingId === doc.id}
+                        disabled={remove.isPending}
                         className="rounded-md border border-rule px-2.5 py-1.5 text-sm text-ink-soft"
                       >
                         Huỷ
@@ -222,7 +208,10 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
                   ) : (
                     <button
                       type="button"
-                      onClick={() => setConfirmingId(doc.id)}
+                      onClick={() => {
+                        remove.reset();
+                        setConfirmingId(doc.id);
+                      }}
                       aria-label={`Xoá ${doc.title}`}
                       className="rounded-md border border-rule px-2.5 py-1.5 text-sm text-ink-soft transition-colors hover:border-lacquer hover:text-lacquer"
                     >
@@ -233,8 +222,6 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
               </div>
 
               {doc.status === "failed" && doc.error_message && (
-                // On the row, not in a toast: the teacher needs to know which
-                // document is unusable, and needs it to still be there later.
                 <div className="mt-2 rounded-md border border-lacquer/30 bg-lacquer-soft px-3 py-2">
                   <p className="text-sm leading-relaxed text-lacquer">
                     {doc.error_message}

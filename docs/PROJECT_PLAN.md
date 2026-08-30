@@ -7,10 +7,10 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `2.3.4` — conversation history ✅ · **the chatbot is complete**
-**Current small phase:** none — **your turn to test, with a fresh API key**
-**State:** waiting for your feedback
-**Blocked on:** a working Gemini key (today's free-tier quota is spent)
+**Last completed:** `2.3.5` — TanStack Query ✅
+**Current small phase:** `2.4.1` — RLS verification
+**State:** finishing Phase 2; you test in Phase 3
+**Blocked on:** a working Gemini key for the live checks (today's quota is spent)
 
 **Settled:** **D7** = `gemini-3.6-flash`, overridable via `GEMINI_MODEL`.
 **D6** = **no TanStack AI** — reversed in 2.3.0, because the grounding guarantee
@@ -342,6 +342,7 @@ Docs are written just before their review gate, not all upfront.
 | 2.3.2 | Chat UI | hand-rolled `useState` + `fetch`; refusals visually distinct | [2.3.2](phases/2.3.2-chat-ui.md) | ✅ |
 | 2.3.3 | Citation rendering | typographic document references, page only when known | [2.3.2](phases/2.3.2-chat-ui.md) | ✅ |
 | 2.3.4 | Conversation persistence | `/history` for signed-in users; guests never stored | [2.3.4](phases/2.3.4-history.md) | ✅ |
+| 2.3.5 | TanStack Query | server-state for documents; `useMutation` only for chat send | [2.3.5](phases/2.3.5-tanstack-query.md) | ✅ |
 
 ### 2.4 Access control
 
@@ -396,3 +397,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `2.3.1` chat route. Rate limited at 8/minute per caller, because the endpoint is reachable without an account and one script could drain the free tier's whole day in a second. In-memory and documented as such: it stops casual abuse and accidental loops, and marks the seam where Redis goes. History capped at 6 turns so a long conversation cannot quietly grow every request.
 - **2026-08-30** — `2.3.2`/`2.3.3` chat UI with citations, built together because an answer without its sources is not testable as this product. A refusal is rendered on a different ground from an answer, so it cannot be mistaken for a quiet confident reply when skimmed. Citations read as footnotes rather than chips, and a page number appears only when we actually have one.
 - **2026-08-30** — `2.3.4` conversation history, completing 2.3. Guests are never persisted: storing their questions with no account to attach them to would be collecting data we said we would not. Persisting never fails the request — a lost history entry is a far smaller harm than a lost answer, so `persist()` swallows storage errors to the log and returns null. **The chatbot is complete and ready to test.**
+- **2026-08-30** — `2.3.5` TanStack Query adopted for the documents panel, where it replaced a hand-rolled `setInterval`, a manual refresh callback, three `setDocuments` calls and three state flags with `refetchInterval` and `invalidateQueries`. Not adopted for the chat message list, which is append-only client state with nothing to invalidate. **There is no official TanStack Query agent skill** — `intent list` finds the package is not intent-enabled and the docs page 404s — so the official SSR guide was followed instead.

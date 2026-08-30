@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
-import { Be_Vietnam_Pro, Bricolage_Grotesque, JetBrains_Mono } from "next/font/google";
+import {
+  Be_Vietnam_Pro,
+  Bricolage_Grotesque,
+  JetBrains_Mono,
+} from "next/font/google";
 
+import { Providers } from "@/app/providers";
 import { SiteHeader } from "@/components/site-header";
 import { getSessionUser } from "@/lib/auth";
 
@@ -45,15 +50,17 @@ export default async function RootLayout({
       className={`${bricolage.variable} ${beVietnam.variable} ${jetbrains.variable}`}
     >
       <body className="flex min-h-dvh flex-col">
-        <SiteHeader user={user} />
-        <main className="flex-1">{children}</main>
-        <footer className="border-t border-rule">
-          <div className="mx-auto max-w-5xl px-5 py-6">
-            <p className="eyebrow">
-              Trả lời chỉ dựa trên tài liệu tuyển sinh đã tải lên
-            </p>
-          </div>
-        </footer>
+        <Providers>
+          <SiteHeader user={user} />
+          <main className="flex-1">{children}</main>
+          <footer className="border-t border-rule">
+            <div className="mx-auto max-w-5xl px-5 py-6">
+              <p className="eyebrow">
+                Trả lời chỉ dựa trên tài liệu tuyển sinh đã tải lên
+              </p>
+            </div>
+          </footer>
+        </Providers>
       </body>
     </html>
   );

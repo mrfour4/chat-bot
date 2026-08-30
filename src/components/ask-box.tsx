@@ -1,5 +1,6 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
 import type { Citation } from "@/lib/db";
@@ -19,6 +20,8 @@ type ChatMessage = {
   grounded: boolean;
 };
 
+type HistoryTurn = { role: "user" | "assistant"; content: string };
+
 type ChatResponse = {
   answer: string;
   citations: Citation[];
@@ -31,60 +34,43 @@ type ChatResponse = {
 export function AskBox() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (messages.length > 0 || pending) {
-      endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-    }
-  }, [messages, pending]);
-
-  async function ask(text: string) {
-    const trimmed = text.trim();
-    if (!trimmed || pending) return;
-
-    const userMessage: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: trimmed,
-      citations: [],
-      grounded: true,
-    };
-
-    // History is taken before the new question is appended, and carries only
-    // what was said -- the model re-retrieves every turn regardless.
-    const history = messages.map((message) => ({
-      role: message.role,
-      content: message.content,
-    }));
-
-    setMessages((current) => [...current, userMessage]);
-    setQuestion("");
-    setPending(true);
-    setError(null);
-
-    try {
+  /**
+   * `useMutation` for sending, and only for sending.
+   *
+   * A conversation is append-only client state, not a cache of server state --
+   * there is nothing here to invalidate or refetch, and modelling messages as
+   * query data would fight the library rather than use it. What the mutation
+   * does give us is `isPending` and `error` without hand-rolled flags.
+   */
+  const send = useMutation({
+    mutationFn: async (payload: {
+      question: string;
+      history: HistoryTurn[];
+    }) => {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          question: trimmed,
-          history,
-          // Null for a guest, so the server simply does not persist.
+          question: payload.question,
+          history: payload.history,
+          // Absent for a guest, so the server simply does not persist.
           ...(conversationId ? { conversationId } : {}),
         }),
       });
 
       if (!response.ok) {
         const body = await response.json().catch(() => null);
-        setError(body?.message ?? "Không gửi được câu hỏi. Vui lòng thử lại.");
-        return;
+        throw new Error(
+          body?.message ?? "Không gửi được câu hỏi. Vui lòng thử lại.",
+        );
       }
 
-      const result: ChatResponse = await response.json();
+      return (await response.json()) as ChatResponse;
+    },
+    onSuccess: (result) => {
       if (result.conversationId) setConversationId(result.conversationId);
 
       setMessages((current) => [
@@ -97,11 +83,43 @@ export function AskBox() {
           grounded: result.grounded,
         },
       ]);
-    } catch {
-      setError("Không kết nối được tới máy chủ. Vui lòng kiểm tra mạng và thử lại.");
-    } finally {
-      setPending(false);
+    },
+  });
+
+  const pending = send.isPending;
+
+  // Declared after `pending` so it can read it. Keeps the newest turn in view
+  // as the conversation grows, including while the answer is still forming.
+  useEffect(() => {
+    if (messages.length > 0 || pending) {
+      endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     }
+  }, [messages, pending]);
+
+  function ask(text: string) {
+    const trimmed = text.trim();
+    if (!trimmed || pending) return;
+
+    // History is taken before the new question is appended, so the model never
+    // sees the current turn twice. It carries only what was said -- retrieval
+    // re-runs every turn, so the conversation can never become a source.
+    const history: HistoryTurn[] = messages.map((message) => ({
+      role: message.role,
+      content: message.content,
+    }));
+
+    setMessages((current) => [
+      ...current,
+      {
+        id: crypto.randomUUID(),
+        role: "user",
+        content: trimmed,
+        citations: [],
+        grounded: true,
+      },
+    ]);
+    setQuestion("");
+    send.mutate({ question: trimmed, history });
   }
 
   return (
@@ -155,7 +173,7 @@ export function AskBox() {
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          void ask(question);
+          ask(question);
         }}
         className="flex items-center gap-2 rounded-lg border border-rule bg-white p-2 transition-colors focus-within:border-ink"
       >
@@ -176,12 +194,12 @@ export function AskBox() {
         </button>
       </form>
 
-      {error && (
+      {send.error && (
         <p
           role="alert"
           className="mt-3 rounded-md border border-lacquer/30 bg-lacquer-soft px-3 py-2 text-sm text-lacquer"
         >
-          {error}
+          {send.error.message}
         </p>
       )}
 
@@ -192,7 +210,7 @@ export function AskBox() {
               key={suggestion}
               type="button"
               disabled={pending}
-              onClick={() => void ask(suggestion)}
+              onClick={() => ask(suggestion)}
               className="rounded-full border border-rule px-3 py-1.5 text-xs text-ink-soft transition-colors hover:border-ink hover:text-ink disabled:opacity-40"
             >
               {suggestion}
