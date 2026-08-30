@@ -7,10 +7,10 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `2.4.2` — guards and the guest path ✅
-**Current small phase:** `2.5.1` — states and polish
-**State:** finishing Phase 2; you test in Phase 3
-**Blocked on:** a working Gemini key for the live checks (today's quota is spent)
+**Last completed:** `2.5` — polish ✅ · **PHASE 2 COMPLETE**
+**Current phase:** Phase 3 — testing, yours
+**State:** waiting for a working Gemini key so I can run the live checks first
+**Blocked on:** the API key
 
 **Settled:** **D7** = `gemini-3.6-flash`, overridable via `GEMINI_MODEL`.
 **D6** = **no TanStack AI** — reversed in 2.3.0, because the grounding guarantee
@@ -355,8 +355,7 @@ Docs are written just before their review gate, not all upfront.
 
 | # | Small phase | Deliverable | Doc | State |
 | --- | --- | --- | --- | --- |
-| 2.5.1 | Empty / loading / error states | throughout | — | ⚪ |
-| 2.5.2 | Responsive + accessibility | mobile, keyboard focus, reduced motion | — | ⚪ |
+| 2.5 | States, motion, accessibility | reduced-motion scrolling, live-region answers, empty-library notice | [2.5](phases/2.5-polish.md) | ✅ |
 
 ---
 
@@ -400,3 +399,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `2.3.5` TanStack Query adopted for the documents panel, where it replaced a hand-rolled `setInterval`, a manual refresh callback, three `setDocuments` calls and three state flags with `refetchInterval` and `invalidateQueries`. Not adopted for the chat message list, which is append-only client state with nothing to invalidate. **There is no official TanStack Query agent skill** — `intent list` finds the package is not intent-enabled and the docs page 404s — so the official SSR guide was followed instead.
 - **2026-08-30** — `2.4.1` authorization verified at the database, not the routes: the publishable key ships in the browser by design, so anyone can call PostgREST directly and the policy is the only thing standing there. 11 checks via `npm run test:rls`. Eleven first-run passes being exactly when to be suspicious, a deliberately leaky policy was added to confirm the suite fails when it should — it did, and was removed.
 - **2026-08-30** — `2.4.2` guards and the guest path. Found a real gap: `requireTeacher()` redirects to `/?error=forbidden` and nothing rendered it, so a student following a teacher link landed home with no explanation — indistinguishable from a broken link. Now explained, and pointed at what they can do instead. Guest surface measured end to end: chat and login open, everything else 401 or redirected.
+- **2026-08-30** — `2.5` polish, **completing Phase 2**. Three real gaps, found by auditing rather than guessing: `scrollIntoView` was ignoring `prefers-reduced-motion` because CSS cannot fix a preference JavaScript overrides; answers were never announced to screen readers, leaving no way to tell "still thinking" from "finished"; and an empty document library made a correctly-refusing assistant look broken. All three are the same principle as 2.1.5 and 2.4.2 — **correct behaviour and broken behaviour must not look the same**.

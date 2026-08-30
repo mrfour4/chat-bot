@@ -31,7 +31,21 @@ type ChatResponse = {
   conversationId: string | null;
 };
 
-export function AskBox() {
+/**
+ * Respects the OS "reduce motion" setting.
+ *
+ * The global CSS neutralises CSS animations, but `scrollIntoView` is JavaScript
+ * and ignores it -- and smooth scrolling is exactly the kind of unrequested
+ * movement that setting exists to prevent.
+ */
+function scrollBehavior(): ScrollBehavior {
+  return typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ? "auto"
+    : "smooth";
+}
+
+export function AskBox({ documentCount }: { documentCount: number }) {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -92,7 +106,10 @@ export function AskBox() {
   // as the conversation grows, including while the answer is still forming.
   useEffect(() => {
     if (messages.length > 0 || pending) {
-      endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      endRef.current?.scrollIntoView({
+        behavior: scrollBehavior(),
+        block: "end",
+      });
     }
   }, [messages, pending]);
 
@@ -124,8 +141,27 @@ export function AskBox() {
 
   return (
     <div>
+      {documentCount === 0 && messages.length === 0 && (
+        // Asking against an empty store correctly refuses every question, which
+        // looks like a broken assistant rather than an empty library. Say which
+        // it is before the student spends a question finding out.
+        <p
+          role="status"
+          className="mb-6 rounded-md border border-pending/40 bg-panel px-4 py-3 text-sm leading-relaxed"
+        >
+          Chưa có tài liệu tuyển sinh nào được tải lên, nên trợ lý chưa thể trả
+          lời câu hỏi nào. Vui lòng quay lại sau.
+        </p>
+      )}
+
       {messages.length > 0 && (
-        <ol className="mb-6 flex flex-col gap-6">
+        <ol
+          // Answers arrive all at once (§5.15), so there is a single moment to
+          // announce. "polite" waits for a pause rather than cutting in.
+          aria-live="polite"
+          aria-atomic="false"
+          className="mb-6 flex flex-col gap-6"
+        >
           {messages.map((message) =>
             message.role === "user" ? (
               <li key={message.id} className="flex justify-end">

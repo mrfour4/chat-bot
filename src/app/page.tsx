@@ -39,7 +39,7 @@ export default async function HomePage({
       </section>
 
       <div className="mt-10 max-w-2xl">
-        <AskBox />
+        <AskBox documentCount={documents.length} />
       </div>
 
       <section className="mt-20 border-t border-rule pt-6">
@@ -60,7 +60,9 @@ export default async function HomePage({
                 <span className="doc-ref text-lacquer">
                   {String(index + 1).padStart(2, "0")}
                 </span>
-                <p className="mt-1.5 text-sm leading-snug font-medium">{doc.title}</p>
+                <p className="mt-1.5 text-sm leading-snug font-medium">
+                  {doc.title}
+                </p>
                 <p className="mt-1 text-xs text-ink-soft">
                   {new Date(doc.created_at).toLocaleDateString("vi-VN")}
                 </p>
