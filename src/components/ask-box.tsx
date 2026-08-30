@@ -24,6 +24,8 @@ type ChatResponse = {
   citations: Citation[];
   grounded: boolean;
   reason: string;
+  /** Present only for a signed-in user; guests are never persisted. */
+  conversationId: string | null;
 };
 
 export function AskBox() {
@@ -31,6 +33,7 @@ export function AskBox() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -67,7 +70,12 @@ export function AskBox() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ question: trimmed, history }),
+        body: JSON.stringify({
+          question: trimmed,
+          history,
+          // Null for a guest, so the server simply does not persist.
+          ...(conversationId ? { conversationId } : {}),
+        }),
       });
 
       if (!response.ok) {
@@ -77,6 +85,7 @@ export function AskBox() {
       }
 
       const result: ChatResponse = await response.json();
+      if (result.conversationId) setConversationId(result.conversationId);
 
       setMessages((current) => [
         ...current,

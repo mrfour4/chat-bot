@@ -18,6 +18,15 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
         </Link>
 
         <nav className="flex items-center gap-1 text-sm">
+          {user && (
+            <Link
+              href="/history"
+              className="rounded-md px-3 py-1.5 text-ink-soft transition-colors hover:bg-panel hover:text-ink"
+            >
+              Lịch sử
+            </Link>
+          )}
+
           {isTeacher && (
             <Link
               href="/teacher/documents"

@@ -3,8 +3,15 @@ import { z } from "zod";
 
 import type { Content } from "@google/genai";
 
+import { getSessionUser } from "@/lib/auth";
+import {
+  appendMessage,
+  createConversation,
+  deriveConversationTitle,
+} from "@/lib/chat/conversations";
 import { askDocuments } from "@/lib/rag/ask";
 import { checkRateLimit } from "@/lib/rag/rate-limit";
+import { createClient } from "@/lib/supabase/server";
 
 /** Long enough for a real admissions question, short enough to bound cost. */
 const MAX_QUESTION_LENGTH = 1000;
@@ -18,6 +25,7 @@ const MAX_HISTORY_TURNS = 6;
 
 const bodySchema = z.object({
   question: z.string().trim().min(1).max(MAX_QUESTION_LENGTH),
+  conversationId: z.string().uuid().optional(),
   history: z
     .array(
       z.object({
@@ -72,5 +80,60 @@ export async function POST(request: Request) {
   // so there is no failure here the route has to interpret.
   const result = await askDocuments(question, contents);
 
-  return NextResponse.json(result);
+  const conversationId = await persist({
+    question,
+    result,
+    conversationId: parsed.data.conversationId,
+  });
+
+  return NextResponse.json({ ...result, conversationId });
+}
+
+/**
+ * Saves the exchange for a signed-in user. Guests keep their conversation in
+ * component state and it ends with the tab -- §4 gives history to students, and
+ * storing a guest's questions without an account to attach them to would be
+ * collecting data we promised not to.
+ *
+ * Never throws: a storage problem must not turn a good answer into an error the
+ * student sees. A lost history entry is a smaller harm than a lost answer.
+ */
+async function persist(input: {
+  question: string;
+  result: Awaited<ReturnType<typeof askDocuments>>;
+  conversationId?: string;
+}): Promise<string | null> {
+  const user = await getSessionUser();
+  if (!user) return null;
+
+  try {
+    const supabase = await createClient();
+
+    const conversationId =
+      input.conversationId ??
+      (
+        await createConversation(supabase, {
+          userId: user.id,
+          title: deriveConversationTitle(input.question),
+        })
+      ).id;
+
+    await appendMessage(supabase, {
+      conversationId,
+      role: "user",
+      content: input.question,
+    });
+
+    await appendMessage(supabase, {
+      conversationId,
+      role: "assistant",
+      content: input.result.answer,
+      citations: input.result.citations,
+    });
+
+    return conversationId;
+  } catch (error) {
+    console.error("[chat] failed to persist conversation:", error);
+    return null;
+  }
 }
