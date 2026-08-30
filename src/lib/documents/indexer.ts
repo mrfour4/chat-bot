@@ -233,7 +233,17 @@ export async function deleteFromStore(geminiDocumentName: string): Promise<void>
     });
   } catch (error) {
     const status = (error as { status?: number }).status;
-    if (status === 404) return;
+
+    // 404: already gone, which is the outcome we wanted -- this is what lets a
+    // half-failed delete self-heal on a second attempt (2.1.7).
+    //
+    // 403: the document belongs to a File Search store this API key cannot
+    // reach, which happens when the key is rotated -- the old store goes with
+    // the old key. Retrying can never succeed, so treating it as an error would
+    // leave a row that is impossible to delete through the UI forever. The
+    // unreachable document is unreachable either way; the stuck row is the only
+    // part we can still fix.
+    if (status === 404 || status === 403) return;
     throw error;
   }
 }
