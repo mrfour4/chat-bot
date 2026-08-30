@@ -7,8 +7,8 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `2.1.2` — upload validation ✅
-**Current small phase:** `2.1.3` — documents repository
+**Last completed:** `2.1.3` — documents repository ✅
+**Current small phase:** `2.1.4` — upload route
 **State:** implementing
 **Blocked on:** nothing
 
@@ -262,7 +262,7 @@ Docs are written just before their review gate, not all upfront.
 | 2.1.0 | Ingestion spike | **Yes — File Search OCRs scans.** 7 findings, D5 answered, D7 raised. | [2.1.0](phases/2.1.0-ingestion-spike.md) | ✅ |
 | 2.1.1 | Vitest harness | `vitest.config.mts`, `npm test`, 2 passing tests | [2.1.1](phases/2.1.1-vitest-harness.md) | ✅ |
 | 2.1.2 | Upload validation | `validateUpload()` pure fn, 8 tests, test-first | [2.1.2](phases/2.1.2-upload-validation.md) | ✅ |
-| 2.1.3 | Documents repository | typed CRUD over `documents` | — | ⚪ |
+| 2.1.3 | Documents repository | typed CRUD with injected client, + `sha256Hex` / `describeError` | [2.1.3](phases/2.1.3-documents-repository.md) | ✅ |
 | 2.1.4 | Upload route | `POST /api/documents` → `pending` row, teacher-only, dedupe | — | ⚪ |
 | 2.1.5 | Indexing + post-index check | File Search upload, poll, `ready`/`failed`; check must be a **scoped retrieval query** (§5.12). **D5 = synchronous, ~60s cap** | — | ⚪ |
 | 2.1.6 | Documents list UI | list, upload form, status polling | — | ⚪ |
@@ -326,3 +326,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `2.1.0` ingestion spike done. Scanned PDFs **do** index (OCR works, diacritics intact), so the planned OCR pre-pass is cancelled. Indexing measured at 10.0–14.6s, which answers **D5** in favour of synchronous. Seven corrections to the plan, including `customMetadata` being an array, `documents.delete` needing `force: true`, and `sizeBytes` being useless as an emptiness signal. New decision **D7** after `gemini-3.7-flash` returned 503 for ~75s straight.
 - **2026-08-30** — `2.1.1` Vitest harness. One pinned dev dependency (`vitest` 4.1.11); `@vitejs/plugin-react` and `vite-tsconfig-paths` dropped as unearned. Config is `.mts` for the same CJS/ESM reason the scripts are. **D5 settled: synchronous indexing, ~60s cap.**
 - **2026-08-30** — `2.1.2` upload validation. Pure `validateUpload()`, 8 tests written before the implementation and observed failing. MIME is treated as a hint and the `%PDF-` signature as the gate, because browsers derive `File.type` from the extension and a renamed executable arrives claiming `application/pdf`.
+- **2026-08-30** — `2.1.3` documents repository. Client is injected rather than imported, so RLS still applies to user reads while indexing write-backs can use the secret key — and so the module stays free of `server-only` and testable. Tests cover `sha256Hex` (published vectors) and `describeError`; the PostgREST wrappers are covered by typecheck against generated schema types instead of mocks.
