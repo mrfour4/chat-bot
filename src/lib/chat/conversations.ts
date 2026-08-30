@@ -68,6 +68,53 @@ export async function listConversations(
   return data ?? [];
 }
 
+/**
+ * One conversation, or null if it is not this user's.
+ *
+ * RLS does the deciding, so "belongs to someone else" and "does not exist"
+ * arrive here identically -- which is the right answer to give back, since
+ * distinguishing them would confirm that another user's conversation exists.
+ */
+export async function getConversation(
+  supabase: ChatClient,
+  id: string,
+): Promise<Conversation | null> {
+  const { data, error } = await supabase
+    .from("conversations")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+export type ConversationSummary = Conversation & { messageCount: number };
+
+/**
+ * The history list: one row per conversation, with its message count.
+ *
+ * The count comes back from PostgREST as an embedded aggregate rather than
+ * from a query per conversation. The previous history page loaded *every
+ * message of every conversation* to render a list -- N+1 round trips to
+ * display data it then mostly ignored.
+ */
+export async function listConversationSummaries(
+  supabase: ChatClient,
+): Promise<ConversationSummary[]> {
+  const { data, error } = await supabase
+    .from("conversations")
+    .select("*, messages(count)")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  return (data ?? []).map(({ messages, ...conversation }) => ({
+    ...conversation,
+    messageCount: messages?.[0]?.count ?? 0,
+  }));
+}
+
 export async function listMessages(
   supabase: ChatClient,
   conversationId: string,

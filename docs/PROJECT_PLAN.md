@@ -9,7 +9,7 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 **Last completed:** `2.5` — polish ✅ · **PHASE 2 COMPLETE**
 **Current phase:** Phase 3 — the feedback round (§8), six small phases
-**State:** 3.5 in progress
+**State:** 3.6 in progress — the last phase
 **Blocked on:** nothing. 3.1–3.5 need no Gemini calls at all; only 3.6 does.
 
 **Settled:** **D7** = `gemini-3.6-flash`, overridable via `GEMINI_MODEL`.
@@ -372,7 +372,7 @@ one doc, one commit, one review gate each. Ordered so that **point 4
 | 3.2 | Header | active page, identity, wrapping, sticky | [3.2](phases/3.2-header.md) | ✅ |
 | 3.3 | Keep the PDF | private Storage bucket, RLS policies, upload writes it | [3.3](phases/3.3-file-storage.md) | ✅ |
 | 3.4 | Preview + download | in-app viewer, signed URL, mobile fallback | [3.4](phases/3.4-preview.md) | ✅ |
-| 3.5 | Conversations | `/chat/[id]`, history as a list, resume a conversation | [3.5](phases/3.5-conversations.md) | — |
+| 3.5 | Conversations | `/chat/[id]`, history as a list, resume a conversation | [3.5](phases/3.5-conversations.md) | ✅ |
 | 3.6 | Background indexing | upload returns at once, work survives the tab | [3.6](phases/3.6-background-indexing.md) | — |
 
 **Why 3.3 precedes 3.6.** §5.10 threw the PDF bytes away on purpose, and that
@@ -431,3 +431,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `3.2` the header. Five named faults rather than a restyle: no active page, no identity or role, sign-out styled as navigation, a non-wrapping row that overflows at 360px, and no stickiness on the app's longest page. Active state is selected *from* `aria-current="page"` so the announcement and the visible state cannot drift; the generated CSS was checked in the build output rather than assumed. The teacher page's own "signed in as" line was removed rather than duplicated — right information, wrong place, true on one page in four. No hamburger: three links do not earn a drawer, a toggle, focus trapping and an escape key.
 - **2026-08-30** — `3.3` keep the uploaded PDF. **§5.10 reversed:** discarding the bytes was the reason indexing had to sit inside the upload request, so storing them is 3.6's precondition, not its neighbour. Private bucket and four object policies in a migration, mirroring the table policies exactly. Ownership rides in the path (`<uploader_id>/<document_id>.pdf`) rather than storage's `owner` column, so the rule is legible in the policy. RLS suite 11 → 17 checks, and the falsification pass found two flaws **in the tests**: a leak reported as "0 tests run" because a duplicate key aborted the block, and read checks that passed on an empty table — §5.12's failure mode, in our own test suite. Both fixed; leaks now produce FAIL lines naming what leaked.
 - **2026-08-30** — `3.4` preview and download. The viewer is the browser's own, in an iframe: `react-pdf` would have been ~1 MB and Turbopack worker config to rebuild what the platform ships. iOS Safari refuses PDFs in iframes and cannot be detected beforehand, so "Mở trong tab mới" is always visible rather than an error path. The route 302s to a 60-second signed URL instead of streaming 20 MB through this process; `?download=1` switches the disposition, so one route serves both. Verified with ten checks against the **hosted** project, including that an expired URL stops working and an anonymous fetch is refused — no Gemini calls. Migration pushed to hosted, since a local-only bucket would have made every preview 404.
+- **2026-08-30** — `3.5` conversations. **No migration:** the model asked for already existed, so this was navigation. The history page had been rendering a transcript rather than a list — every message of every conversation, one query each, to display a title and a date; now one query with an embedded count. `/chat/[id]` reads through the user's client so RLS decides, and answers 404 rather than 403 because 403 confirms existence. Asking on `/` now rewrites the URL to `/chat/<id>` via `window.history.replaceState`, so a refresh keeps the thread: it was always saved, but the app looked like it had forgotten. Eight checks against hosted; the one failure was the fixture's, not the app's — a bulk insert with differing keys makes PostgREST send NULL for the missing ones.

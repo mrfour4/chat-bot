@@ -1,13 +1,7 @@
 import Link from "next/link";
 
-import { CitationList } from "@/components/citation-list";
-import { Markdown } from "@/components/markdown";
 import { requireUser } from "@/lib/auth";
-import {
-  listConversations,
-  listMessages,
-} from "@/lib/chat/conversations";
-import { parseCitations } from "@/lib/db";
+import { listConversationSummaries } from "@/lib/chat/conversations";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Lịch sử · Cố vấn Tuyển sinh" };
@@ -18,24 +12,29 @@ export default async function HistoryPage() {
   await requireUser();
   const supabase = await createClient();
 
-  const conversations = await listConversations(supabase);
-  const withMessages = await Promise.all(
-    conversations.map(async (conversation) => ({
-      conversation,
-      messages: await listMessages(supabase, conversation.id),
-    })),
-  );
+  // A list of conversations, not a transcript of all of them. The previous
+  // version loaded every message of every conversation to render a heading and
+  // a date -- N+1 round trips for data it then mostly ignored.
+  const conversations = await listConversationSummaries(supabase);
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-12 md:py-16">
-      <div className="border-b border-rule pb-6">
-        <p className="eyebrow">Của bạn</p>
-        <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight">
-          Lịch sử hỏi đáp
-        </h1>
+      <div className="flex items-end justify-between gap-4 border-b border-rule pb-6">
+        <div>
+          <p className="eyebrow">Của bạn</p>
+          <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight">
+            Lịch sử hỏi đáp
+          </h1>
+        </div>
+        <Link
+          href="/"
+          className="shrink-0 rounded-md bg-ink px-4 py-2 text-sm font-medium text-paper transition-opacity hover:opacity-90"
+        >
+          Đặt câu hỏi mới
+        </Link>
       </div>
 
-      {withMessages.length === 0 ? (
+      {conversations.length === 0 ? (
         <div className="mt-10 rounded-lg border border-dashed border-rule p-10 text-center">
           <p className="font-display text-lg font-medium">Chưa có câu hỏi nào.</p>
           <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-ink-soft">
@@ -49,37 +48,30 @@ export default async function HistoryPage() {
           </Link>
         </div>
       ) : (
-        <ol className="mt-8 flex flex-col gap-10">
-          {withMessages.map(({ conversation, messages }) => (
+        <ul className="mt-8 divide-y divide-rule border-y border-rule">
+          {conversations.map((conversation) => (
             <li key={conversation.id}>
-              <div className="flex items-baseline justify-between gap-4 border-b border-rule pb-2">
-                <h2 className="truncate font-display text-lg font-medium">
-                  {conversation.title ?? "Cuộc hỏi đáp"}
-                </h2>
+              {/* The whole row is the link. A title that happens to be short
+                  should not leave most of the row unclickable. */}
+              <Link
+                href={`/chat/${conversation.id}`}
+                className="flex items-baseline justify-between gap-4 py-4 transition-colors hover:bg-panel"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium">
+                    {conversation.title ?? "Cuộc hỏi đáp"}
+                  </span>
+                  <span className="doc-ref mt-1">
+                    {conversation.messageCount} tin nhắn
+                  </span>
+                </span>
                 <span className="doc-ref shrink-0">
                   {new Date(conversation.created_at).toLocaleDateString("vi-VN")}
                 </span>
-              </div>
-
-              <ol className="mt-4 flex flex-col gap-4">
-                {messages.map((message) => (
-                  <li key={message.id}>
-                    {message.role === "user" ? (
-                      <p className="text-sm font-medium">{message.content}</p>
-                    ) : (
-                      <div className="rounded-lg border border-rule bg-white px-4 py-3">
-                        <Markdown>{message.content}</Markdown>
-                        <CitationList
-                          citations={parseCitations(message.citations)}
-                        />
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ol>
+              </Link>
             </li>
           ))}
-        </ol>
+        </ul>
       )}
     </div>
   );

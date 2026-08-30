@@ -13,7 +13,7 @@ const SUGGESTIONS = [
   "Đối tượng tuyển sinh là ai?",
 ];
 
-type ChatMessage = {
+export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
@@ -46,10 +46,21 @@ function scrollBehavior(): ScrollBehavior {
     : "smooth";
 }
 
-export function AskBox({ documentCount }: { documentCount: number }) {
+export function AskBox({
+  documentCount,
+  initialMessages = [],
+  initialConversationId = null,
+}: {
+  documentCount: number;
+  /** A resumed conversation, loaded on the server. Empty for a new one. */
+  initialMessages?: ChatMessage[];
+  initialConversationId?: string | null;
+}) {
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
+  const [conversationId, setConversationId] = useState<string | null>(
+    initialConversationId,
+  );
   const endRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -86,7 +97,17 @@ export function AskBox({ documentCount }: { documentCount: number }) {
       return (await response.json()) as ChatResponse;
     },
     onSuccess: (result) => {
-      if (result.conversationId) setConversationId(result.conversationId);
+      if (result.conversationId && result.conversationId !== conversationId) {
+        setConversationId(result.conversationId);
+
+        // Put the conversation in the address bar the moment it exists, so a
+        // refresh or a shared link lands back on it. `replaceState` rather
+        // than `router.replace`: Next integrates it with the router, and it
+        // costs no navigation, no refetch and no remount of a list we are
+        // already holding. Replace, not push, because the empty page this
+        // started from is not somewhere to go "back" to.
+        window.history.replaceState(null, "", `/chat/${result.conversationId}`);
+      }
 
       setMessages((current) => [
         ...current,
