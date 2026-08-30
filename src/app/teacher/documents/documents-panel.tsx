@@ -39,6 +39,7 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
   const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [previewingId, setPreviewingId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { data: documents = [] } = useQuery({
@@ -169,7 +170,22 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
             <li key={doc.id} className="py-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{doc.title}</p>
+                  {doc.storage_path ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPreviewingId(previewingId === doc.id ? null : doc.id)
+                      }
+                      aria-expanded={previewingId === doc.id}
+                      className="block max-w-full truncate text-left text-sm font-medium underline decoration-rule underline-offset-4 transition-colors hover:decoration-ink"
+                    >
+                      {doc.title}
+                    </button>
+                  ) : (
+                    // Uploaded before 3.3, so there is no file to open. Plain
+                    // text rather than a control that would do nothing.
+                    <p className="truncate text-sm font-medium">{doc.title}</p>
+                  )}
                   <p className="doc-ref mt-1">
                     {doc.file_name} · {formatFileSize(doc.file_size)} ·{" "}
                     {new Date(doc.created_at).toLocaleDateString("vi-VN")}
@@ -220,6 +236,49 @@ export function DocumentsPanel({ initial }: { initial: DocumentRow[] }) {
                   )}
                 </div>
               </div>
+
+              {previewingId === doc.id && doc.storage_path && (
+                // Inline rather than a modal, for the same reason the delete
+                // confirmation is inline: the teacher's eyes stay on the row.
+                // It also avoids a dialog's focus trap and escape handling for
+                // something that is really just a longer row.
+                <div className="mt-4">
+                  <div className="flex flex-wrap items-center gap-3 pb-3">
+                    <a
+                      href={`/api/documents/${doc.id}/file?download=1`}
+                      className="rounded-md border border-rule px-2.5 py-1.5 text-sm text-ink transition-colors hover:border-ink"
+                    >
+                      Tải xuống
+                    </a>
+                    {/* Always offered, not only as an error path: iOS Safari
+                        and some Android browsers refuse to render a PDF inside
+                        an iframe, and there is no reliable way to detect that
+                        before it fails. A visible link degrades to working
+                        rather than to a blank rectangle. */}
+                    <a
+                      href={`/api/documents/${doc.id}/file`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-ink-soft underline underline-offset-4 hover:text-ink"
+                    >
+                      Mở trong tab mới
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewingId(null)}
+                      className="ml-auto text-sm text-ink-soft hover:text-ink"
+                    >
+                      Đóng
+                    </button>
+                  </div>
+
+                  <iframe
+                    src={`/api/documents/${doc.id}/file`}
+                    title={`Xem trước ${doc.title}`}
+                    className="h-[70vh] max-h-[720px] w-full rounded-md border border-rule bg-panel"
+                  />
+                </div>
+              )}
 
               {doc.status === "failed" && doc.error_message && (
                 <div className="mt-2 rounded-md border border-lacquer/30 bg-lacquer-soft px-3 py-2">
