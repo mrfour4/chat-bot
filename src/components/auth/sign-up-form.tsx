@@ -34,7 +34,7 @@ export function SignUpForm() {
                 event.stopPropagation();
                 void form.handleSubmit();
             }}
-            className="rounded-lg border border-rule bg-white p-6"
+            className="rounded-lg border border-rule bg-surface p-6"
         >
             <FieldGroup>
                 <form.Field name="fullName">

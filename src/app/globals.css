@@ -10,17 +10,20 @@
    palette borrows from Vietnamese administrative paperwork: office-paper
    neutrals, ink black, and a lacquer red reserved for the seal and citations.
 --------------------------------------------------------------------------- */
-@theme {
-    --color-paper: #fafaf8;
-    --color-panel: #f1f0ea;
-    --color-rule: #dedcd3;
-    --color-ink: #191a17;
-    --color-ink-soft: #6b6c63;
-    --color-lacquer: #a32a1c;
-    --color-lacquer-soft: #f4e8e5;
-    --color-verified: #1f5f4b;
-    --color-pending: #96690b;
+@theme inline {
+    --color-paper: var(--paper);
+    --color-surface: var(--surface);
+    --color-panel: var(--panel);
+    --color-rule: var(--rule);
+    --color-ink: var(--ink);
+    --color-ink-soft: var(--ink-soft);
+    --color-lacquer: var(--lacquer);
+    --color-lacquer-soft: var(--lacquer-soft);
+    --color-verified: var(--verified);
+    --color-pending: var(--pending);
+}
 
+@theme {
     --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
     --font-heading: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
     --font-sans: var(--font-be-vietnam), ui-sans-serif, system-ui, sans-serif;
@@ -40,12 +43,12 @@
     }
 
     ::selection {
-        background-color: var(--color-lacquer);
-        color: var(--color-paper);
+        background-color: var(--lacquer);
+        color: var(--paper);
     }
 
     :focus-visible {
-        outline: 2px solid var(--color-lacquer);
+        outline: 2px solid var(--lacquer);
         outline-offset: 2px;
     }
     * {
@@ -64,7 +67,7 @@
         font-size: 0.6875rem;
         letter-spacing: 0.02em;
         text-transform: uppercase;
-        color: var(--color-ink-soft);
+        color: var(--ink-soft);
     }
 
     .eyebrow {
@@ -72,7 +75,7 @@
         font-size: 0.6875rem;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: var(--color-ink-soft);
+        color: var(--ink-soft);
     }
 
     /* An assistant answer, rendered from Markdown.
@@ -140,15 +143,15 @@
      The lacquer rule is the same mark citations use. */
     .markdown blockquote {
         margin-block: 0.9em;
-        border-inline-start: 2px solid var(--color-lacquer);
+        border-inline-start: 2px solid var(--lacquer);
         padding-inline-start: 0.9em;
-        color: var(--color-ink-soft);
+        color: var(--ink-soft);
     }
 
     .markdown hr {
         margin-block: 1.2em;
         border: 0;
-        border-top: 1px solid var(--color-rule);
+        border-top: 1px solid var(--rule);
     }
 }
 
@@ -203,6 +206,17 @@
 }
 
 :root {
+    --paper: #fafaf8;
+    --surface: #ffffff;
+    --panel: #f1f0ea;
+    --rule: #dedcd3;
+    --ink: #191a17;
+    --ink-soft: #6b6c63;
+    --lacquer: #a32a1c;
+    --lacquer-soft: #f4e8e5;
+    --verified: #1f5f4b;
+    --pending: #96690b;
+
     /* shadcn/ui tokens, expressed in the brand palette above so that any
      component pulled from the registry is on-brand without per-component edits. */
     --background: #fafaf8; /* paper */
@@ -240,35 +254,46 @@
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --paper: #131412;
+    --surface: #1c1e1b;
+    --panel: #212320;
+    --rule: #31342e;
+    --ink: #eceae3;
+    --ink-soft: #a0a297;
+    --lacquer: #e8705c;
+    --lacquer-soft: #2c1d1a;
+    --verified: #5fb99a;
+    --pending: #d3a441;
+
+    --background: #131412; /* paper */
+    --foreground: #eceae3; /* ink */
+    --card: #1c1e1b;
+    --card-foreground: #eceae3;
+    --popover: #1c1e1b;
+    --popover-foreground: #eceae3;
+    --primary: #eceae3;
+    --primary-foreground: #131412;
+    --secondary: #212320; /* panel */
+    --secondary-foreground: #eceae3;
+    --muted: #212320;
+    --muted-foreground: #a0a297; /* ink-soft */
+    --accent: #2c1d1a; /* lacquer-soft */
+    --accent-foreground: #e8705c;
+    --destructive: #e8705c; /* lacquer */
+    --border: #31342e; /* rule */
+    --input: #31342e;
+    --ring: #e8705c;
+    --chart-1: #e8705c;
+    --chart-2: #5fb99a;
+    --chart-3: #d3a441;
+    --chart-4: #a0a297;
+    --chart-5: #eceae3;
+    --sidebar: #212320;
+    --sidebar-foreground: #eceae3;
+    --sidebar-primary: #eceae3;
+    --sidebar-primary-foreground: #131412;
+    --sidebar-accent: #2c1d1a;
+    --sidebar-accent-foreground: #e8705c;
+    --sidebar-border: #31342e;
+    --sidebar-ring: #e8705c;
 }

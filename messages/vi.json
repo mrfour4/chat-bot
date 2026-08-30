@@ -30,7 +30,6 @@
         "placeholder": "Nhập câu hỏi của bạn…",
         "inputLabel": "Câu hỏi về tuyển sinh",
         "submit": "Hỏi",
-        "disclaimer": "Trả lời chỉ dựa trên tài liệu tuyển sinh đã tải lên",
         "sources": "Trích từ {count} nguồn",
         "page": "trang {page}",
         "suggestion1": "Có những phương thức xét tuyển nào?",
@@ -151,5 +150,11 @@
         "uploadTooLarge": "Tệp vượt quá dung lượng cho phép ({size} MB).",
         "uploadWrongMime": "Chỉ chấp nhận tệp PDF.",
         "uploadNotAPdf": "Tệp này không phải là PDF hợp lệ."
+    },
+    "theme": {
+        "label": "Giao diện",
+        "light": "Sáng",
+        "dark": "Tối",
+        "system": "Theo hệ thống"
     }
 }

@@ -1,10 +1,19 @@
 "use client";
 
+import { LanguagesIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useTransition } from "react";
 
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { LOCALES, LOCALE_LABELS } from "@/constants/i18n";
+import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { LOCALES, LOCALE_LABELS, isLocale } from "@/constants/i18n";
 import { setLocale } from "@/i18n/actions";
 
 export function LanguageSwitcher() {
@@ -13,28 +22,37 @@ export function LanguageSwitcher() {
     const [pending, startTransition] = useTransition();
 
     return (
-        <ToggleGroup
-            aria-label={t("language")}
-            value={[locale]}
-            onValueChange={(value) => {
-                const next = value[0];
-
-                if (!next || next === locale) return;
-                startTransition(() => setLocale(next));
-            }}
-            disabled={pending}
-            className="hidden sm:flex"
-        >
-            {LOCALES.map((option) => (
-                <ToggleGroupItem
-                    key={option}
-                    value={option}
-                    aria-label={LOCALE_LABELS[option]}
-                    className="doc-ref px-2"
-                >
-                    {option.toUpperCase()}
-                </ToggleGroupItem>
-            ))}
-        </ToggleGroup>
+        <DropdownMenu>
+            <DropdownMenuTrigger
+                render={
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={t("language")}
+                        disabled={pending}
+                        className="shrink-0 text-ink-soft"
+                    >
+                        <LanguagesIcon />
+                    </Button>
+                }
+            />
+            <DropdownMenuContent align="end">
+                <DropdownMenuGroup>
+                    <DropdownMenuRadioGroup
+                        value={locale}
+                        onValueChange={(next) => {
+                            if (!isLocale(next) || next === locale) return;
+                            startTransition(() => setLocale(next));
+                        }}
+                    >
+                        {LOCALES.map((option) => (
+                            <DropdownMenuRadioItem key={option} value={option}>
+                                {LOCALE_LABELS[option]}
+                            </DropdownMenuRadioItem>
+                        ))}
+                    </DropdownMenuRadioGroup>
+                </DropdownMenuGroup>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }

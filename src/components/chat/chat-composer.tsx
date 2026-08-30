@@ -62,7 +62,7 @@ export function ChatComposer({
 
                             return (
                                 <Field data-invalid={invalid || undefined}>
-                                    <div className="flex items-center gap-2 rounded-lg border border-rule bg-white p-2 transition-colors focus-within:border-ink">
+                                    <div className="flex items-center gap-2 rounded-lg border border-rule bg-surface p-2 transition-colors focus-within:border-ink">
                                         <Input
                                             value={field.state.value}
                                             onBlur={field.handleBlur}
@@ -105,10 +105,6 @@ export function ChatComposer({
                         }}
                     </form.Field>
                 </form>
-
-                <p className="eyebrow mt-2.5 justify-center text-center">
-                    {t("disclaimer")}
-                </p>
             </div>
         </div>
     );

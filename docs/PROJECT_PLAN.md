@@ -7,10 +7,10 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `4.9` — conventions ✅ · **PHASE 4 COMPLETE**
-**Current phase:** Phase 5 — testing, yours
-**State:** Phase 4 complete. Conventions are in `CONVENTION.md`.
-**Blocked on:** nothing. 3.1–3.5 need no Gemini calls at all; only 3.6 does.
+**Last completed:** `5.1` — theme and switchers ✅
+**Current phase:** `5.2` — mock Gemini server
+**State:** Phase 5 planned in §10, ten small phases. Conventions in `CONVENTION.md`.
+**Blocked on:** nothing. Gemini quota is exhausted, which is what 5.2 is for.
 
 **Settled:** **D7** = `gemini-3.6-flash`, overridable via `GEMINI_MODEL`.
 **D6** = **no TanStack AI** — reversed in 2.3.0, because the grounding guarantee
@@ -432,7 +432,122 @@ The code gets clean; the knowledge stays findable.
 
 ---
 
-## 10. Phase 5 — Test
+## 10. Phase 5 — the third feedback round
+
+Your review after using the app. Ten small phases, same rules: one doc, one
+commit each. **No live Gemini calls** — 5.2 builds a mock Gemini server first,
+because your quota is exhausted and every phase after it needs indexing to run.
+
+| # | Small phase | Deliverable | Doc | State |
+| --- | --- | --- | --- | --- |
+| 5.1 | Theme + switchers | light/dark/system, both switchers as menus, disclaimer removed | [5.1](phases/5.1-theme.md) | ✅ |
+| 5.2 | Mock Gemini server | independent server, random delay and outcome, no quota | [5.2](phases/5.2-mock-gemini.md) | ⚪ |
+| 5.3 | Document lifecycle | rename, archive, delete, `updated_by`; six display statuses | [5.3](phases/5.3-document-lifecycle.md) | ⚪ |
+| 5.4 | Documents table | TanStack Table v9 + shadcn Table, search, status filter, paging | [5.4](phases/5.4-documents-table.md) | ⚪ |
+| 5.5 | Status without polling | Supabase Realtime pushes the change; the poll comes out | [5.5](phases/5.5-realtime.md) | ⚪ |
+| 5.6 | Multi-file upload | many files at once, indexed one at a time | [5.6](phases/5.6-multi-upload.md) | ⚪ |
+| 5.7 | Message paging | cursor, 25/page, MessageScroller, fetch on approaching the top | [5.7](phases/5.7-message-paging.md) | ⚪ |
+| 5.8 | History | cursor paging, virtualized, search, rename, delete | [5.8](phases/5.8-history.md) | ⚪ |
+| 5.9 | Seed data | enough rows to make paging, virtualization and filters real | [5.9](phases/5.9-seed.md) | ⚪ |
+| 5.10 | Conventions | `CONVENTION.md` and this file brought up to date | [5.10](phases/5.10-conventions.md) | ⚪ |
+
+### What the libraries already decided
+
+Eight things checked before planning, each of which changed the plan:
+
+**5.10.1 MessageScroller already virtualizes, and already handles paging
+upward.** Every `MessageScrollerItem` carries `content-visibility: auto` with
+`contain-intrinsic-size`, so the browser skips rendering off-screen rows without
+unmounting them — virtualization with none of the usual costs (Ctrl-F still
+works, no measurement cache, no absolute positioning). `MessageScrollerViewport`
+takes **`preserveScrollOnPrepend`**, and `useMessageScrollerScrollable()` reports
+`{ start, end }`. That is exactly "virtualize, keep my place when older messages
+arrive, tell me when I'm near the top". **So chat does not need TanStack
+Virtual.** Read from `@shadcn/react@0.3.0`'s type definitions and the registry
+source, not the docs — the docs page for `message-scroller` does not exist.
+
+**5.10.2 TanStack Table ships official skills; TanStack Virtual does not.**
+`npm pack` then `tar tzf`: `@tanstack/react-table@9.2.4` contains six
+`skills/*/SKILL.md` — `getting-started`, `table-state`, `create-table-hook`,
+`with-tanstack-query`, `with-tanstack-virtual`, `migrate-v8-to-v9`.
+`@tanstack/react-virtual@3.14.10` contains none. So 5.4 loads a real skill; 5.8
+reads the installed source instead, the same way we handled Query and Form.
+
+**Table v9, not v8.** `latest` is 9.2.4 and the skills describe v9's API
+(`useTable`, `tableFeatures`, `table.FlexRender`) — v8's `useReactTable`
+examples produce the wrong setup. shadcn's own data-table examples are still v8,
+so those are reference for *markup* only.
+
+**5.10.3 Gemini cannot rename a document.** `ai.fileSearchStores.documents`
+exposes exactly `list`, `get` and `delete` — there is no `update` or `patch`, and
+`displayName` is set once at upload. So of your two options, only the mapping one
+exists: the citation name must come from **our** row. We already stamp `docid`
+into `customMetadata` and read it back in `extractCitations`, so the join is
+already there; 5.3 makes the renderer prefer the row's title over Gemini's
+`retrievedContext.title`, which is the stale one.
+
+**5.10.4 An independent mock Gemini server is feasible, and it is small.** Five
+endpoints, because `uploadToFileSearchStore` is a resumable upload: a `start`
+POST answering with an `x-goog-upload-url` header, a bytes POST answering
+`x-goog-upload-status: final`, `operations.get`, `generateContent`, and document
+`delete`. The decisive detail is in `uploadBlobInternal`: when `httpOptions.baseUrl`
+is set, the SDK **rewrites the returned upload URL's protocol, host and port** to
+that base. So the mock can hand back any URL and the SDK will still come home to
+it. `GEMINI_BASE_URL` therefore redirects the whole surface, and the real
+`@google/genai` client stays in the path — error classification, retry and the
+grounding guard all still get exercised.
+
+**5.10.5 Teachers cannot read each other's profiles.** `profiles_select_own` is
+the only `SELECT` policy (§5.4), so an "Uploaded by" column would come back blank
+for every document the viewing teacher did not upload — the §5.12 failure mode
+again, a working join that looks like missing data. 5.4 widens it deliberately:
+teachers may read the profile directory, with an RLS check to prove students
+still cannot.
+
+**5.10.6 Archive has to delete from the Gemini store.** File Search has no
+"disable" — the only way out of retrieval scope is `documents.delete`. That
+matches your definition exactly ("removed from Gemini's retrieval/reference
+scope … still kept in our own storage"), and it means **un-archiving costs a
+re-index**. Acceptable: 3.3 keeps the PDF, so un-archive is just the indexing job
+again. The alternative — leaving it in the store and excluding it with
+`metadataFilter` — needs a filter expression that grows with the archive and
+fails silently when it gets it wrong.
+
+**5.10.7 The brand palette cannot switch themes as written.** `--color-paper`
+and friends live in Tailwind's `@theme` block, which compiles to static utility
+classes; 29 files use them. 5.1 routes each through a CSS variable defined in
+`:root` and `.dark`, so dark mode costs **zero component edits**.
+
+**5.10.8 Realtime needs two lines of SQL.** `alter publication supabase_realtime
+add table public.documents` and `alter table public.documents replica identity
+full`; Realtime then authorizes every event against the subscriber's own RLS. No
+account, no keys, no third party — it is already in the stack.
+
+### The two places I did not do what you asked
+
+**Six statuses, not four.** Uploading · Indexing · **Ready** · **Failed** ·
+Archived · Deleted. The four you listed have no state for "this document is
+working" or "this document never indexed", and those are the two a teacher most
+needs to tell apart — a library where a failed upload is indistinguishable from a
+live one is how §5.12 bites. They are not stored as an enum: `status` stays the
+indexing state machine and `archived_at` / `deleted_at` are timestamps, so an
+archived document still remembers it was ready and un-archiving is one column.
+
+**"Archived" is the right word** — it is what every product means by it, and
+Vietnamese "Lưu trữ" reads correctly. The alternative worth considering was
+"Tạm ẩn / Hidden", which describes the *effect* on the chatbot rather than the
+state of the file; I kept Archived because the file genuinely is retained, and
+Hidden implies it could still be found.
+
+**Delete is a tombstone.** The file leaves Storage and Gemini as you specified,
+but the row stays, badged Deleted and hidden behind the status filter — otherwise
+"Deleted" could never be a status you see. It also makes the unique checksum
+index partial (`where deleted_at is null`), so a deleted file can be uploaded
+again.
+
+---
+
+## 11. Phase 6 — Test
 
 - **Documents:** valid PDF (`uit.pdf`) · **scanned PDF (`iuh.pdf`) — must not report `ready` unless text was genuinely retrieved** · invalid file · oversized · duplicate · deletion · indexing failure · multiple documents
 - **RAG:** answerable · multi-part · cross-document (UIT + IUH in one question) · off-topic · **no answer in the documents** · ambiguous · Vietnamese · prompt-injection against the document-only rule
@@ -447,7 +562,7 @@ checked against whether that document actually indexed.
 
 ---
 
-## 11. Changelog
+## 12. Changelog
 
 - **2026-08-30** — Phase 1 complete, merged to `main`. Scaffold, auth, design system, shadcn/ui on Base UI; schema under Supabase CLI control (local stack on 544xx, applied and verified on both local and hosted); types generated; `/api/health` green. Node scripts renamed to `.mts`; teacher promotion verified on hosted.
 - **2026-08-30** — TanStack AI evaluated from package source: adopted client-side only, because its Gemini adapter drops `groundingMetadata` (§5.11). Test PDFs parsed: `iuh.pdf` is a pure scan with no font resources, making OCR support an open risk with a silent failure mode (§5.12).
@@ -489,3 +604,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `4.7` architecture. Five hand-written `fetch` calls came out of two components into `lib/api/`, over one `expectOk` that reads the route's own Vietnamese message — restating those in the client would only produce a vaguer sentence from further away. `useDocuments` and `useChat` took the state: the documents panel went 150 lines → 35, the ask box 160 → 45, both now just layout. Constants, types and providers moved to directories named for what they are. Feature barrels are for consumers only — a folder's own files still import each other directly, because a barrel its members import from is a cycle waiting to happen.
 - **2026-08-30** — `4.8` Vietnamese and English via next-intl, **without locale routing**: a `[locale]` segment would have meant rewriting every route, `Link`, redirect and guard bounce for an audience that is almost entirely Vietnamese. Three tests guard the catalogues, because a missing key renders as the key itself — a half-translated page looks like a working one with a stray identifier in it. The placeholder test caught a real subtlety: English pluralises where Vietnamese does not, and only ICU *argument names* are comparable. Two lines drawn deliberately: a message produced **while someone is waiting** is translated, one a background job *persists* is not (there is no reader to have a language); and **the assistant keeps answering in Vietnamese**, because an English answer would be an unverified translation of a Vietnamese regulation, which is the exact transformation this product exists to avoid.
 - **2026-08-30** — `4.9` comments removed and `CONVENTION.md` written, **completing Phase 4**. The stripper parses with the TypeScript compiler rather than matching text, because a regex that removes `//` also removes it from strings, URLs and JSX, silently. It was wrong twice before it was right: `createScanner` returns no trivia in this version, so the first run quietly removed only JSX comment blocks while appearing to work; and a comment alone in an empty `catch` belongs to no node. `CONVENTION.md` carries the conventions and, more importantly, the facts that cost something to learn — lowercase metadata keys, deletion order, the un-backdatable `updated_at`, why streaming is impossible — each of which looks like something a later reader could simplify away.
+- **2026-08-30** — `5.1` light/dark/system. The palette had to move before it could switch: the brand colours lived in Tailwind's `@theme`, which compiles to static values, so `bg-paper` was `#fafaf8` in 29 files forever. Routing them through `@theme inline` and CSS variables made dark mode a **zero-component-edit** change — the compiled utility is now `background-color:var(--paper)`, checked in the build output rather than assumed. Lacquer is the one colour that could not simply be reused: `#a32a1c` on the dark ground measures **2.56:1**, so the seal, every citation and the focus ring would have failed; the brightened `#e8705c` measures 6.07:1. The trigger icon does not show the current theme, which is deliberate — showing it needs a mounted flag, and a `useState` in an effect to dodge a hydration mismatch is a cascading render the linter is right to reject. The choice is shown where choices are made, inside the menu. The chat disclaimer is gone: the citations under each answer already say where that answer came from, which is the same claim made about a specific thing instead of in general.

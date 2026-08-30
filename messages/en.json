@@ -30,7 +30,6 @@
         "placeholder": "Type your question…",
         "inputLabel": "Question about admissions",
         "submit": "Ask",
-        "disclaimer": "Answers come only from the uploaded admissions documents",
         "sources": "{count, plural, one {From # source} other {From # sources}}",
         "page": "page {page}",
         "suggestion1": "What admission methods are there?",
@@ -151,5 +150,11 @@
         "uploadTooLarge": "That file is over the size limit ({size} MB).",
         "uploadWrongMime": "PDF files only.",
         "uploadNotAPdf": "That file is not a valid PDF."
+    },
+    "theme": {
+        "label": "Theme",
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System"
     }
 }

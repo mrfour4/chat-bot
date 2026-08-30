@@ -49,6 +49,7 @@ export default async function RootLayout({
     return (
         <html
             lang={locale}
+            suppressHydrationWarning
             className={`${bricolage.variable} ${beVietnam.variable} ${jetbrains.variable}`}
         >
             <body className="flex min-h-dvh flex-col">

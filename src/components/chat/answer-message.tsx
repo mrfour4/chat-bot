@@ -10,7 +10,7 @@ export function AnswerMessage({ message }: { message: ChatMessage }) {
                 className={cn(
                     "rounded-lg border px-4 py-3",
                     message.grounded
-                        ? "border-rule bg-white"
+                        ? "border-rule bg-surface"
                         : "border-pending/40 bg-panel",
                 )}
             >

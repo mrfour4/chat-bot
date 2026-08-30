@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { SealMark } from "@/components/layout/seal-mark";
 import { SiteNav } from "@/components/layout/site-nav";
+import { ThemeSwitcher } from "@/components/layout/theme-switcher";
 import { UserMenu } from "@/components/layout/user-menu";
 import { Button } from "@/components/ui/button";
 import type { SessionUser } from "@/lib/auth";
@@ -37,6 +38,7 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
 
                 <div className="ml-auto flex items-center gap-2 sm:gap-3">
                     <SiteNav items={items} />
+                    <ThemeSwitcher />
                     <LanguageSwitcher />
 
                     {user ? (
