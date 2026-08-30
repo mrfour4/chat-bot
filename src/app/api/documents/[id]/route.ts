@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { apiMessages } from "@/lib/api/messages";
+
 import { getSessionUser, getTeacher } from "@/lib/auth";
 import { deleteFromStore } from "@/lib/documents/indexer";
 import { deleteDocument, getDocument } from "@/lib/documents/repo";
@@ -12,22 +14,17 @@ export async function DELETE(
 ) {
     const teacher = await getTeacher();
     if (!teacher) {
-        const user = await getSessionUser();
+        const [user, t] = await Promise.all([getSessionUser(), apiMessages()]);
         return NextResponse.json(
             user
-                ? {
-                      code: "forbidden",
-                      message: "Chỉ giáo viên mới có quyền xoá tài liệu.",
-                  }
-                : {
-                      code: "unauthenticated",
-                      message: "Vui lòng đăng nhập để tiếp tục.",
-                  },
+                ? { code: "forbidden", message: t("forbiddenDelete") }
+                : { code: "unauthenticated", message: t("unauthenticated") },
             { status: user ? 403 : 401 },
         );
     }
 
     const { id } = await params;
+    const t = await apiMessages();
     const supabase = await createClient();
 
     // Read through the user's client, so RLS decides visibility. A document
@@ -36,7 +33,7 @@ export async function DELETE(
     const document = await getDocument(supabase, id);
     if (!document) {
         return NextResponse.json(
-            { code: "not-found", message: "Không tìm thấy tài liệu." },
+            { code: "not-found", message: t("notFound") },
             { status: 404 },
         );
     }
@@ -56,9 +53,7 @@ export async function DELETE(
             return NextResponse.json(
                 {
                     code: "store-delete-failed",
-                    message:
-                        "Không xoá được tài liệu khỏi Gemini. Tài liệu vẫn còn trong danh " +
-                        "sách — vui lòng thử lại.",
+                    message: t("storeDeleteFailed"),
                 },
                 { status: 502 },
             );
@@ -74,9 +69,7 @@ export async function DELETE(
             return NextResponse.json(
                 {
                     code: "storage-delete-failed",
-                    message:
-                        "Không xoá được tệp PDF đã lưu. Tài liệu vẫn còn trong danh " +
-                        "sách — vui lòng thử lại.",
+                    message: t("storageDeleteFailed"),
                 },
                 { status: 502 },
             );

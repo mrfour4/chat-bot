@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -10,10 +12,12 @@ export function AuthSubmit({
     submitting: boolean;
     children: string;
 }) {
+    const t = useTranslations("common");
+
     return (
         <Button type="submit" disabled={!canSubmit} className="w-full">
             {submitting && <Spinner />}
-            {submitting ? "Đang xử lý…" : children}
+            {submitting ? t("processing") : children}
         </Button>
     );
 }

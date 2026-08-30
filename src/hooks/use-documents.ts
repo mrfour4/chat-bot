@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { DOCUMENTS_POLL_INTERVAL_MS } from "@/constants/documents";
 import {
@@ -24,6 +25,7 @@ import { queryKeys } from "@/lib/query/keys";
  * another, where an inconsistency between them is visible.
  */
 export function useDocuments(initial: DocumentRow[]) {
+    const t = useTranslations("documents");
     const queryClient = useQueryClient();
     const invalidate = () =>
         queryClient.invalidateQueries({ queryKey: queryKeys.documents });
@@ -51,31 +53,30 @@ export function useDocuments(initial: DocumentRow[]) {
         onSuccess: (document) => {
             setUploadFormKey((key) => key + 1);
             notifySuccess(
-                "Đã tải lên",
-                `“${document.title}” đang được lập chỉ mục. Bạn có thể rời khỏi trang.`,
+                t("uploadedTitle"),
+                t("uploadedDescription", { title: document.title }),
             );
             return invalidate();
         },
-        onError: (error) => notifyError("Tải lên thất bại", error.message),
+        onError: (error) => notifyError(t("uploadFailed"), error.message),
     });
 
     const remove = useMutation({
         mutationFn: deleteDocument,
         onSuccess: () => {
-            notifySuccess("Đã xoá tài liệu");
+            notifySuccess(t("deletedTitle"));
             return invalidate();
         },
-        onError: (error) =>
-            notifyError("Không xoá được tài liệu", error.message),
+        onError: (error) => notifyError(t("deleteFailed"), error.message),
     });
 
     const retry = useMutation({
         mutationFn: retryDocument,
         onSuccess: () => {
-            notifySuccess("Đang lập chỉ mục lại");
+            notifySuccess(t("reindexingTitle"));
             return invalidate();
         },
-        onError: (error) => notifyError("Không thử lại được", error.message),
+        onError: (error) => notifyError(t("retryFailed"), error.message),
     });
 
     /**

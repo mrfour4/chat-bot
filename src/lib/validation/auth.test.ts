@@ -44,9 +44,9 @@ describe("signUpSchema", () => {
         });
 
         expect(result.success).toBe(false);
-        expect(result.error?.issues[0]?.message).toContain(
-            String(MIN_PASSWORD_LENGTH),
-        );
+        // A key, not a sentence: the same schema runs on both sides and only
+        // the caller knows the reader's language.
+        expect(result.error?.issues[0]?.message).toBe("passwordTooShort");
     });
 
     it("accepts an empty name", () => {

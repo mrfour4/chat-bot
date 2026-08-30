@@ -1,3 +1,5 @@
+import { getTranslations } from "next-intl/server";
+
 import { AskBox, ForbiddenNotice } from "@/components/chat";
 import { listIndexedDocuments } from "@/lib/documents";
 
@@ -6,6 +8,7 @@ export default async function HomePage({
 }: {
     searchParams: Promise<{ error?: string }>;
 }) {
+    const t = await getTranslations("home");
     const [documents, { error }] = await Promise.all([
         listIndexedDocuments(),
         searchParams,
@@ -16,14 +19,12 @@ export default async function HomePage({
             {error === "forbidden" && <ForbiddenNotice />}
 
             <section>
-                <p className="eyebrow">Hỏi đáp tuyển sinh</p>
+                <p className="eyebrow">{t("eyebrow")}</p>
                 <h1 className="mt-3 font-display text-4xl leading-[1.1] font-semibold tracking-tight text-balance md:text-5xl">
-                    Mọi câu trả lời đều trích từ văn bản tuyển sinh chính thức.
+                    {t("title")}
                 </h1>
                 <p className="mt-5 leading-relaxed text-ink-soft">
-                    Hỏi về phương thức xét tuyển, chỉ tiêu, học phí, hồ sơ hay
-                    mốc thời gian. Nếu tài liệu hiện có không nói đến điều bạn
-                    hỏi, trợ lý sẽ nói rõ là chưa có thông tin — không suy đoán.
+                    {t("description")}
                 </p>
             </section>
 

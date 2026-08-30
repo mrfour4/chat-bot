@@ -1,5 +1,6 @@
+/** Keys into the `chat` namespace, so the prompts translate with everything else. */
 export const SUGGESTED_QUESTIONS = [
-    "Có những phương thức xét tuyển nào?",
-    "Trường có những ngành nào?",
-    "Đối tượng tuyển sinh là ai?",
-];
+    "suggestion1",
+    "suggestion2",
+    "suggestion3",
+] as const;

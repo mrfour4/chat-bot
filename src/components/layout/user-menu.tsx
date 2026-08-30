@@ -1,9 +1,12 @@
+import { useTranslations } from "next-intl";
+
 import { signOut } from "@/app/(auth)/actions";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import type { SessionUser } from "@/lib/auth";
 
 export function UserMenu({ user }: { user: SessionUser }) {
+    const t = useTranslations("nav");
     const isTeacher = user.profile.role === "teacher";
 
     return (
@@ -21,7 +24,7 @@ export function UserMenu({ user }: { user: SessionUser }) {
                 <span
                     className={`doc-ref shrink-0 ${isTeacher ? "text-lacquer" : ""}`}
                 >
-                    {isTeacher ? "Giáo viên" : "Học sinh"}
+                    {isTeacher ? t("teacher") : t("student")}
                 </span>
 
                 <form action={signOut}>
@@ -31,7 +34,7 @@ export function UserMenu({ user }: { user: SessionUser }) {
                         size="sm"
                         className="text-ink-soft hover:text-lacquer"
                     >
-                        Đăng xuất
+                        {t("signOut")}
                     </Button>
                 </form>
             </div>

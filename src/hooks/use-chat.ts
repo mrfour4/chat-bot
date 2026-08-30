@@ -2,6 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { askQuestion } from "@/lib/api/chat";
 import { notifyError } from "@/lib/notify";
@@ -51,6 +52,7 @@ export function useChat({
     initialMessages: ChatMessage[];
     initialConversationId: string | null;
 }) {
+    const t = useTranslations("chat");
     const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
     const [conversationId, setConversationId] = useState<string | null>(
         initialConversationId,
@@ -93,8 +95,7 @@ export function useChat({
         // has no such evidence, so it gets one -- and keeps the inline message
         // too, because a toast expires and a question left unanswered would
         // then look like it had simply been ignored.
-        onError: (error) =>
-            notifyError("Không gửi được câu hỏi", error.message),
+        onError: (error) => notifyError(t("askFailed"), error.message),
     });
 
     const pending = send.isPending;

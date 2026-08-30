@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 import { Button } from "@/components/ui/button";
 import type { DocumentRow } from "@/lib/db";
 
@@ -14,6 +16,8 @@ export function DocumentPreview({
     document: DocumentRow;
     onClose: () => void;
 }) {
+    const t = useTranslations("documents");
+    const tc = useTranslations("common");
     const href = `/api/documents/${document.id}/file`;
 
     return (
@@ -22,7 +26,7 @@ export function DocumentPreview({
                 <Button
                     variant="outline"
                     size="sm"
-                    render={<a href={`${href}?download=1`}>Tải xuống</a>}
+                    render={<a href={`${href}?download=1`}>{t("download")}</a>}
                 />
                 {/* Always offered, not only as an error path: iOS Safari and
                     some Android browsers refuse to render a PDF inside an
@@ -39,7 +43,7 @@ export function DocumentPreview({
                             target="_blank"
                             rel="noopener noreferrer"
                         >
-                            Mở trong tab mới
+                            {t("openInNewTab")}
                         </a>
                     }
                 />
@@ -49,13 +53,13 @@ export function DocumentPreview({
                     onClick={onClose}
                     className="ml-auto text-ink-soft"
                 >
-                    Đóng
+                    {tc("close")}
                 </Button>
             </div>
 
             <iframe
                 src={href}
-                title={`Xem trước ${document.title}`}
+                title={t("previewTitle", { title: document.title })}
                 className="h-[70vh] max-h-[720px] w-full rounded-md border border-rule bg-panel"
             />
         </div>

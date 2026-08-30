@@ -1,6 +1,7 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { signUp, type AuthFormState } from "@/app/(auth)/actions";
@@ -12,6 +13,7 @@ import { notifyError } from "@/lib/notify";
 import { MIN_PASSWORD_LENGTH, signUpSchema } from "@/lib/validation/auth";
 
 export function SignUpForm() {
+    const t = useTranslations("auth");
     const [result, setResult] = useState<AuthFormState>({});
 
     const form = useForm({
@@ -21,7 +23,7 @@ export function SignUpForm() {
             setResult({});
             const outcome = await signUp(value);
             setResult(outcome);
-            if (outcome.error) notifyError("Không thành công", outcome.error);
+            if (outcome.error) notifyError(t("failed"), outcome.error);
         },
     });
 
@@ -39,7 +41,7 @@ export function SignUpForm() {
                     {(field) => (
                         <AuthField
                             field={field}
-                            label="Họ và tên"
+                            label={t("fullName")}
                             type="text"
                             autoComplete="name"
                         />
@@ -50,7 +52,7 @@ export function SignUpForm() {
                     {(field) => (
                         <AuthField
                             field={field}
-                            label="Email"
+                            label={t("email")}
                             type="email"
                             autoComplete="email"
                         />
@@ -61,10 +63,12 @@ export function SignUpForm() {
                     {(field) => (
                         <AuthField
                             field={field}
-                            label="Mật khẩu"
+                            label={t("password")}
                             type="password"
                             autoComplete="new-password"
-                            description={`Ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`}
+                            description={t("passwordHint", {
+                                min: MIN_PASSWORD_LENGTH,
+                            })}
                         />
                     )}
                 </form.Field>
@@ -79,7 +83,7 @@ export function SignUpForm() {
                             canSubmit={canSubmit}
                             submitting={submitting}
                         >
-                            Tạo tài khoản
+                            {t("signUp")}
                         </AuthSubmit>
                     )}
                 </form.Subscribe>

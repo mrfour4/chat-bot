@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { apiMessages } from "@/lib/api/messages";
+
 import { getSessionUser, getTeacher } from "@/lib/auth";
 import { getDocument } from "@/lib/documents/repo";
 import { signedUrlFor } from "@/lib/documents/storage";
@@ -23,22 +25,17 @@ export async function GET(
 ) {
     const teacher = await getTeacher();
     if (!teacher) {
-        const user = await getSessionUser();
+        const [user, t] = await Promise.all([getSessionUser(), apiMessages()]);
         return NextResponse.json(
             user
-                ? {
-                      code: "forbidden",
-                      message: "Chỉ giáo viên mới xem được tài liệu.",
-                  }
-                : {
-                      code: "unauthenticated",
-                      message: "Vui lòng đăng nhập để tiếp tục.",
-                  },
+                ? { code: "forbidden", message: t("forbiddenView") }
+                : { code: "unauthenticated", message: t("unauthenticated") },
             { status: user ? 403 : 401 },
         );
     }
 
     const { id } = await params;
+    const t = await apiMessages();
     const supabase = await createClient();
 
     // Through the user's client, so RLS decides. A document belonging to a
@@ -46,7 +43,7 @@ export async function GET(
     const document = await getDocument(supabase, id);
     if (!document) {
         return NextResponse.json(
-            { code: "not-found", message: "Không tìm thấy tài liệu." },
+            { code: "not-found", message: t("notFound") },
             { status: 404 },
         );
     }
@@ -57,9 +54,7 @@ export async function GET(
         return NextResponse.json(
             {
                 code: "no-file",
-                message:
-                    "Tệp PDF của tài liệu này không được lưu lại (tải lên trước khi hệ " +
-                    "thống bắt đầu giữ tệp). Hãy tải lên lại để xem và tải xuống.",
+                message: t("noStoredFile"),
             },
             { status: 404 },
         );
@@ -76,7 +71,7 @@ export async function GET(
         return NextResponse.json(
             {
                 code: "sign-failed",
-                message: "Không mở được tệp. Vui lòng thử lại.",
+                message: t("signFailed"),
             },
             { status: 502 },
         );

@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+
+import { apiMessages } from "@/lib/api/messages";
 import { z } from "zod";
 
 import type { Content } from "@google/genai";
@@ -48,12 +50,15 @@ function callerKey(request: Request): string {
 }
 
 export async function POST(request: Request) {
+    const t = await apiMessages();
     const limit = checkRateLimit(callerKey(request));
     if (!limit.allowed) {
         return NextResponse.json(
             {
                 code: "rate-limited",
-                message: `Bạn đang hỏi hơi nhanh. Vui lòng thử lại sau ${limit.retryAfterSeconds} giây.`,
+                message: t("rateLimited", {
+                    seconds: limit.retryAfterSeconds,
+                }),
             },
             {
                 status: 429,
@@ -65,7 +70,7 @@ export async function POST(request: Request) {
     const parsed = bodySchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) {
         return NextResponse.json(
-            { code: "invalid-request", message: "Câu hỏi không hợp lệ." },
+            { code: "invalid-request", message: t("invalidQuestion") },
             { status: 400 },
         );
     }

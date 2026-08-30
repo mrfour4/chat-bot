@@ -1,5 +1,7 @@
 import { after, NextResponse } from "next/server";
 
+import { apiMessages } from "@/lib/api/messages";
+
 import { getSessionUser, getTeacher } from "@/lib/auth";
 import { runIndexingJob } from "@/lib/documents/job";
 import { listStale, resetToPending } from "@/lib/documents/repo";
@@ -38,16 +40,19 @@ export async function POST(request: Request) {
     if (!authorizedByCron) {
         const teacher = await getTeacher();
         if (!teacher) {
-            const user = await getSessionUser();
+            const [user, t] = await Promise.all([
+                getSessionUser(),
+                apiMessages(),
+            ]);
             return NextResponse.json(
                 user
                     ? {
                           code: "forbidden",
-                          message: "Chỉ giáo viên mới có quyền.",
+                          message: t("forbidden"),
                       }
                     : {
                           code: "unauthenticated",
-                          message: "Vui lòng đăng nhập.",
+                          message: t("unauthenticated"),
                       },
                 { status: user ? 403 : 401 },
             );

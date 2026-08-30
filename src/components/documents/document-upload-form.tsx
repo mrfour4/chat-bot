@@ -1,6 +1,7 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { MAX_UPLOAD_BYTES } from "@/lib/documents/validate";
+import { useFieldErrors } from "@/hooks/use-field-errors";
 import { uploadSchema } from "@/lib/validation/upload";
 
 const MAX_MEGABYTES = Math.round(MAX_UPLOAD_BYTES / (1024 * 1024));
@@ -23,6 +25,9 @@ export function DocumentUploadForm({
     uploading: boolean;
     onUpload: (file: File) => void;
 }) {
+    const t = useTranslations("documents");
+    const translateErrors = useFieldErrors();
+
     const form = useForm({
         defaultValues: { file: null as File | null },
         validators: { onChange: uploadSchema },
@@ -49,7 +54,7 @@ export function DocumentUploadForm({
                     return (
                         <Field data-invalid={invalid || undefined}>
                             <FieldLabel htmlFor="document-file">
-                                Tệp PDF
+                                {t("fileLabel")}
                             </FieldLabel>
 
                             <div className="flex flex-wrap items-center gap-3">
@@ -78,21 +83,18 @@ export function DocumentUploadForm({
                                         >
                                             {uploading && <Spinner />}
                                             {uploading
-                                                ? "Đang tải lên…"
-                                                : "Tải lên"}
+                                                ? t("uploading")
+                                                : t("upload")}
                                         </Button>
                                     )}
                                 </form.Subscribe>
                             </div>
 
                             {invalid ? (
-                                <FieldError errors={errors} />
+                                <FieldError errors={translateErrors(errors)} />
                             ) : (
                                 <FieldDescription>
-                                    Chỉ nhận tệp PDF, tối đa {MAX_MEGABYTES} MB.
-                                    Sau khi tải lên xong, việc lập chỉ mục chạy
-                                    nền — bạn có thể rời khỏi trang hoặc đóng
-                                    trình duyệt.
+                                    {t("uploadHint", { size: MAX_MEGABYTES })}
                                 </FieldDescription>
                             )}
                         </Field>

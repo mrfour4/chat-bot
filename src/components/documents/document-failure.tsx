@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { TriangleAlertIcon } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -14,12 +15,14 @@ export function DocumentFailure({
     retrying: boolean;
     onRetry: () => void;
 }) {
+    const t = useTranslations("documents");
+
     if (document.status !== "failed" || !document.error_message) return null;
 
     return (
         <Alert variant="destructive" className="mt-2">
             <TriangleAlertIcon />
-            <AlertTitle>Lập chỉ mục thất bại</AlertTitle>
+            <AlertTitle>{t("failureTitle")}</AlertTitle>
             <AlertDescription>
                 <p>{document.error_message}</p>
 
@@ -34,12 +37,10 @@ export function DocumentFailure({
                         onClick={onRetry}
                     >
                         {retrying && <Spinner />}
-                        {retrying ? "Đang thử lại…" : "Thử lập chỉ mục lại"}
+                        {retrying ? t("retrying") : t("retry")}
                     </Button>
                 ) : (
-                    <p className="mt-1 text-ink-soft">
-                        Tải lên lại chính tệp này để thử lập chỉ mục lần nữa.
-                    </p>
+                    <p className="mt-1 text-ink-soft">{t("reupload")}</p>
                 )}
             </AlertDescription>
         </Alert>

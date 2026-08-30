@@ -1,5 +1,7 @@
 import { after, NextResponse } from "next/server";
 
+import { apiMessages, uploadMessageKey } from "@/lib/api/messages";
+
 import { getSessionUser, getTeacher } from "@/lib/auth";
 import { sha256Hex } from "@/lib/documents/checksum";
 import { runIndexingJob } from "@/lib/documents/job";
@@ -13,7 +15,7 @@ import {
 } from "@/lib/documents/repo";
 import { objectPath, putPdf } from "@/lib/documents/storage";
 import { deriveTitle } from "@/lib/documents/title";
-import { validateUpload } from "@/lib/documents/validate";
+import { MAX_UPLOAD_BYTES, validateUpload } from "@/lib/documents/validate";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -22,6 +24,8 @@ import { createClient } from "@/lib/supabase/server";
  * default of 10s does not cut the job off mid-upload to Gemini.
  */
 export const maxDuration = 90;
+
+const MAX_MEGABYTES = Math.round(MAX_UPLOAD_BYTES / (1024 * 1024));
 
 function fail(status: number, code: string, message: string) {
     return NextResponse.json({ code, message }, { status });
@@ -32,10 +36,10 @@ function fail(status: number, code: string, message: string) {
  * 401 means "log in", 403 means "logging in will not help".
  */
 async function denyReason() {
-    const user = await getSessionUser();
+    const [user, t] = await Promise.all([getSessionUser(), apiMessages()]);
     return user
-        ? fail(403, "forbidden", "Chỉ giáo viên mới có quyền quản lý tài liệu.")
-        : fail(401, "unauthenticated", "Vui lòng đăng nhập để tiếp tục.");
+        ? fail(403, "forbidden", t("forbiddenDocuments"))
+        : fail(401, "unauthenticated", t("unauthenticated"));
 }
 
 export async function GET() {
@@ -55,12 +59,10 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get("file");
 
+    const t = await apiMessages();
+
     if (!(file instanceof File)) {
-        return fail(
-            400,
-            "no-file",
-            "Không tìm thấy tệp trong yêu cầu tải lên.",
-        );
+        return fail(400, "no-file", t("noFileInRequest"));
     }
 
     // Read once: validation needs the bytes for the signature check and the
@@ -73,7 +75,11 @@ export async function POST(request: Request) {
         bytes,
     });
     if (!validation.ok) {
-        return fail(400, validation.code, validation.message);
+        return fail(
+            400,
+            validation.code,
+            t(uploadMessageKey(validation.code), { size: MAX_MEGABYTES }),
+        );
     }
 
     const supabase = await createClient();
@@ -87,7 +93,7 @@ export async function POST(request: Request) {
         return NextResponse.json(
             {
                 code: "duplicate",
-                message: `Tài liệu này đã được tải lên với tên "${existing.title}".`,
+                message: t("duplicate", { title: existing.title }),
                 existing: { id: existing.id, title: existing.title },
             },
             { status: 409 },

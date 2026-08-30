@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -29,6 +31,9 @@ export function DeleteDocumentDialog({
     pending: boolean;
     onConfirm: () => void;
 }) {
+    const t = useTranslations("documents");
+    const tc = useTranslations("common");
+
     return (
         <Dialog>
             <DialogTrigger
@@ -36,26 +41,26 @@ export function DeleteDocumentDialog({
                     <Button
                         variant="outline"
                         size="sm"
-                        aria-label={`Xoá ${document.title}`}
+                        aria-label={t("deleteLabel", { title: document.title })}
                     >
-                        Xoá
+                        {t("delete")}
                     </Button>
                 }
             />
 
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Xoá tài liệu này?</DialogTitle>
+                    <DialogTitle>{t("deleteTitle")}</DialogTitle>
                     <DialogDescription>
-                        “{document.title}” sẽ bị xoá khỏi danh sách và khỏi chỉ
-                        mục của trợ lý. Học sinh sẽ không còn nhận được câu trả
-                        lời trích từ tài liệu này.
+                        {t("deleteDescription", { title: document.title })}
                     </DialogDescription>
                 </DialogHeader>
 
                 <DialogFooter>
                     <DialogClose
-                        render={<Button variant="outline">Huỷ</Button>}
+                        render={
+                            <Button variant="outline">{tc("cancel")}</Button>
+                        }
                     />
                     <Button
                         variant="destructive"
@@ -63,7 +68,7 @@ export function DeleteDocumentDialog({
                         onClick={onConfirm}
                     >
                         {pending && <Spinner />}
-                        {pending ? "Đang xoá…" : "Xoá tài liệu"}
+                        {pending ? t("deleting") : t("deleteConfirm")}
                     </Button>
                 </DialogFooter>
             </DialogContent>

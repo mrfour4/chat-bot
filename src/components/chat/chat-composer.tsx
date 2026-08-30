@@ -1,12 +1,14 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
+import { useTranslations } from "next-intl";
 
 import { ChatError } from "@/components/chat/chat-error";
 import { SuggestionList } from "@/components/chat/suggestion-list";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useFieldErrors } from "@/hooks/use-field-errors";
 import { questionSchema } from "@/lib/validation/chat";
 
 /**
@@ -26,6 +28,9 @@ export function ChatComposer({
     showSuggestions: boolean;
     onAsk: (question: string) => void;
 }) {
+    const t = useTranslations("chat");
+    const translateErrors = useFieldErrors();
+
     const form = useForm({
         defaultValues: { question: "" },
         validators: { onChange: questionSchema },
@@ -75,8 +80,8 @@ export function ChatComposer({
                                                 )
                                             }
                                             disabled={pending}
-                                            placeholder="Nhập câu hỏi của bạn…"
-                                            aria-label="Câu hỏi về tuyển sinh"
+                                            placeholder={t("placeholder")}
+                                            aria-label={t("inputLabel")}
                                             aria-invalid={invalid || undefined}
                                             className="h-9 border-0 bg-transparent shadow-none focus-visible:ring-0"
                                         />
@@ -93,12 +98,16 @@ export function ChatComposer({
                                                     }
                                                     className="shrink-0"
                                                 >
-                                                    Hỏi
+                                                    {t("submit")}
                                                 </Button>
                                             )}
                                         </form.Subscribe>
                                     </div>
-                                    {invalid && <FieldError errors={errors} />}
+                                    {invalid && (
+                                        <FieldError
+                                            errors={translateErrors(errors)}
+                                        />
+                                    )}
                                 </Field>
                             );
                         }}
@@ -106,7 +115,7 @@ export function ChatComposer({
                 </form>
 
                 <p className="eyebrow mt-2.5 justify-center text-center">
-                    Trả lời chỉ dựa trên tài liệu tuyển sinh đã tải lên
+                    {t("disclaimer")}
                 </p>
             </div>
         </div>

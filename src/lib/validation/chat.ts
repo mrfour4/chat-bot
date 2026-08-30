@@ -6,11 +6,8 @@ export const questionSchema = z.object({
     question: z
         .string()
         .trim()
-        .min(1, "Nhập câu hỏi của bạn.")
-        .max(
-            MAX_QUESTION_LENGTH,
-            `Câu hỏi tối đa ${MAX_QUESTION_LENGTH} ký tự.`,
-        ),
+        .min(1, "questionRequired")
+        .max(MAX_QUESTION_LENGTH, "questionTooLong"),
 });
 
 export type QuestionInput = z.infer<typeof questionSchema>;

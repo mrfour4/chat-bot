@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 
-export type NavItem = { href: string; label: string };
+export type NavItem = { href: string; labelKey: string };
 
 /**
  * The navigation links, split out because knowing the current page needs
@@ -12,12 +13,10 @@ export type NavItem = { href: string; label: string };
  */
 export function SiteNav({ items }: { items: NavItem[] }) {
     const pathname = usePathname();
+    const t = useTranslations("nav");
 
     return (
-        <nav
-            aria-label="Điều hướng chính"
-            className="flex items-center gap-0.5"
-        >
+        <nav aria-label={t("label")} className="flex items-center gap-0.5">
             {items.map((item) => {
                 // `startsWith` so a nested route (/chat/<id>) still marks its section.
                 // "/" would match everything, so it is compared exactly.
@@ -36,7 +35,7 @@ export function SiteNav({ items }: { items: NavItem[] }) {
                         aria-current={active ? "page" : undefined}
                         className="rounded-md px-2.5 py-1.5 text-sm text-ink-soft transition-colors hover:bg-panel hover:text-ink aria-[current=page]:bg-panel aria-[current=page]:font-medium aria-[current=page]:text-ink"
                     >
-                        {item.label}
+                        {t(item.labelKey)}
                     </Link>
                 );
             })}

@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { LockIcon } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -8,13 +9,13 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
  * is broken rather than not theirs.
  */
 export function ForbiddenNotice() {
+    const t = useTranslations("home");
+
     return (
         <Alert role="status" className="mb-8 border-pending/40 bg-panel">
             <LockIcon />
-            <AlertTitle>Trang này chỉ dành cho giáo viên</AlertTitle>
-            <AlertDescription>
-                Bạn vẫn có thể đặt câu hỏi về tuyển sinh ở ngay bên dưới.
-            </AlertDescription>
+            <AlertTitle>{t("forbiddenTitle")}</AlertTitle>
+            <AlertDescription>{t("forbiddenDescription")}</AlertDescription>
         </Alert>
     );
 }

@@ -1,10 +1,12 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import {
+    MIN_PASSWORD_LENGTH,
     signInSchema,
     signUpSchema,
     type SignInInput,
@@ -16,15 +18,14 @@ export interface AuthFormState {
     notice?: string;
 }
 
-const CONFIG_ERROR =
-    "Không kết nối được máy chủ xác thực. Kiểm tra cấu hình Supabase trong .env.local.";
-
 export async function signIn(input: SignInInput): Promise<AuthFormState> {
+    const t = await getTranslations("serverAuth");
+
     // Re-validated here, not trusted from the client. The form runs the same
     // schema for immediate feedback; this run is the one that decides.
     const parsed = signInSchema.safeParse(input);
     if (!parsed.success) {
-        return { error: "Nhập email và mật khẩu để đăng nhập." };
+        return { error: t("signInFailed") };
     }
     const { email, password } = parsed.data;
 
@@ -38,10 +39,10 @@ export async function signIn(input: SignInInput): Promise<AuthFormState> {
         // A missing session with no status is a transport failure, not a wrong password.
         if (error)
             signInError = error.status
-                ? "Email hoặc mật khẩu không đúng."
-                : CONFIG_ERROR;
+                ? t("invalidCredentials")
+                : t("configError");
     } catch {
-        signInError = CONFIG_ERROR;
+        signInError = t("configError");
     }
 
     if (signInError) return { error: signInError };
@@ -51,12 +52,18 @@ export async function signIn(input: SignInInput): Promise<AuthFormState> {
 }
 
 export async function signUp(input: SignUpInput): Promise<AuthFormState> {
+    const t = await getTranslations("serverAuth");
+    const tValidation = await getTranslations("validation");
+
     const parsed = signUpSchema.safeParse(input);
     if (!parsed.success) {
+        // The schema speaks in keys, so translate the first one here rather
+        // than handing a raw identifier to the browser.
+        const key = parsed.error.issues[0]?.message;
         return {
-            error:
-                parsed.error.issues[0]?.message ??
-                "Thông tin đăng ký chưa hợp lệ.",
+            error: key
+                ? tValidation(key, { min: MIN_PASSWORD_LENGTH })
+                : t("signUpInvalid"),
         };
     }
     const { email, password, fullName } = parsed.data;
@@ -70,16 +77,14 @@ export async function signUp(input: SignUpInput): Promise<AuthFormState> {
         });
 
         if (error)
-            return { error: error.status ? error.message : CONFIG_ERROR };
+            return { error: error.status ? error.message : t("configError") };
 
         // With email confirmation on, Supabase returns a user but no session.
         if (!data.session) {
-            return {
-                notice: "Kiểm tra email để xác nhận tài khoản, rồi đăng nhập.",
-            };
+            return { notice: t("confirmEmail") };
         }
     } catch {
-        return { error: CONFIG_ERROR };
+        return { error: t("configError") };
     }
 
     revalidatePath("/", "layout");

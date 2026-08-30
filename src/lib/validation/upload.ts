@@ -11,12 +11,9 @@ import { MAX_UPLOAD_BYTES } from "@/lib/documents/validate";
  */
 export const uploadSchema = z.object({
     file: z
-        .instanceof(File, { message: "Chọn một tệp PDF." })
-        .refine((file) => file.size > 0, "Tệp rỗng.")
-        .refine(
-            (file) => file.size <= MAX_UPLOAD_BYTES,
-            `Tệp vượt quá ${Math.round(MAX_UPLOAD_BYTES / (1024 * 1024))} MB.`,
-        ),
+        .instanceof(File, { message: "fileRequired" })
+        .refine((file) => file.size > 0, "fileEmpty")
+        .refine((file) => file.size <= MAX_UPLOAD_BYTES, "fileTooLarge"),
 });
 
 export type UploadInput = z.infer<typeof uploadSchema>;

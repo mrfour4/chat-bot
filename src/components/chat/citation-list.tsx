@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { ChevronRightIcon } from "lucide-react";
 
 import {
@@ -22,6 +23,8 @@ import type { Citation } from "@/lib/db";
  * still *claimed* at a glance even when it is not being read.
  */
 export function CitationList({ citations }: { citations: Citation[] }) {
+    const t = useTranslations("chat");
+
     if (citations.length === 0) return null;
 
     return (
@@ -31,7 +34,7 @@ export function CitationList({ citations }: { citations: Citation[] }) {
                     aria-hidden
                     className="size-3.5 transition-transform group-data-[panel-open]:rotate-90 motion-reduce:transition-none"
                 />
-                Trích từ {citations.length} nguồn
+                {t("sources", { count: citations.length })}
             </CollapsibleTrigger>
 
             <CollapsibleContent>
@@ -47,7 +50,7 @@ export function CitationList({ citations }: { citations: Citation[] }) {
                                     worse than none: a student who checks and finds nothing
                                     there learns the assistant is unreliable. */}
                                 {citation.page !== null &&
-                                    ` · trang ${citation.page}`}
+                                    ` · ${t("page", { page: citation.page })}`}
                             </p>
                             {citation.snippet && (
                                 <p className="mt-1 text-sm leading-relaxed text-ink-soft">

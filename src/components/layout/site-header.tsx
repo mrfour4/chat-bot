@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
+import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { SealMark } from "@/components/layout/seal-mark";
 import { SiteNav } from "@/components/layout/site-nav";
 import { UserMenu } from "@/components/layout/user-menu";
@@ -8,13 +10,15 @@ import type { SessionUser } from "@/lib/auth";
 import type { NavItem } from "@/components/layout/site-nav";
 
 export function SiteHeader({ user }: { user: SessionUser | null }) {
+    const t = useTranslations("nav");
+    const tc = useTranslations("common");
     const isTeacher = user?.profile.role === "teacher";
 
     const items: NavItem[] = [
-        { href: "/", label: "Hỏi đáp" },
-        ...(user ? [{ href: "/history", label: "Lịch sử" }] : []),
+        { href: "/", labelKey: "chat" },
+        ...(user ? [{ href: "/history", labelKey: "history" }] : []),
         ...(isTeacher
-            ? [{ href: "/teacher/documents", label: "Tài liệu" }]
+            ? [{ href: "/teacher/documents", labelKey: "documents" }]
             : []),
     ];
 
@@ -30,12 +34,13 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
                     <SealMark size={26} />
                     {/* Truncates rather than pushing the row wider than the viewport. */}
                     <span className="truncate font-display text-[15px] font-semibold tracking-tight text-ink">
-                        Cố vấn Tuyển sinh
+                        {tc("appName")}
                     </span>
                 </Link>
 
                 <div className="ml-auto flex items-center gap-2 sm:gap-3">
                     <SiteNav items={items} />
+                    <LanguageSwitcher />
 
                     {user ? (
                         <UserMenu user={user} />
@@ -44,7 +49,7 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
                             variant="outline"
                             size="sm"
                             className="shrink-0"
-                            render={<Link href="/login">Đăng nhập</Link>}
+                            render={<Link href="/login">{t("signIn")}</Link>}
                         />
                     )}
                 </div>

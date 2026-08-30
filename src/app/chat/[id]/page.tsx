@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 
 import { AskBox } from "@/components/chat";
@@ -10,7 +11,10 @@ import { parseCitations } from "@/lib/db";
 import { listIndexedDocuments } from "@/lib/documents";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata = { title: "Cuộc hỏi đáp · Cố vấn Tuyển sinh" };
+export async function generateMetadata() {
+    const t = await getTranslations();
+    return { title: `${t("conversation.metaTitle")} · ${t("common.appName")}` };
+}
 
 export default async function ConversationPage({
     params,
@@ -18,6 +22,7 @@ export default async function ConversationPage({
     params: Promise<{ id: string }>;
 }) {
     await requireUser();
+    const t = await getTranslations("conversation");
 
     const { id } = await params;
     const supabase = await createClient();
@@ -48,22 +53,23 @@ export default async function ConversationPage({
         <div className="mx-auto max-w-2xl px-5 py-10 md:py-14">
             <div className="border-b border-rule pb-5">
                 <div className="flex items-baseline justify-between gap-4">
-                    <p className="eyebrow">Tiếp tục cuộc hỏi đáp</p>
+                    <p className="eyebrow">{t("eyebrow")}</p>
                     <Button
                         variant="ghost"
                         size="sm"
                         className="doc-ref shrink-0"
-                        render={<Link href="/">+ Cuộc mới</Link>}
+                        render={<Link href="/">{t("new")}</Link>}
                     />
                 </div>
                 <h1 className="mt-2 font-display text-2xl font-semibold tracking-tight">
-                    {conversation.title ?? "Cuộc hỏi đáp"}
+                    {conversation.title ?? t("untitled")}
                 </h1>
                 <p className="mt-1.5 text-sm text-ink-soft">
-                    Bắt đầu ngày{" "}
-                    {new Date(conversation.created_at).toLocaleDateString(
-                        "vi-VN",
-                    )}
+                    {t("startedOn", {
+                        date: new Date(
+                            conversation.created_at,
+                        ).toLocaleDateString(),
+                    })}
                 </p>
             </div>
 
@@ -79,7 +85,7 @@ export default async function ConversationPage({
                 variant="link"
                 size="sm"
                 className="mt-10 px-0 text-ink-soft"
-                render={<Link href="/history">← Tất cả cuộc hỏi đáp</Link>}
+                render={<Link href="/history">{t("all")}</Link>}
             />
         </div>
     );

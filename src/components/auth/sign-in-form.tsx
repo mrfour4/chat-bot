@@ -1,6 +1,7 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { signIn, type AuthFormState } from "@/app/(auth)/actions";
@@ -12,6 +13,7 @@ import { notifyError } from "@/lib/notify";
 import { signInSchema } from "@/lib/validation/auth";
 
 export function SignInForm() {
+    const t = useTranslations("auth");
     const [result, setResult] = useState<AuthFormState>({});
 
     const form = useForm({
@@ -21,7 +23,7 @@ export function SignInForm() {
             setResult({});
             const outcome = await signIn(value);
             setResult(outcome);
-            if (outcome.error) notifyError("Không thành công", outcome.error);
+            if (outcome.error) notifyError(t("failed"), outcome.error);
         },
     });
 
@@ -39,7 +41,7 @@ export function SignInForm() {
                     {(field) => (
                         <AuthField
                             field={field}
-                            label="Email"
+                            label={t("email")}
                             type="email"
                             autoComplete="email"
                         />
@@ -50,7 +52,7 @@ export function SignInForm() {
                     {(field) => (
                         <AuthField
                             field={field}
-                            label="Mật khẩu"
+                            label={t("password")}
                             type="password"
                             autoComplete="current-password"
                         />
@@ -67,7 +69,7 @@ export function SignInForm() {
                             canSubmit={canSubmit}
                             submitting={submitting}
                         >
-                            Đăng nhập
+                            {t("signIn")}
                         </AuthSubmit>
                     )}
                 </form.Subscribe>

@@ -2,6 +2,8 @@
 
 import type { AnyFieldApi } from "@tanstack/react-form";
 
+import { useFieldErrors } from "@/hooks/use-field-errors";
+
 import {
     Field,
     FieldDescription,
@@ -30,6 +32,7 @@ export function AuthField({
     autoComplete: string;
     description?: string;
 }) {
+    const translateErrors = useFieldErrors();
     const errors = field.state.meta.errors;
     const invalid = field.state.meta.isTouched && errors.length > 0;
 
@@ -50,7 +53,7 @@ export function AuthField({
             {description && !invalid && (
                 <FieldDescription>{description}</FieldDescription>
             )}
-            {invalid && <FieldError errors={errors} />}
+            {invalid && <FieldError errors={translateErrors(errors)} />}
         </Field>
     );
 }

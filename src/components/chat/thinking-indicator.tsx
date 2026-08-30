@@ -1,6 +1,10 @@
+import { useTranslations } from "next-intl";
+
 import { Spinner } from "@/components/ui/spinner";
 
 export function ThinkingIndicator() {
+    const t = useTranslations("chat");
+
     return (
         <p
             aria-live="polite"
@@ -9,7 +13,7 @@ export function ThinkingIndicator() {
             <Spinner className="size-3.5 text-ink-soft motion-reduce:animate-none" />
             {/* We cannot stream the answer (§5.15), so we show the work instead.
                 This stage is real, not decorative. */}
-            Đang tìm trong tài liệu tuyển sinh…
+            {t("thinking")}
         </p>
     );
 }

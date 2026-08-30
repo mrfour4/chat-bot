@@ -1,5 +1,7 @@
 import { after, NextResponse } from "next/server";
 
+import { apiMessages } from "@/lib/api/messages";
+
 import { getSessionUser, getTeacher } from "@/lib/auth";
 import { runIndexingJob } from "@/lib/documents/job";
 import { getDocument, resetToPending } from "@/lib/documents/repo";
@@ -20,22 +22,23 @@ export async function POST(
 ) {
     const teacher = await getTeacher();
     if (!teacher) {
-        const user = await getSessionUser();
+        const [user, t] = await Promise.all([getSessionUser(), apiMessages()]);
         return NextResponse.json(
             user
-                ? { code: "forbidden", message: "Chỉ giáo viên mới có quyền." }
-                : { code: "unauthenticated", message: "Vui lòng đăng nhập." },
+                ? { code: "forbidden", message: t("forbidden") }
+                : { code: "unauthenticated", message: t("unauthenticated") },
             { status: user ? 403 : 401 },
         );
     }
 
     const { id } = await params;
+    const t = await apiMessages();
     const supabase = await createClient();
 
     const document = await getDocument(supabase, id);
     if (!document) {
         return NextResponse.json(
-            { code: "not-found", message: "Không tìm thấy tài liệu." },
+            { code: "not-found", message: t("notFound") },
             { status: 404 },
         );
     }
@@ -44,8 +47,7 @@ export async function POST(
         return NextResponse.json(
             {
                 code: "no-file",
-                message:
-                    "Tệp PDF của tài liệu này không được lưu lại. Hãy tải lên lại tệp.",
+                message: t("noStoredFileRetry"),
             },
             { status: 409 },
         );

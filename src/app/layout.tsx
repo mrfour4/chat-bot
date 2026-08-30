@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
 import {
     Be_Vietnam_Pro,
     Bricolage_Grotesque,
@@ -31,29 +33,33 @@ const jetbrains = JetBrains_Mono({
     display: "swap",
 });
 
-export const metadata: Metadata = {
-    title: "Cố vấn Tuyển sinh",
-    description:
-        "Hỏi đáp tuyển sinh dựa trên văn bản chính thức do nhà trường công bố.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+    const t = await getTranslations();
+    return {
+        title: t("common.appName"),
+        description: t("home.description"),
+    };
+}
 
 export default async function RootLayout({
     children,
 }: Readonly<{ children: React.ReactNode }>) {
-    const user = await getSessionUser();
+    const [user, locale] = await Promise.all([getSessionUser(), getLocale()]);
 
     return (
         // The font variables live on <html>: the base layer applies `font-sans`
         // there, and a custom property declared lower down would not resolve.
         <html
-            lang="vi"
+            lang={locale}
             className={`${bricolage.variable} ${beVietnam.variable} ${jetbrains.variable}`}
         >
             <body className="flex min-h-dvh flex-col">
-                <AppProviders>
-                    <SiteHeader user={user} />
-                    <main className="flex-1">{children}</main>
-                </AppProviders>
+                <NextIntlClientProvider>
+                    <AppProviders>
+                        <SiteHeader user={user} />
+                        <main className="flex-1">{children}</main>
+                    </AppProviders>
+                </NextIntlClientProvider>
             </body>
         </html>
     );

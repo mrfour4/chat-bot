@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { MessageSquareIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -12,19 +13,19 @@ import {
 } from "@/components/ui/empty";
 
 export function HistoryEmpty() {
+    const t = useTranslations("history");
+
     return (
         <Empty className="mt-10 border border-dashed border-rule">
             <EmptyHeader>
                 <EmptyMedia variant="icon">
                     <MessageSquareIcon />
                 </EmptyMedia>
-                <EmptyTitle>Chưa có câu hỏi nào</EmptyTitle>
-                <EmptyDescription>
-                    Câu hỏi bạn đặt khi đã đăng nhập sẽ được lưu lại ở đây.
-                </EmptyDescription>
+                <EmptyTitle>{t("emptyTitle")}</EmptyTitle>
+                <EmptyDescription>{t("emptyDescription")}</EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
-                <Button render={<Link href="/">Đặt câu hỏi</Link>} />
+                <Button render={<Link href="/">{t("emptyAction")}</Link>} />
             </EmptyContent>
         </Empty>
     );
