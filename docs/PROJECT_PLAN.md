@@ -7,13 +7,14 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `2.1.0` — ingestion spike ✅
-**Current small phase:** `2.1.1` — Vitest harness
-**State:** awaiting your review of the 2.1.0 findings, then I write the 2.1.1 plan
-**Blocked on:** your confirmation
+**Last completed:** `2.1.1` — Vitest harness ✅
+**Current small phase:** `2.1.2` — upload validation, test-first
+**State:** implementing
+**Blocked on:** nothing
 
-**Open decisions:** **D5** indexing placement — *spike says Option A; needs your
-yes* · **D6** TanStack AI (§5.11) · **D7** default model (§5.13, new)
+**Open decisions:** **D6** TanStack AI (§5.11) · **D7** default model (§5.13)
+**Settled:** **D5** = synchronous indexing with a ~60s cap, on the 10.0–14.6s
+measured in 2.1.0.
 
 ---
 
@@ -34,6 +35,7 @@ Small phase plan (docs/phases/N.md)
 - **Step by step, together.** No subagents. You read every diff.
 - **You verify the UI.** No Playwright, no browser tests. I verify with `typecheck`, `lint`, `test`, `build`, and `curl`, and report exactly what they show.
 - **Schema changes go through the Supabase CLI.** Never pasted SQL in the Dashboard.
+- **Free tier — spend API calls carefully.** Gemini is mocked in tests; real calls are reserved for one end-to-end check per phase that needs one. Free tier is also flash-models-only, which constrains **D7**.
 - **Library behaviour is verified, not remembered.** Read the installed source; published docs have already been wrong once (§5.2) and silent twice (§5.11, §5.12).
 
 ---
@@ -216,7 +218,6 @@ client-side only, pending your approval of §7.3.
 
 **Open decisions — I need your call:**
 
-- **D5 — where indexing runs.** 2.1.0 measured indexing at **10.0–14.6s**, so synchronous-with-timeout is viable on evidence. **Recommendation: Option A, ~60s cap.** See 2.1.5.
 - **D6 — TanStack AI, in or out.** See §5.11 and 2.3.0.
 - **D7 — default model.** See §5.13. Not urgent; lands in 2.2.3.
 
@@ -259,11 +260,11 @@ Docs are written just before their review gate, not all upfront.
 | # | Small phase | Deliverable | Doc | State |
 | --- | --- | --- | --- | --- |
 | 2.1.0 | Ingestion spike | **Yes — File Search OCRs scans.** 7 findings, D5 answered, D7 raised. | [2.1.0](phases/2.1.0-ingestion-spike.md) | ✅ |
-| 2.1.1 | Vitest harness | `vitest.config.ts`, `npm test`, one passing test | — | ⚪ |
+| 2.1.1 | Vitest harness | `vitest.config.mts`, `npm test`, 2 passing tests | [2.1.1](phases/2.1.1-vitest-harness.md) | ✅ |
 | 2.1.2 | Upload validation | `validateUpload()` pure fn, test-first | — | ⚪ |
 | 2.1.3 | Documents repository | typed CRUD over `documents` | — | ⚪ |
 | 2.1.4 | Upload route | `POST /api/documents` → `pending` row, teacher-only, dedupe | — | ⚪ |
-| 2.1.5 | Indexing + post-index check | File Search upload, poll, `ready`/`failed`; check must be a **scoped retrieval query** (§5.12) — **D5** | — | ⚪ |
+| 2.1.5 | Indexing + post-index check | File Search upload, poll, `ready`/`failed`; check must be a **scoped retrieval query** (§5.12). **D5 = synchronous, ~60s cap** | — | ⚪ |
 | 2.1.6 | Documents list UI | list, upload form, status polling | — | ⚪ |
 | 2.1.7 | Delete | `DELETE /api/documents/[id]`, Gemini doc + row — needs `config: { force: true }` (2.1.0 finding 5) | — | ⚪ |
 | 2.1.8 | Retry + failure UX | retry action, reconcile stuck rows | — | ⚪ |
@@ -323,3 +324,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — TanStack AI evaluated from package source: adopted client-side only, because its Gemini adapter drops `groundingMetadata` (§5.11). Test PDFs parsed: `iuh.pdf` is a pure scan with no font resources, making OCR support an open risk with a silent failure mode (§5.12).
 - **2026-08-30** — Phase 2 re-cut into 21 small phases, one commit each, each with its own doc in `docs/phases/`. This file became the master tracker rather than the only doc.
 - **2026-08-30** — `2.1.0` ingestion spike done. Scanned PDFs **do** index (OCR works, diacritics intact), so the planned OCR pre-pass is cancelled. Indexing measured at 10.0–14.6s, which answers **D5** in favour of synchronous. Seven corrections to the plan, including `customMetadata` being an array, `documents.delete` needing `force: true`, and `sizeBytes` being useless as an emptiness signal. New decision **D7** after `gemini-3.7-flash` returned 503 for ~75s straight.
+- **2026-08-30** — `2.1.1` Vitest harness. One pinned dev dependency (`vitest` 4.1.11); `@vitejs/plugin-react` and `vite-tsconfig-paths` dropped as unearned. Config is `.mts` for the same CJS/ESM reason the scripts are. **D5 settled: synchronous indexing, ~60s cap.**
