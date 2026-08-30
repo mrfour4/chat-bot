@@ -6,7 +6,7 @@ import {
 } from "next/font/google";
 
 import { Providers } from "@/app/providers";
-import { SiteHeader } from "@/components/site-header";
+import { SiteHeader } from "@/components/layout/site-header";
 import { getSessionUser } from "@/lib/auth";
 
 import "./globals.css";

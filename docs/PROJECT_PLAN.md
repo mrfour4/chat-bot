@@ -9,7 +9,7 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 **Last completed:** `3.6` — background indexing ✅ · **PHASE 3 COMPLETE**
 **Current phase:** Phase 4 — quality and conventions (§9)
-**State:** 4.4 in progress
+**State:** 4.5 in progress
 **Blocked on:** nothing. 3.1–3.5 need no Gemini calls at all; only 3.6 does.
 
 **Settled:** **D7** = `gemini-3.6-flash`, overridable via `GEMINI_MODEL`.
@@ -411,7 +411,7 @@ want. Nine small phases, same rules. **No Gemini calls in any of them.**
 | 4.1 | Prettier, 4 spaces | one formatter, whole repo reformatted | [4.1](phases/4.1-formatting.md) | ✅ |
 | 4.2 | shadcn inventory | the missing components, installed once | [4.2](phases/4.2-shadcn-inventory.md) | ✅ |
 | 4.3 | Chat UX | fixed composer, no document list, collapsed citations | [4.3](phases/4.3-chat-ux.md) | ✅ |
-| 4.4 | Primitives → shadcn | Dialog, Alert, Empty, Spinner; state components split out | [4.4](phases/4.4-components.md) | — |
+| 4.4 | Primitives → shadcn | Dialog, Alert, Empty, Spinner; state components split out | [4.4](phases/4.4-components.md) | ✅ |
 | 4.5 | Forms | TanStack Form + Zod + `Field` | [4.5](phases/4.5-forms.md) | — |
 | 4.6 | Toasts | every mutation reports success or failure | [4.6](phases/4.6-toasts.md) | — |
 | 4.7 | Architecture | types/constants/lib split, component folders + `index.ts` | [4.7](phases/4.7-architecture.md) | — |
@@ -483,3 +483,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `4.1` Prettier at four spaces, landed alone so no later diff hides inside reformatting noise. Generated files, applied migrations and Markdown are excluded — Prettier rewraps prose, which would rewrite every doc for nothing. The lockfile's reformat came from npm, not Prettier: npm mirrors `package.json`'s indentation into it, so four-space there made four-space there too. Full suite green afterwards, which is how we know a formatter did only formatting.
 - **2026-08-30** — `4.2` component inventory: dialog, field, collapsible, alert, empty, spinner, separator, skeleton, toggle-group, all Base UI. The CLI's offer to overwrite `button.tsx` was declined — the shadcn guidance is that `--overwrite` needs the owner's approval, and updating a button is not a side effect of installing a dialog. Found that `toast.tsx` had been installed at some point and **never mounted or called**, which is why no mutation has ever reported anything.
 - **2026-08-30** — `4.3` chat UX. Fixing the composer to the viewport exposed two things that had to be handled rather than hoped for: the input would have sat out of line with the messages, because it centres on the viewport while the page was a left-aligned column inside a wider container (both chat pages are now one `max-w-2xl` measure); and the footer became unreachable under the bar, with no scroll position that could reveal it. The disclaimer moved into the composer instead, which is better placement anyway — it is a statement about the answers, now sitting where the question is asked. Citations collapse by default but keep their **count** visible, because hiding whether there were three sources or none would undo the product's whole claim.
+- **2026-08-30** — `4.4` primitives replaced and states split out. Six hand-styled buttons and inputs, three copies of a spinning `span`, four notice paragraphs and three hand-built empty states became `Button`, `Input`, `Spinner`, `Alert`, `Empty`, `Separator`, `Dialog`. Base UI composes with `render`, not `asChild`. The 240-line documents panel became eight components; the ask box became an orchestrator of seven. Splitting the upload form introduced a regression and it was caught here: the form no longer knew an upload had succeeded, so the chosen file stayed in the field looking unsent — clearing on submit would have been worse, throwing the file away before we knew it worked, so the panel remounts the form by key on success only.

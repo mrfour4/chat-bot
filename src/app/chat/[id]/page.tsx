@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { AskBox, type ChatMessage } from "@/components/ask-box";
+import { AskBox } from "@/components/chat/ask-box";
+import { Button } from "@/components/ui/button";
+import type { ChatMessage } from "@/components/chat/types";
 import { requireUser } from "@/lib/auth";
 import { getConversation, listMessages } from "@/lib/chat/conversations";
 import { parseCitations } from "@/lib/db";
@@ -47,12 +49,12 @@ export default async function ConversationPage({
             <div className="border-b border-rule pb-5">
                 <div className="flex items-baseline justify-between gap-4">
                     <p className="eyebrow">Tiếp tục cuộc hỏi đáp</p>
-                    <Link
-                        href="/"
-                        className="doc-ref shrink-0 transition-colors hover:text-ink"
-                    >
-                        + Cuộc mới
-                    </Link>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="doc-ref shrink-0"
+                        render={<Link href="/">+ Cuộc mới</Link>}
+                    />
                 </div>
                 <h1 className="mt-2 font-display text-2xl font-semibold tracking-tight">
                     {conversation.title ?? "Cuộc hỏi đáp"}
@@ -73,12 +75,12 @@ export default async function ConversationPage({
                 />
             </div>
 
-            <Link
-                href="/history"
-                className="mt-10 inline-block text-sm text-ink-soft underline underline-offset-4 hover:text-ink"
-            >
-                ← Tất cả cuộc hỏi đáp
-            </Link>
+            <Button
+                variant="link"
+                size="sm"
+                className="mt-10 px-0 text-ink-soft"
+                render={<Link href="/history">← Tất cả cuộc hỏi đáp</Link>}
+            />
         </div>
     );
 }

@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { Markdown } from "@/components/markdown";
+import { Markdown } from "@/components/chat/markdown";
 
 /**
  * No DOM here, and none needed: `renderToStaticMarkup` returns the HTML string

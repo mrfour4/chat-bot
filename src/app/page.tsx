@@ -1,4 +1,5 @@
-import { AskBox } from "@/components/ask-box";
+import { AskBox } from "@/components/chat/ask-box";
+import { ForbiddenNotice } from "@/components/chat/forbidden-notice";
 import { listIndexedDocuments } from "@/lib/documents";
 
 export default async function HomePage({
@@ -13,18 +14,7 @@ export default async function HomePage({
 
     return (
         <div className="mx-auto max-w-2xl px-5 py-16 md:py-20">
-            {/* requireTeacher() redirects here when a student opens a teacher link.
-          Without this the bounce is silent, and the student is left thinking
-          the page is broken rather than not theirs. */}
-            {error === "forbidden" && (
-                <p
-                    role="status"
-                    className="mb-8 rounded-md border border-pending/40 bg-panel px-4 py-3 text-sm leading-relaxed"
-                >
-                    Trang quản lý tài liệu chỉ dành cho giáo viên. Bạn vẫn có
-                    thể đặt câu hỏi về tuyển sinh ở ngay bên dưới.
-                </p>
-            )}
+            {error === "forbidden" && <ForbiddenNotice />}
 
             <section>
                 <p className="eyebrow">Hỏi đáp tuyển sinh</p>
