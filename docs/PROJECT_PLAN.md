@@ -1,42 +1,40 @@
 # AI Admissions Advisor — Project Plan
 
-**Single source of truth.** Where we are, what's next, why things are the way
-they are. Nothing else tracks progress.
+**Master tracker.** Status, decisions, and the phase index. Each small phase has
+its own doc in `docs/phases/`; this file says where we are and why.
 
 ---
 
 ## 1. Status
 
-**Current phase:** Phase 2.1 — teacher document management
-**Current step:** none — 2.1 steps need writing and approving before any code
-**Next step:** expand §7.1 into steps, then you approve
-**Blocked on:** nothing
+**Last completed:** `2.1.0` — ingestion spike ✅
+**Current small phase:** `2.1.1` — Vitest harness
+**State:** awaiting your review of the 2.1.0 findings, then I write the 2.1.1 plan
+**Blocked on:** your confirmation
 
-| Phase | State |
-| --- | --- |
-| 1 · Setup | ✅ complete — `/api/health` green, merged to `main` |
-| 2.1 · Teacher document management | ⚪ next |
-| 2.2 · Gemini RAG | ⚪ |
-| 2.3 · Chatbot | ⚪ |
-| 2.4 · Access control | ⚪ |
-| 2.5 · UX polish | ⚪ |
-| 3 · Test | ⚪ |
-
-**Known loose end:** the hosted project has no accounts, so
-`npm run promote:teacher -- <email>` has nothing to promote. Sign up at `/login`
-first — and turn **off** email confirmation in Dashboard → Authentication →
-Sign In / Providers → Email, or the account can't log in. Needed before
-`/teacher/documents` is reachable.
+**Open decisions:** **D5** indexing placement — *spike says Option A; needs your
+yes* · **D6** TanStack AI (§5.11) · **D7** default model (§5.13, new)
 
 ---
 
 ## 2. How we work
 
-- **Plan first.** Each phase's steps are written here and approved before any code.
-- **Step by step, together.** No subagents. One step at a time, so you can read every diff.
-- **You verify the UI.** No Playwright, no browser tests. I verify with `typecheck`, `lint`, `build`, and `curl`, and report exactly what they show.
-- **One tracking file.** This one.
+**The loop, one small phase at a time:**
+
+```
+Small phase plan (docs/phases/N.md)
+  → your review → your approval
+  → implement → verify → update this file → commit
+  → next small phase
+```
+
+- **A small phase is one commit.** No large commits spanning a whole feature.
+- **Plan first, every time.** I write the phase doc, you approve it, then I code. Never the other way round.
+- **One phase doc is written at a time.** Writing `2.1.7`'s plan before `2.1.0` has run would be guessing — the spike may change what comes after it. Each doc is written at its own review gate.
+- **Step by step, together.** No subagents. You read every diff.
+- **You verify the UI.** No Playwright, no browser tests. I verify with `typecheck`, `lint`, `test`, `build`, and `curl`, and report exactly what they show.
 - **Schema changes go through the Supabase CLI.** Never pasted SQL in the Dashboard.
+- **Library behaviour is verified, not remembered.** Read the installed source; published docs have already been wrong once (§5.2) and silent twice (§5.11, §5.12).
 
 ---
 
@@ -92,9 +90,12 @@ ai.models.generateContent({
 })
 
 response.candidates[0].groundingMetadata
-  .groundingChunks[i].retrievedContext  // { title, text, pageNumber, mediaId }
+  .groundingChunks[i].retrievedContext  // { title, text, pageNumber, customMetadata }
   .groundingSupports[j]                 // { segment, groundingChunkIndices }
 ```
+
+> `mediaId` is documented on `retrievedContext` but came back `undefined` on
+> every chunk in the 2.1.0 spike. Do not build on it.
 
 > `ai.interactions.create`, shown in some Gemini docs, **does not exist** in
 > this SDK version. Do not use it.
@@ -102,6 +103,15 @@ response.candidates[0].groundingMetadata
 **5.3 Citations map back to rows.** Upload stamps the Supabase document id into
 `customMetadata`, so a citation resolves to a real row.
 `documents.gemini_document_name` covers the reverse direction (deletion).
+
+The shape is an **array**, not an object — corrected after 2.1.0, where the
+round-trip was confirmed working end to end:
+
+```ts
+config: { customMetadata: [{ key: "documentId", stringValue: id }] }
+// comes back as retrievedContext.customMetadata, same shape
+// and is queryable via fileSearch.metadataFilter: `documentId=${id}`
+```
 
 **5.4 RLS is the authorization boundary.** Route guards are UX; RLS is
 enforcement. Every table gets RLS in the migration that creates it.
@@ -129,7 +139,9 @@ the calling role, and it only reports on the caller.
 3. **Post-check** — no `groundingMetadata` means discard the model's text and return the refusal.
 
 Layer 3 is what makes the guarantee testable, and is the most important
-behaviour in the product.
+behaviour in the product. **It also constrains our library choices: anything
+that sits between us and the raw Gemini response must preserve
+`groundingMetadata`.** See §5.11.
 
 **5.8 Generated types stay generated.** `db:types` overwrites
 `src/lib/database.types.ts` wholesale, so nothing hand-written may live there.
@@ -142,15 +154,77 @@ for Vietnamese diacritic coverage.
 **5.10 Out of scope.** Original PDFs in Supabase Storage, multi-university
 tenancy, automated answer-quality eval beyond Phase 3.
 
+**5.11 TanStack AI: client yes, server no.** Evaluated at your suggestion. The
+finding that decides it — read from the package source, not the docs:
+
+```
+$ npm pack @tanstack/ai-gemini    # v0.26.4
+$ grep -rn "grounding" package/src/adapters/text.ts   → no matches
+$ grep -ril "citation" package/                       → no matches
+```
+
+`@tanstack/ai-gemini` **does** ship `fileSearchTool({ fileSearchStoreNames })`,
+so retrieval would work. But its text adapter reads only
+`candidates[0].content.parts` and `finishReason`. It never reads
+`groundingMetadata`, and the word "citation" does not appear anywhere in the
+package. Routing our Gemini call through it would silently discard the exact
+field §5.7 layer 3 depends on — and the failure would look like a working
+chatbot with no citations, not like an error. Middleware cannot recover it:
+the data is dropped inside the adapter, before any `StreamChunk` exists.
+
+**So: never let a TanStack adapter own the Gemini call.** We keep `@google/genai`
+on the server and use TanStack AI as a client-side chat layer only, against our
+own SSE route — a documented, first-class pattern
+(`skills/ai-core/custom-backend-integration/SKILL.md`, shipped inside the
+package). Citations travel as an AG-UI `CUSTOM` event
+(`{ type: 'CUSTOM', name: string, value?: any }`), which is the protocol's
+intended escape hatch. Full reasoning and the alternative in §7.3.
+
+**5.12 Scanned PDFs work — measured, not assumed.** Settled by the 2.1.0
+spike. Gemini File Search OCRs image-only PDFs: `iuh.pdf` (12 pages, **zero
+font resources**, one full-page image per page) indexed in 11.8–14.6s and
+returned real Vietnamese with diacritics intact and page numbers populated. No
+OCR pre-pass is needed.
+
+The spike nearly concluded the opposite. Its first run queried the shared store
+without scoping, and every chunk came back from `uit.pdf` — indistinguishable
+from the silent-empty-index failure. Scoping with
+`metadataFilter: "docid=iuhpdf"` showed the document had been fully indexed all
+along.
+
+**The lesson outlives the question:** in a shared store, "no chunks from
+document X" says something about *ranking*, not about *indexing*. Only a scoped
+query can tell those apart. That is why 2.1.5's post-index check is a scoped
+retrieval query and not a metadata lookup — and there is no cheaper option:
+`sizeBytes` reports the raw uploaded byte count, not extracted text, and
+`state` reads `STATE_ACTIVE` regardless.
+
+**5.13 The newest model is not the most available.** `gemini-3.7-flash` (our
+default) returned `503 UNAVAILABLE` on six consecutive attempts over ~75s
+during 2.1.0, twice. The model exists — confirmed via `models.list` — it is
+capacity-constrained. `gemini-3.6-flash` answered first try every time.
+
+A student asking about an admissions deadline should not meet a dead chatbot
+because we picked the newest model. **Decision D7**, landing in 2.2.3: pin
+`gemini-3.6-flash` · keep 3.7 with fallback on 503/429 · or use
+`gemini-flash-latest`.
+
 **Resolved decisions:** app runs against the **hosted** project (local Docker is
-the migration proving ground) · single `.env.local` · `zod` kept for Phase 2.1
-validation · **Vitest** added at the start of Phase 2.
+the migration proving ground) · single `.env.local` · `zod` (4.5.4, installed)
+for validation · **Vitest** added at the start of Phase 2 · TanStack AI adopted
+client-side only, pending your approval of §7.3.
+
+**Open decisions — I need your call:**
+
+- **D5 — where indexing runs.** 2.1.0 measured indexing at **10.0–14.6s**, so synchronous-with-timeout is viable on evidence. **Recommendation: Option A, ~60s cap.** See 2.1.5.
+- **D6 — TanStack AI, in or out.** See §5.11 and 2.3.0.
+- **D7 — default model.** See §5.13. Not urgent; lands in 2.2.3.
 
 ---
 
 ## 6. Phase 1 — Setup ✅
 
-Merged to `main`: `9840e69`, `45968d9`.
+Merged to `main`: `9840e69`, `45968d9`, `dedffae`, `0b59146`.
 
 **Built:** Next.js 16 + TypeScript + Tailwind v4 · shadcn/ui on Base UI with
 brand tokens · Supabase browser/server/secret clients + session refresh in
@@ -162,7 +236,9 @@ separately · schema under CLI control with a local Docker stack and seed.
 **Verified, local and hosted:** 4 tables with RLS · `profiles` `SELECT`-only ·
 `handle_new_user` ACL reduced to `postgres`/`service_role` · signup trigger
 firing · `db reset` reproducible from scratch · typecheck/lint/build clean ·
-`/api/health` `ok: true` with `gemini-3.7-flash`.
+`/api/health` `ok: true` with `gemini-3.7-flash` · `tu.le@devsamurai.com`
+promoted to `teacher` on the hosted project, so `/teacher/documents` is
+reachable.
 
 **Two bugs caught by verifying rather than assuming:** a `revoke` that left
 `anon` able to execute a `SECURITY DEFINER` function, and fonts silently falling
@@ -171,55 +247,79 @@ variables sat on `<body>`.
 
 ---
 
-## 7. Phase 2 — Implement
+## 7. Phase 2 — the small phases
 
-### 7.1 Teacher document management ← next
+Each row is one plan → review → approve → implement → verify → commit cycle.
+Docs are written just before their review gate, not all upfront.
 
-Upload a PDF → row created `pending` → indexed into File Search → status
-visible → viewable and deletable.
+**Legend:** ✅ done · 🟡 awaiting your review · ⚪ not written yet
 
-- Vitest added here; upload validation and failure paths written test-first
-- Upload route: teacher-only, PDF only, size cap, sha256 for duplicate detection
-- `uploadToFileSearchStore` with `customMetadata: { documentId }`; poll the operation; write `ready`/`failed` + `gemini_document_name` back
-- Status polling in the UI; delete removes the Gemini document *and* the row
-- Failure paths are first-class: a failed index says why and offers retry
+### 2.1 Teacher document management
 
-*Steps to be expanded here and approved before coding.*
+| # | Small phase | Deliverable | Doc | State |
+| --- | --- | --- | --- | --- |
+| 2.1.0 | Ingestion spike | **Yes — File Search OCRs scans.** 7 findings, D5 answered, D7 raised. | [2.1.0](phases/2.1.0-ingestion-spike.md) | ✅ |
+| 2.1.1 | Vitest harness | `vitest.config.ts`, `npm test`, one passing test | — | ⚪ |
+| 2.1.2 | Upload validation | `validateUpload()` pure fn, test-first | — | ⚪ |
+| 2.1.3 | Documents repository | typed CRUD over `documents` | — | ⚪ |
+| 2.1.4 | Upload route | `POST /api/documents` → `pending` row, teacher-only, dedupe | — | ⚪ |
+| 2.1.5 | Indexing + post-index check | File Search upload, poll, `ready`/`failed`; check must be a **scoped retrieval query** (§5.12) — **D5** | — | ⚪ |
+| 2.1.6 | Documents list UI | list, upload form, status polling | — | ⚪ |
+| 2.1.7 | Delete | `DELETE /api/documents/[id]`, Gemini doc + row — needs `config: { force: true }` (2.1.0 finding 5) | — | ⚪ |
+| 2.1.8 | Retry + failure UX | retry action, reconcile stuck rows | — | ⚪ |
 
-### 7.2 Gemini RAG
+### 2.2 Gemini RAG
 
-- `askDocuments(question)` → `{ answer, citations, grounded }`
-- Citations from `groundingMetadata` → `{ documentId, fileName, page, snippet }`, resolved against `documents`
-- **The ungrounded guard**, written test-first before the happy path
+| # | Small phase | Deliverable | Doc | State |
+| --- | --- | --- | --- | --- |
+| 2.2.1 | The ungrounded guard | pure fn + tests, written before the happy path | — | ⚪ |
+| 2.2.2 | Citation mapping | `groundingMetadata` → `Citation[]`, resolved to rows | — | ⚪ |
+| 2.2.3 | `askDocuments()` | system instruction, `fileSearch` tool, guard wired in — **decision D7** | — | ⚪ |
 
-### 7.3 Chatbot
+### 2.3 Chatbot
 
-- Streaming, Vietnamese-first, clear loading and error states
-- Citations rendered as document references (the design's signature element)
-- Guests chat without an account; students get persisted history
+| # | Small phase | Deliverable | Doc | State |
+| --- | --- | --- | --- | --- |
+| 2.3.0 | TanStack AI setup | install, read shipped skills, `intent install` diff — **decision D6**; skipped entirely if you say no | — | ⚪ |
+| 2.3.1 | Chat SSE route | `POST /api/chat` streaming AG-UI events + `CUSTOM` citations | — | ⚪ |
+| 2.3.2 | Chat UI | `useChat` (or hand-rolled), streaming into shadcn chat primitives | — | ⚪ |
+| 2.3.3 | Citation rendering | document references — the design's signature element | — | ⚪ |
+| 2.3.4 | Conversation persistence | students get history; guests do not | — | ⚪ |
 
-### 7.4 Access control
+### 2.4 Access control
 
-Guest → chat · Student → chat + own history · Teacher → documents + chat.
-Verified at the RLS level, not just the route level.
+| # | Small phase | Deliverable | Doc | State |
+| --- | --- | --- | --- | --- |
+| 2.4.1 | RLS verification | prove the boundary at the database, not the route | — | ⚪ |
+| 2.4.2 | Guards + guest path | route guards, guest chat without an account | — | ⚪ |
 
-### 7.5 UX polish
+### 2.5 UX polish
 
-Empty/loading/error states throughout; mobile; keyboard focus; reduced motion.
+| # | Small phase | Deliverable | Doc | State |
+| --- | --- | --- | --- | --- |
+| 2.5.1 | Empty / loading / error states | throughout | — | ⚪ |
+| 2.5.2 | Responsive + accessibility | mobile, keyboard focus, reduced motion | — | ⚪ |
 
 ---
 
 ## 8. Phase 3 — Test
 
-- **Documents:** valid PDF · invalid file · oversized · duplicate · deletion · indexing failure · multiple documents
-- **RAG:** answerable · multi-part · cross-document · off-topic · **no answer in the documents** · ambiguous · Vietnamese · prompt-injection against the document-only rule
+- **Documents:** valid PDF (`uit.pdf`) · **scanned PDF (`iuh.pdf`) — must not report `ready` unless text was genuinely retrieved** · invalid file · oversized · duplicate · deletion · indexing failure · multiple documents
+- **RAG:** answerable · multi-part · cross-document (UIT + IUH in one question) · off-topic · **no answer in the documents** · ambiguous · Vietnamese · prompt-injection against the document-only rule
 - **Authorization:** guest cannot upload · student cannot upload · student cannot delete teacher documents · unauthorized users cannot reach teacher APIs · users cannot read another's history
 
 **The test that matters most:** if the information isn't in the uploaded
 documents, the chatbot must not fabricate an answer.
 
+**Its near-twin, from §5.12:** a correct refusal and a silently empty index look
+identical from the outside. Every "not in the documents" result in Phase 3 gets
+checked against whether that document actually indexed.
+
 ---
 
 ## 9. Changelog
 
-- **2026-08-30** — Phase 1 complete, merged to `main`. Scaffold, auth, design system, shadcn/ui on Base UI; schema under Supabase CLI control (local stack on 544xx, applied and verified on both local and hosted); types generated; `/api/health` green.
+- **2026-08-30** — Phase 1 complete, merged to `main`. Scaffold, auth, design system, shadcn/ui on Base UI; schema under Supabase CLI control (local stack on 544xx, applied and verified on both local and hosted); types generated; `/api/health` green. Node scripts renamed to `.mts`; teacher promotion verified on hosted.
+- **2026-08-30** — TanStack AI evaluated from package source: adopted client-side only, because its Gemini adapter drops `groundingMetadata` (§5.11). Test PDFs parsed: `iuh.pdf` is a pure scan with no font resources, making OCR support an open risk with a silent failure mode (§5.12).
+- **2026-08-30** — Phase 2 re-cut into 21 small phases, one commit each, each with its own doc in `docs/phases/`. This file became the master tracker rather than the only doc.
+- **2026-08-30** — `2.1.0` ingestion spike done. Scanned PDFs **do** index (OCR works, diacritics intact), so the planned OCR pre-pass is cancelled. Indexing measured at 10.0–14.6s, which answers **D5** in favour of synchronous. Seven corrections to the plan, including `customMetadata` being an array, `documents.delete` needing `force: true`, and `sizeBytes` being useless as an emptiness signal. New decision **D7** after `gemini-3.7-flash` returned 503 for ~75s straight.
