@@ -15,6 +15,7 @@ import {
     SEARCH_DEBOUNCE_MS,
 } from "@/constants/documents";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { useDocumentsRealtime } from "@/hooks/use-documents-realtime";
 import {
     archiveDocument,
     deleteDocument,
@@ -64,6 +65,11 @@ export function useDocuments() {
     const invalidate = () =>
         queryClient.invalidateQueries({ queryKey: queryKeys.documents });
 
+    // Realtime pushes the change; polling only covers a socket that never
+    // connected, because a dead connection and a slow index would otherwise
+    // look identical -- a document stuck on "Uploading" forever.
+    const live = useDocumentsRealtime(invalidate);
+
     const [uploadFormKey, setUploadFormKey] = useState(0);
     const [search, setSearch] = useState("");
     const [status, setStatus] = useState<DocumentsStatusFilter>("all");
@@ -79,6 +85,7 @@ export function useDocuments() {
         placeholderData: keepPreviousData,
 
         refetchInterval: (query) =>
+            !live &&
             (query.state.data?.documents ?? []).some((document) =>
                 isPending(document.status),
             )

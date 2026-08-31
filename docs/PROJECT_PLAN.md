@@ -7,8 +7,8 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `5.4` — documents table ✅
-**Current phase:** `5.5` — status without polling
+**Last completed:** `5.5` — status without polling ✅
+**Current phase:** `5.6` — multi-file upload
 **State:** Phase 5 planned in §10, ten small phases. Conventions in `CONVENTION.md`.
 **Blocked on:** nothing. Gemini quota is exhausted, which is what 5.2 is for.
 
@@ -444,7 +444,7 @@ because your quota is exhausted and every phase after it needs indexing to run.
 | 5.2 | Mock Gemini server | independent server, random delay and outcome, no quota | [5.2](phases/5.2-mock-gemini.md) | ✅ |
 | 5.3 | Document lifecycle | rename, archive, delete, `updated_by`; six display statuses | [5.3](phases/5.3-document-lifecycle.md) | ✅ |
 | 5.4 | Documents table | TanStack Table v9 + shadcn Table, search, status filter, paging | [5.4](phases/5.4-documents-table.md) | ✅ |
-| 5.5 | Status without polling | Supabase Realtime pushes the change; the poll comes out | [5.5](phases/5.5-realtime.md) | ⚪ |
+| 5.5 | Status without polling | Realtime broadcast pushes the change; polling demoted to fallback | [5.5](phases/5.5-realtime.md) | ✅ |
 | 5.6 | Multi-file upload | many files at once, indexed one at a time | [5.6](phases/5.6-multi-upload.md) | ⚪ |
 | 5.7 | Message paging | cursor, 25/page, MessageScroller, fetch on approaching the top | [5.7](phases/5.7-message-paging.md) | ⚪ |
 | 5.8 | History | cursor paging, virtualized, search, rename, delete | [5.8](phases/5.8-history.md) | ⚪ |
@@ -518,10 +518,11 @@ and friends live in Tailwind's `@theme` block, which compiles to static utility
 classes; 29 files use them. 5.1 routes each through a CSS variable defined in
 `:root` and `.dark`, so dark mode costs **zero component edits**.
 
-**5.10.8 Realtime needs two lines of SQL.** `alter publication supabase_realtime
-add table public.documents` and `alter table public.documents replica identity
-full`; Realtime then authorizes every event against the subscriber's own RLS. No
-account, no keys, no third party — it is already in the stack.
+**5.10.8 Realtime is already in the stack.** No account, no keys, no third
+party. 5.5 uses **Broadcast from Database** rather than Postgres Changes — a
+trigger sends the row and one RLS policy on `realtime.messages` authorizes the
+channel at join time, instead of the table's policy being evaluated against
+every event for every subscriber.
 
 ### The two places I did not do what you asked
 
@@ -608,3 +609,4 @@ checked against whether that document actually indexed.
 - **2026-08-30** — `5.2` a mock Gemini server, so the rest of Phase 5 costs nothing. A stub in place of `getGemini()` would have been cheaper and would have deleted exactly the code most likely to break: `classifyGeminiError` reads an HTTP status and a JSON error body, and the upload is three requests, not one. So it is a real server and the real SDK stays in the path. Five endpoints, read out of `node/index.mjs` — the one that makes it possible is `uploadBlobInternal` **rewriting the resumable upload URL's host to `httpOptions.baseUrl`**, which is why a single env var can redirect the whole surface. It simulates the five failures this app has actually met, including §5.12's silent one: indexed, `ready`, zero retrievable chunks. All five verified through the real client. It also found a latent bug: the sweeper resets a row to `pending` before re-running it, so had indexing ever outlasted the stale window it would have **hijacked a job that was still working** — safe today only because 60s < 3min. The rule is now written down and asserted (`STALE_AFTER_MS > INDEXING_TIMEOUT_MS`), and both numbers raised, since 60s was chosen in 2.1.0 when indexing blocked the request and 3.6 made it background work.
 - **2026-08-30** — `5.3` rename, archive and soft delete. Archived and deleted are **timestamps, not statuses**: `status` is the indexing state machine, and an archived document has to remember it once indexed cleanly or un-archiving becomes a guess. Renaming on Gemini turned out to be impossible — `fileSearchStores.documents` has `list`, `get` and `delete` and nothing else — so the citation name comes from our row, resolved **at render rather than at persist**, because a rename has to reach messages written last week. The soft delete quietly broke the authorization model: the old "deletes only their own" rule lived in a `DELETE` policy, and a soft delete is an `UPDATE`, so the policy stopped covering the action it existed for without failing. Rewritten, and the rewrite exposed a second hole — `WITH CHECK` sees only the new row, so it **cannot** say "the uploader is immutable", and without a trigger a teacher could take ownership of a colleague's document and then delete it, passing every policy on the way. 17 → 25 RLS checks, then falsified: dropping the trigger and weakening the policy made exactly three fail, naming what leaked. Teachers can now read the profile directory, without which both attribution columns would have rendered blank — a working join that looks like missing data.
 - **2026-08-31** — `5.4` the documents table, on TanStack Table v9 — **the first TanStack package here that ships agent skills**, six of them, loaded before writing any of it. They earn their place immediately: v9 replaces `useReactTable` with `useTable`, row models with `tableFeatures`, and `flexRender` with `table.FlexRender`, and shadcn's own data-table examples are still v8. Reading them led to registering **no features at all**: `rowPaginationFeature` plus `manualPagination` would have added a state slice and a second owner for paging the query already owns, and the server has already sliced the page. Search escapes `%` and `_` — verified against hosted, where searching `%` returns the one title containing a literal percent instead of everything — and searches `title` alone, because PostgREST's `or` is a comma-separated string that a comma in the search term would rewrite. The status filter translates the six display statuses back into the columns that hold them, since 5.3 made them derived. Archive and delete both confirm in an `AlertDialog`, which unlike `Dialog` will not close on a click outside; restore does not, because it is the undo.
+- **2026-08-31** — `5.5` document status is pushed, not polled. Broadcast from Database rather than Postgres Changes: a trigger sends the row and a single policy on `realtime.messages` authorizes the channel when it is joined. The topic check in that policy is load-bearing — `realtime.messages` is shared by every channel in the project, so `is_teacher()` alone would have opened all of them. Verified on hosted: a teacher receives INSERT, UPDATE, UPDATE, DELETE in order and a guest is refused the topic by name. **The phase's real finding is a mistake I made.** Postgres Changes was built first and measured as delivering INSERT and DELETE while silently dropping every UPDATE — three consistent runs, a schema audit, and a migration written to work around it. All of it was wrong: the probe called `signInWithPassword` on the *service-role* client, which replaces that client's token, so every subsequent write ran as the teacher and was refused by `documents_update_teacher`'s `WITH CHECK`. The updates never happened. It survived because the probe discarded the returned `error`; printing it ended the investigation in one run. **A consistent result is not a correct one** — three runs agreed because they repeated one broken setup three times. Polling was demoted rather than deleted: a WebSocket fails in ways a fetch does not, and without the fallback every one of those failures renders as a document stuck on "Uploading" forever.
