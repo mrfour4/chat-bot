@@ -1,13 +1,34 @@
 import type { DocumentRow } from "@/lib/db";
 import { expectOk } from "@/lib/api/http";
+import type { DocumentListing } from "@/lib/documents/repo";
 
-export async function fetchDocuments(): Promise<DocumentRow[]> {
+export type DocumentsQuery = {
+    search: string;
+    status: string;
+    page: number;
+    pageSize: number;
+};
+
+export type DocumentsPage = DocumentListing & {
+    page: number;
+    pageSize: number;
+};
+
+export async function fetchDocumentsPage(
+    query: DocumentsQuery,
+): Promise<DocumentsPage> {
+    const params = new URLSearchParams({
+        page: String(query.page),
+        pageSize: String(query.pageSize),
+    });
+    if (query.search) params.set("q", query.search);
+    if (query.status !== "all") params.set("status", query.status);
+
     const response = await expectOk(
-        await fetch("/api/documents"),
+        await fetch(`/api/documents?${params}`),
         "Không tải được danh sách.",
     );
-    const body: { documents: DocumentRow[] } = await response.json();
-    return body.documents;
+    return (await response.json()) as DocumentsPage;
 }
 
 export async function uploadDocument(file: File): Promise<DocumentRow> {

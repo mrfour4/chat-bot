@@ -1,38 +1,87 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+    keepPreviousData,
+    useMutation,
+    useQuery,
+    useQueryClient,
+} from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
-import { DOCUMENTS_POLL_INTERVAL_MS } from "@/constants/documents";
 import {
+    DOCUMENTS_PAGE_SIZE,
+    DOCUMENTS_POLL_INTERVAL_MS,
+    SEARCH_DEBOUNCE_MS,
+} from "@/constants/documents";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import {
+    archiveDocument,
     deleteDocument,
-    fetchDocuments,
+    fetchDocumentsPage,
+    renameDocument,
     requestReindex,
     retryDocument,
+    unarchiveDocument,
     uploadDocument,
+    type DocumentsPage,
 } from "@/lib/api/documents";
-import type { DocumentRow } from "@/lib/db";
 import { isPending, isStale } from "@/lib/documents/status";
+import type { DocumentDisplayStatus } from "@/lib/documents/status";
 import { notifyError, notifySuccess } from "@/lib/notify";
 import { queryKeys } from "@/lib/query/keys";
 
-export function useDocuments(initial: DocumentRow[]) {
+export type DocumentsStatusFilter = DocumentDisplayStatus | "all";
+
+const EMPTY_PAGE: DocumentsPage = {
+    documents: [],
+    total: 0,
+    page: 0,
+    pageSize: DOCUMENTS_PAGE_SIZE,
+};
+
+function useReportingMutation<TVariables>(
+    run: (variables: TVariables) => Promise<unknown>,
+    successKey: string,
+    failureKey: string,
+    onSettled: () => Promise<void>,
+) {
+    const t = useTranslations("documents");
+
+    return useMutation({
+        mutationFn: run,
+        onSuccess: () => {
+            notifySuccess(t(successKey));
+            return onSettled();
+        },
+        onError: (error: Error) => notifyError(t(failureKey), error.message),
+    });
+}
+
+export function useDocuments() {
     const t = useTranslations("documents");
     const queryClient = useQueryClient();
     const invalidate = () =>
         queryClient.invalidateQueries({ queryKey: queryKeys.documents });
 
     const [uploadFormKey, setUploadFormKey] = useState(0);
+    const [search, setSearch] = useState("");
+    const [status, setStatus] = useState<DocumentsStatusFilter>("all");
+    const [page, setPage] = useState(0);
+    const [pageSize, setPageSize] = useState(DOCUMENTS_PAGE_SIZE);
 
-    const { data: documents = [] } = useQuery({
-        queryKey: queryKeys.documents,
-        queryFn: fetchDocuments,
+    const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
+    const queryInput = { search: debouncedSearch, status, page, pageSize };
 
-        initialData: initial,
+    const { data = EMPTY_PAGE, isPlaceholderData } = useQuery({
+        queryKey: queryKeys.documentsPage(queryInput),
+        queryFn: () => fetchDocumentsPage(queryInput),
+        placeholderData: keepPreviousData,
 
         refetchInterval: (query) =>
-            (query.state.data ?? []).some((doc) => isPending(doc.status))
+            (query.state.data?.documents ?? []).some((document) =>
+                isPending(document.status),
+            )
                 ? DOCUMENTS_POLL_INTERVAL_MS
                 : false,
     });
@@ -50,41 +99,85 @@ export function useDocuments(initial: DocumentRow[]) {
         onError: (error) => notifyError(t("uploadFailed"), error.message),
     });
 
-    const remove = useMutation({
-        mutationFn: deleteDocument,
-        onSuccess: () => {
-            notifySuccess(t("deletedTitle"));
-            return invalidate();
-        },
-        onError: (error) => notifyError(t("deleteFailed"), error.message),
-    });
-
-    const retry = useMutation({
-        mutationFn: retryDocument,
-        onSuccess: () => {
-            notifySuccess(t("reindexingTitle"));
-            return invalidate();
-        },
-        onError: (error) => notifyError(t("retryFailed"), error.message),
-    });
+    const remove = useReportingMutation(
+        deleteDocument,
+        "deletedTitle",
+        "deleteFailed",
+        invalidate,
+    );
+    const retry = useReportingMutation(
+        retryDocument,
+        "reindexingTitle",
+        "retryFailed",
+        invalidate,
+    );
+    const rename = useReportingMutation(
+        renameDocument,
+        "renamedTitle",
+        "renameFailed",
+        invalidate,
+    );
+    const archive = useReportingMutation(
+        archiveDocument,
+        "archivedTitle",
+        "archiveFailed",
+        invalidate,
+    );
+    const restore = useReportingMutation(
+        unarchiveDocument,
+        "restoredTitle",
+        "restoreFailed",
+        invalidate,
+    );
 
     useEffect(() => {
-        if (!documents.some((doc) => isStale(doc))) return;
+        if (!data.documents.some((document) => isStale(document))) return;
 
         requestReindex()
             .then(invalidate)
             .catch(() => {});
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [documents]);
+    }, [data]);
+
+    const changeFilter =
+        <T>(set: (value: T) => void) =>
+        (value: T) => {
+            set(value);
+            setPage(0);
+        };
 
     return {
-        documents,
+        documents: data.documents,
+        total: data.total,
+        loading: isPlaceholderData,
+
+        search,
+        onSearchChange: changeFilter(setSearch),
+        status,
+        onStatusChange: changeFilter(setStatus),
+
+        page,
+        pageSize,
+        onPageChange: setPage,
+        onPageSizeChange: changeFilter(setPageSize),
+
         uploadFormKey,
         uploading: upload.isPending,
-        deletingId: remove.isPending ? (remove.variables ?? null) : null,
-        retryingId: retry.isPending ? (retry.variables ?? null) : null,
         upload: upload.mutate,
+
+        pendingId:
+            (remove.isPending ? remove.variables : null) ??
+            (archive.isPending ? archive.variables : null) ??
+            (restore.isPending ? restore.variables : null) ??
+            (retry.isPending ? retry.variables : null) ??
+            (rename.isPending ? rename.variables?.id : null) ??
+            null,
+
         remove: remove.mutate,
         retry: retry.mutate,
+        rename: rename.mutate,
+        archive: archive.mutate,
+        restore: restore.mutate,
+        renaming: rename.isPending,
     };
 }

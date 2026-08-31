@@ -3,16 +3,21 @@ import { after, NextResponse } from "next/server";
 import { apiMessages, uploadMessageKey } from "@/lib/api/messages";
 
 import { getSessionUser, getTeacher } from "@/lib/auth";
+import {
+    DOCUMENTS_MAX_PAGE_SIZE,
+    DOCUMENTS_PAGE_SIZE,
+} from "@/constants/documents";
 import { sha256Hex } from "@/lib/documents/checksum";
 import { runIndexingJob } from "@/lib/documents/job";
 import {
     createDocument,
     findByChecksum,
-    listDocuments,
+    listDocumentsPage,
     markFailed,
     resetToPending,
     setStoragePath,
 } from "@/lib/documents/repo";
+import { isDisplayStatus } from "@/lib/documents/status";
 import { objectPath, putPdf } from "@/lib/documents/storage";
 import { deriveTitle } from "@/lib/documents/title";
 import { MAX_UPLOAD_BYTES, validateUpload } from "@/lib/documents/validate";
@@ -33,14 +38,38 @@ async function denyReason() {
         : fail(401, "unauthenticated", t("unauthenticated"));
 }
 
-export async function GET() {
+function readPositive(value: string | null, fallback: number, max: number) {
+    const parsed = Number.parseInt(value ?? "", 10);
+    if (!Number.isFinite(parsed) || parsed < 0) return fallback;
+    return Math.min(parsed, max);
+}
+
+export async function GET(request: Request) {
     const teacher = await getTeacher();
     if (!teacher) return denyReason();
 
-    const supabase = await createClient();
-    const documents = await listDocuments(supabase);
+    const url = new URL(request.url);
+    const status = url.searchParams.get("status");
 
-    return NextResponse.json({ documents });
+    const page = readPositive(url.searchParams.get("page"), 0, 10_000);
+    const pageSize = Math.max(
+        1,
+        readPositive(
+            url.searchParams.get("pageSize"),
+            DOCUMENTS_PAGE_SIZE,
+            DOCUMENTS_MAX_PAGE_SIZE,
+        ),
+    );
+
+    const supabase = await createClient();
+    const listing = await listDocumentsPage(supabase, {
+        search: url.searchParams.get("q") ?? undefined,
+        status: isDisplayStatus(status) ? status : undefined,
+        page,
+        pageSize,
+    });
+
+    return NextResponse.json({ ...listing, page, pageSize });
 }
 
 export async function POST(request: Request) {

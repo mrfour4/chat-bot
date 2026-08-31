@@ -1,8 +1,6 @@
 import { getTranslations } from "next-intl/server";
 
 import { requireTeacher } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
-import { listDocuments } from "@/lib/documents/repo";
 
 import { DocumentsPanel } from "@/components/documents";
 
@@ -14,9 +12,6 @@ export async function generateMetadata() {
 export default async function TeacherDocumentsPage() {
     await requireTeacher();
     const t = await getTranslations("documents");
-    const supabase = await createClient();
-
-    const documents = await listDocuments(supabase);
 
     return (
         <div className="mx-auto max-w-5xl px-5 py-12 md:py-16">
@@ -27,7 +22,7 @@ export default async function TeacherDocumentsPage() {
                 </h1>
             </div>
 
-            <DocumentsPanel initial={documents} />
+            <DocumentsPanel />
         </div>
     );
 }

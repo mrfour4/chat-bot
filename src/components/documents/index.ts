@@ -1,9 +1,13 @@
-export { DeleteDocumentDialog } from "@/components/documents/delete-document-dialog";
+export { DocumentActionsMenu } from "@/components/documents/document-actions-menu";
 export { DocumentFailure } from "@/components/documents/document-failure";
-export { DocumentList } from "@/components/documents/document-list";
-export { DocumentListItem } from "@/components/documents/document-list-item";
+export { DocumentNameCell } from "@/components/documents/document-name-cell";
+export { DocumentPeopleCell } from "@/components/documents/document-people-cell";
 export { DocumentPreview } from "@/components/documents/document-preview";
 export { DocumentsEmpty } from "@/components/documents/documents-empty";
+export { DocumentsPagination } from "@/components/documents/documents-pagination";
 export { DocumentsPanel } from "@/components/documents/documents-panel";
 export { DocumentStatusBadge } from "@/components/documents/document-status-badge";
+export { DocumentsTable } from "@/components/documents/documents-table";
+export { DocumentsToolbar } from "@/components/documents/documents-toolbar";
 export { DocumentUploadForm } from "@/components/documents/document-upload-form";
+export { RenameDocumentDialog } from "@/components/documents/rename-document-dialog";

@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import { FileTextIcon } from "lucide-react";
+import { FileTextIcon, SearchXIcon } from "lucide-react";
 
 import {
     Empty,
@@ -9,17 +9,23 @@ import {
     EmptyTitle,
 } from "@/components/ui/empty";
 
-export function DocumentsEmpty() {
+export function DocumentsEmpty({ filtered }: { filtered: boolean }) {
     const t = useTranslations("documents");
 
     return (
-        <Empty className="mt-10 border border-dashed border-rule">
+        <Empty className="border-0">
             <EmptyHeader>
                 <EmptyMedia variant="icon">
-                    <FileTextIcon />
+                    {filtered ? <SearchXIcon /> : <FileTextIcon />}
                 </EmptyMedia>
-                <EmptyTitle>{t("emptyTitle")}</EmptyTitle>
-                <EmptyDescription>{t("emptyDescription")}</EmptyDescription>
+                <EmptyTitle>
+                    {filtered ? t("noMatchesTitle") : t("emptyTitle")}
+                </EmptyTitle>
+                <EmptyDescription>
+                    {filtered
+                        ? t("noMatchesDescription")
+                        : t("emptyDescription")}
+                </EmptyDescription>
             </EmptyHeader>
         </Empty>
     );
