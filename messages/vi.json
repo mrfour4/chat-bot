@@ -174,7 +174,12 @@
         "errorOauthCancelled": "Bạn đã huỷ đăng nhập bằng Google.",
         "errorConfirm": "Liên kết xác nhận không còn hiệu lực. Vui lòng đăng nhập lại.",
         "continueWithGoogle": "Tiếp tục với Google",
-        "or": "hoặc"
+        "or": "hoặc",
+        "forgotPasswordTitle": "Đặt lại mật khẩu",
+        "forgotPasswordIntro": "Nhập email của bạn. Nếu địa chỉ này có tài khoản, chúng tôi sẽ gửi một liên kết để đặt mật khẩu mới.",
+        "sendResetLink": "Gửi liên kết",
+        "backToSignIn": "Quay lại đăng nhập",
+        "forgotPassword": "Quên mật khẩu?"
     },
     "validation": {
         "email": "Email không hợp lệ.",
@@ -266,7 +271,11 @@
         "disconnect": "Ngắt kết nối",
         "disconnectLastIdentity": "Đây là cách đăng nhập duy nhất của bạn. Hãy đặt mật khẩu trước khi ngắt kết nối Google.",
         "passwordSignIn": "Mật khẩu",
-        "failed": "Không thành công"
+        "failed": "Không thành công",
+        "newPasswordTitle": "Đặt mật khẩu mới",
+        "newPasswordIntro": "Chọn một mật khẩu mới cho tài khoản của bạn.",
+        "backToProfile": "Về trang tài khoản",
+        "forgotPasswordHint": "Không nhớ mật khẩu hiện tại? Gửi liên kết đặt lại qua email."
     },
     "serverProfile": {
         "nameInvalid": "Tên hiển thị không hợp lệ.",
@@ -289,6 +298,7 @@
         "connectFailed": "Không kết nối được Google. Vui lòng thử lại.",
         "disconnectFailed": "Không ngắt kết nối được. Vui lòng thử lại.",
         "disconnectLastIdentity": "Đây là cách đăng nhập duy nhất của bạn. Hãy đặt mật khẩu trước.",
-        "disconnected": "Đã ngắt kết nối Google."
+        "disconnected": "Đã ngắt kết nối Google.",
+        "passwordRejected": "Không đổi được mật khẩu. Mật khẩu có thể quá yếu hoặc phiên đăng nhập đã hết hạn."
     }
 }

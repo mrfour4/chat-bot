@@ -1,10 +1,15 @@
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { AvatarForm } from "@/components/profile/avatar-form";
+import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { DisplayNameForm } from "@/components/profile/display-name-form";
 import { ProfileSection } from "@/components/profile/profile-section";
+import { SetPasswordForm } from "@/components/profile/set-password-form";
 import { requireUser } from "@/lib/auth";
 import { avatarUrl } from "@/lib/profile/avatar-url";
+import { getIdentities } from "@/lib/profile/connections";
+import { hasPassword } from "@/lib/profile/identities";
 
 export async function generateMetadata() {
     const t = await getTranslations();
@@ -15,8 +20,13 @@ export default async function ProfilePage() {
     const user = await requireUser();
     const t = await getTranslations("profile");
 
-    const src = await avatarUrl(user);
+    const [src, identities] = await Promise.all([
+        avatarUrl(user),
+        getIdentities(),
+    ]);
+
     const stored = Boolean(user.profile.avatar_url);
+    const passwordSet = hasPassword(identities);
 
     return (
         <div className="mx-auto w-full max-w-3xl px-5 py-12 md:py-16">
@@ -66,6 +76,24 @@ export default async function ProfilePage() {
                             </div>
                         </dl>
                     </div>
+                </ProfileSection>
+
+                <ProfileSection
+                    title={t("password")}
+                    description={passwordSet ? undefined : t("noPasswordYet")}
+                >
+                    {passwordSet ? <ChangePasswordForm /> : <SetPasswordForm />}
+
+                    {passwordSet && (
+                        <p className="mt-4 text-sm">
+                            <Link
+                                href="/forgot-password"
+                                className="text-ink-soft underline underline-offset-4 hover:text-lacquer"
+                            >
+                                {t("forgotPasswordHint")}
+                            </Link>
+                        </p>
+                    )}
                 </ProfileSection>
             </div>
         </div>

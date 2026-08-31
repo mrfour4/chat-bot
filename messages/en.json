@@ -174,7 +174,12 @@
         "errorOauthCancelled": "You cancelled Google sign-in.",
         "errorConfirm": "That confirmation link is no longer valid. Please sign in again.",
         "continueWithGoogle": "Continue with Google",
-        "or": "or"
+        "or": "or",
+        "forgotPasswordTitle": "Reset your password",
+        "forgotPasswordIntro": "Enter your email. If that address has an account, we will send a link to set a new password.",
+        "sendResetLink": "Send link",
+        "backToSignIn": "Back to sign in",
+        "forgotPassword": "Forgot your password?"
     },
     "validation": {
         "email": "That is not a valid email address.",
@@ -266,7 +271,11 @@
         "disconnect": "Disconnect",
         "disconnectLastIdentity": "This is your only way to sign in. Set a password before disconnecting Google.",
         "passwordSignIn": "Password",
-        "failed": "Something went wrong"
+        "failed": "Something went wrong",
+        "newPasswordTitle": "Set a new password",
+        "newPasswordIntro": "Choose a new password for your account.",
+        "backToProfile": "Back to account",
+        "forgotPasswordHint": "Do not remember your current password? Send a reset link by email."
     },
     "serverProfile": {
         "nameInvalid": "That display name is not valid.",
@@ -289,6 +298,7 @@
         "connectFailed": "Could not connect Google. Please try again.",
         "disconnectFailed": "Could not disconnect. Please try again.",
         "disconnectLastIdentity": "This is your only way to sign in. Set a password first.",
-        "disconnected": "Google disconnected."
+        "disconnected": "Google disconnected.",
+        "passwordRejected": "Could not change the password. It may be too weak, or your session may have expired."
     }
 }

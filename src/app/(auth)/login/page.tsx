@@ -80,6 +80,17 @@ export default async function LoginPage({
                 ) : (
                     <SignInForm oauth={oauth} />
                 )}
+                {!isSignUp && (
+                    <p className="mt-4 text-center text-sm">
+                        <Link
+                            href="/forgot-password"
+                            className="text-ink-soft underline underline-offset-4 hover:text-lacquer"
+                        >
+                            {t("forgotPassword")}
+                        </Link>
+                    </p>
+                )}
+
                 <p className="mt-6 text-center text-sm text-ink-soft">
                     {isSignUp ? t("haveAccount") : t("noAccount")}
                     <Link

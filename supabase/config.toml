@@ -160,13 +160,24 @@ site_url = "http://localhost:3000"
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 additional_redirect_urls = [
-  # Exact callback URLs the OAuth flow may return to. `next dev` serves
-  # `localhost`, while site_url above says `127.0.0.1`; browsers treat those as
-  # different origins, so both are listed. The previous value was
-  # `https://127.0.0.1:3000` -- wrong scheme, and no path, so no callback
-  # could ever match it.
-  "http://localhost:3000/auth/callback",
-  "http://127.0.0.1:3000/auth/callback",
+  # Where an auth flow may return to. `next dev` serves `localhost` and
+  # site_url now says the same, but a browser may be pointed at either and the
+  # two are different origins -- so both are listed.
+  #
+  # The `/**` wildcard is load-bearing, not laziness. A recovery link's
+  # redirectTo carries a query string (`/auth/confirm?next=/profile/password`),
+  # and an entry without one does not match: Supabase then silently falls back
+  # to site_url, so the email lands the user on the home page instead of the
+  # set-password screen. Verified by reading the generated email -- see
+  # docs/phases/9.5-reset-password.md.
+  #
+  # The wildcard still pins scheme, host and port. It only opens paths on an
+  # origin we already control, which is the boundary this list exists to draw.
+  #
+  # The previous value was `https://127.0.0.1:3000`: wrong scheme, and no path,
+  # so no callback could ever have matched it.
+  "http://localhost:3000/**",
+  "http://127.0.0.1:3000/**",
 ]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
@@ -254,6 +265,13 @@ otp_expiry = 3600
 # [auth.email.template.invite]
 # subject = "You have been invited"
 # content_path = "./supabase/templates/invite.html"
+
+# Custom because the default recovery email returns the session in the URL
+# fragment, which a server-rendered callback can never read. See the comment at
+# the top of the template, and docs/phases/9.5-reset-password.md.
+[auth.email.template.recovery]
+subject = "Đặt lại mật khẩu — Cố vấn Tuyển sinh"
+content_path = "./supabase/templates/recovery.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]

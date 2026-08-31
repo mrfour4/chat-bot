@@ -1,0 +1,33 @@
+<!--
+  Recovery email.
+
+  Custom for one reason: the default template links to Supabase's own
+  /auth/v1/verify, which redirects back with the session in the URL *fragment*
+  (#access_token=...). A fragment is never sent to a server, so a server-rendered
+  route sees no token at all and the flow dies at "liên kết không hợp lệ".
+  Verified by following the generated link:
+
+    303 -> http://localhost:3000/auth/confirm?next=/profile/password#access_token=…
+
+  {{ .TokenHash }} puts the credential in the query string instead, where
+  /auth/confirm can read it and exchange it with verifyOtp.
+-->
+<h2>Đặt lại mật khẩu</h2>
+
+<p>
+    Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản
+    <strong>{{ .Email }}</strong> tại Cố vấn Tuyển sinh.
+</p>
+
+<p>
+    <a
+        href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/profile/password"
+        >Đặt mật khẩu mới</a
+    >
+</p>
+
+<p>
+    Liên kết này chỉ dùng được một lần và sẽ hết hạn sau một giờ. Nếu bạn không
+    yêu cầu đặt lại mật khẩu, bạn có thể bỏ qua email này -- mật khẩu hiện tại
+    của bạn không thay đổi.
+</p>
