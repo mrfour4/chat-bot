@@ -37,7 +37,6 @@
         "suggestion2": "Which programmes does the university offer?",
         "suggestion3": "Who is eligible to apply?",
         "askFailed": "Could not send your question",
-        "olderAbove": "Scroll up for older messages",
         "loadingOlder": "Loading older messages…",
         "loadOlderFailed": "Could not load older messages"
     },

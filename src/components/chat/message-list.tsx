@@ -3,6 +3,7 @@
 import { AnswerMessage } from "@/components/chat/answer-message";
 import { OlderMessagesTrigger } from "@/components/chat/older-messages-trigger";
 import { QuestionMessage } from "@/components/chat/question-message";
+import { RestoreScrollOnPrepend } from "@/components/chat/restore-scroll-on-prepend";
 import { ThinkingIndicator } from "@/components/chat/thinking-indicator";
 import {
     MessageScroller,
@@ -19,12 +20,14 @@ export function MessageList({
     pending,
     hasOlder,
     loadingOlder,
+    restoreTo,
     onLoadOlder,
 }: {
     messages: ChatMessage[];
     pending: boolean;
     hasOlder: boolean;
     loadingOlder: boolean;
+    restoreTo: string | null;
     onLoadOlder: () => void;
 }) {
     if (messages.length === 0 && !pending) return null;
@@ -38,15 +41,6 @@ export function MessageList({
                     aria-atomic="false"
                 >
                     <MessageScrollerContent className="mx-auto w-full max-w-2xl gap-6 px-5 py-8">
-                        {hasOlder && (
-                            <MessageScrollerItem messageId="older">
-                                <OlderMessagesTrigger
-                                    loading={loadingOlder}
-                                    onReach={onLoadOlder}
-                                />
-                            </MessageScrollerItem>
-                        )}
-
                         {messages.map((message) => (
                             <MessageScrollerItem
                                 key={message.id}
@@ -70,6 +64,14 @@ export function MessageList({
                         )}
                     </MessageScrollerContent>
                 </MessageScrollerViewport>
+
+                <OlderMessagesTrigger
+                    hasOlder={hasOlder}
+                    loading={loadingOlder}
+                    onReach={onLoadOlder}
+                />
+
+                <RestoreScrollOnPrepend messageId={restoreTo} />
 
                 <MessageScrollerButton />
             </MessageScroller>

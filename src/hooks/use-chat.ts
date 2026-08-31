@@ -39,6 +39,7 @@ export function useChat({
     );
 
     const [cursor, setCursor] = useState<string | null>(initialCursor);
+    const [restoreTo, setRestoreTo] = useState<string | null>(null);
 
     const send = useMutation({
         mutationFn: (payload: { question: string; history: HistoryTurn[] }) =>
@@ -74,6 +75,7 @@ export function useChat({
         onSuccess: (page) => {
             setCursor(page.nextCursor);
             setMessages((current) => [...page.messages, ...current]);
+            setRestoreTo(page.messages.at(-1)?.id ?? null);
         },
         onError: (error) => notifyError(t("loadOlderFailed"), error.message),
     });
@@ -104,6 +106,7 @@ export function useChat({
         error: send.error?.message ?? null,
         hasOlder: Boolean(conversationId && cursor),
         loadingOlder: older.isPending,
+        restoreTo,
         loadOlder,
         ask,
     };

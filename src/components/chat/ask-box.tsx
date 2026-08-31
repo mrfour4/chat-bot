@@ -18,8 +18,16 @@ export function AskBox({
     initialConversationId?: string | null;
     initialCursor?: string | null;
 }) {
-    const { messages, pending, error, hasOlder, loadingOlder, loadOlder, ask } =
-        useChat({ initialMessages, initialConversationId, initialCursor });
+    const {
+        messages,
+        pending,
+        error,
+        hasOlder,
+        loadingOlder,
+        restoreTo,
+        loadOlder,
+        ask,
+    } = useChat({ initialMessages, initialConversationId, initialCursor });
 
     return (
         <div className="flex min-h-0 flex-1 flex-col">
@@ -34,6 +42,7 @@ export function AskBox({
                 pending={pending}
                 hasOlder={hasOlder}
                 loadingOlder={loadingOlder}
+                restoreTo={restoreTo}
                 onLoadOlder={loadOlder}
             />
 

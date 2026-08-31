@@ -7,9 +7,11 @@ import { useMessageScrollerScrollable } from "@/components/ui/message-scroller";
 import { Spinner } from "@/components/ui/spinner";
 
 export function OlderMessagesTrigger({
+    hasOlder,
     loading,
     onReach,
 }: {
+    hasOlder: boolean;
     loading: boolean;
     onReach: () => void;
 }) {
@@ -17,13 +19,20 @@ export function OlderMessagesTrigger({
     const { start } = useMessageScrollerScrollable();
 
     useEffect(() => {
-        if (!start) onReach();
-    }, [start, onReach]);
+        if (hasOlder && !start && !loading) onReach();
+    }, [hasOlder, start, loading, onReach]);
+
+    if (!loading) return null;
 
     return (
-        <p className="doc-ref flex items-center justify-center gap-2 py-2">
-            {loading && <Spinner />}
-            {loading ? t("loadingOlder") : t("olderAbove")}
+        <p
+            aria-live="polite"
+            className="doc-ref pointer-events-none absolute inset-x-0 top-3 z-10 flex items-center justify-center gap-2"
+        >
+            <span className="flex items-center gap-2 rounded-full border border-rule bg-surface/95 px-3 py-1 shadow-sm backdrop-blur">
+                <Spinner />
+                {t("loadingOlder")}
+            </span>
         </p>
     );
 }
