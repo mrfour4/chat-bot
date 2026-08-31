@@ -179,7 +179,8 @@
         "forgotPasswordIntro": "Enter your email. If that address has an account, we will send a link to set a new password.",
         "sendResetLink": "Send link",
         "backToSignIn": "Back to sign in",
-        "forgotPassword": "Forgot your password?"
+        "forgotPassword": "Forgot your password?",
+        "verifying": "Verifying your link…"
     },
     "validation": {
         "email": "That is not a valid email address.",

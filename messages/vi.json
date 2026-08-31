@@ -179,7 +179,8 @@
         "forgotPasswordIntro": "Nhập email của bạn. Nếu địa chỉ này có tài khoản, chúng tôi sẽ gửi một liên kết để đặt mật khẩu mới.",
         "sendResetLink": "Gửi liên kết",
         "backToSignIn": "Quay lại đăng nhập",
-        "forgotPassword": "Quên mật khẩu?"
+        "forgotPassword": "Quên mật khẩu?",
+        "verifying": "Đang xác minh liên kết…"
     },
     "validation": {
         "email": "Email không hợp lệ.",

@@ -185,6 +185,31 @@ question with no answer and no explanation looks like it was ignored.
 
 These caused real failures. Changing them will look harmless and will not be.
 
+- **A `"use server"` file may export only async functions.** Every export becomes
+  a callable endpoint, so a `const` export is refused — and the refusal breaks
+  every *other* export in the file, surfacing as "Export X doesn't exist in
+  target module". TypeScript and the test suite cannot see this; only running the
+  app can. Constants belong in a plain module (`lib/profile/paths.ts`).
+- **`profiles` is writable only through two columns.** `grant update (full_name,
+  avatar_url)` plus `profiles_update_own` plus the `profiles_guard_immutable`
+  trigger. Never `grant update on public.profiles` — `authenticated` would regain
+  `role`. The trigger skips callers where `auth.uid()` is null, because
+  `promote:teacher` runs as the service role.
+- **Supabase silently substitutes `site_url` for a `redirectTo` it does not
+  allow.** No error, no warning — the email or callback simply goes somewhere
+  else. `additional_redirect_urls` needs `/**` on our origins because a
+  `redirectTo` carrying a query string does not match a bare path entry.
+- **Free-tier Supabase with the default email provider refuses custom email
+  templates**, and `config push` is atomic — one template blocks every other auth
+  setting from being pushed. Keep `[auth.email.template.*]` commented out until
+  custom SMTP exists.
+- **The default recovery/confirmation email returns the session in the URL
+  fragment.** A fragment never reaches the server, so a route handler sees no
+  token. `/auth/recover` is a client page for exactly this reason.
+- **A row inserted into `auth.users` by SQL cannot take part in an email flow.**
+  GoTrue reads `confirmation_token` as a string and the insert leaves it `NULL`:
+  *"converting NULL to string is unsupported"*. Use the signup API when a test
+  needs a real account.
 - **The app uses the HOSTED Supabase, not the local stack.**
   `NEXT_PUBLIC_SUPABASE_URL` in `.env.local` is `https://<ref>.supabase.co`. The
   local stack exists for `npm run test:rls` and for applying migrations before

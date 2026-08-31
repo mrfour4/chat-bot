@@ -7,7 +7,7 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `8.4` — backfilled the missing profile ✅ · **PHASE 8 COMPLETE, Google sign-in working on hosted**
+**Last completed:** `9.6` — connect/disconnect Google ✅ · **PHASE 9 COMPLETE**
 **Current phase:** Phase 7 — testing, yours
 **Google sign-in:** working against the **hosted** project, which is what
 `.env.local` points the app at — see the warning below. Automatic account
@@ -732,7 +732,7 @@ password, connect/disconnect Google — following the existing auth architecture
 | 9.3 | The page — display name and avatar | [9.3](phases/9.3-profile-page.md) | ✅ |
 | 9.4 | Password — change it, or set a first one | [9.4](phases/9.4-password.md) | ✅ |
 | 9.5 | Forgot password — the emailed recovery flow | [9.5](phases/9.5-reset-password.md) | ✅ |
-| 9.6 | Google — connect and disconnect | [9.6](phases/9.6-link-google.md) | ⏳ |
+| 9.6 | Google — connect and disconnect | [9.6](phases/9.6-link-google.md) | ✅ |
 
 ### The trap this phase had to avoid
 
@@ -778,6 +778,8 @@ silently. 9.4 re-authenticates with the old password first.
 ---
 
 ## 15. Changelog
+
+- **2026-08-31** — Phase 9, the profile page: avatar, display name, password, recovery, and Google connect/disconnect. The riskiest part was the least visible: `profiles` had no UPDATE policy, and the init migration says that absence was what prevented self-promotion — while `authenticated` held a table-level UPDATE grant on **every** column including `role`. Adding the policy the feature needed would have made `update profiles set role='teacher'` a two-line request, so the write path is narrowed three ways (column grant, policy, guard trigger), each falsified by removing it. The first guard refused every role change and broke `npm run promote:teacher`; it now returns early when `auth.uid()` is null. Two findings came only from running things: a `"use server"` file may export **only async functions**, so a `const` export 500'd every page while typecheck, lint and 212 tests passed; and the default recovery email returns the session in the URL **fragment**, which a server route can never read — the custom `{{ .TokenHash }}` template that fixes it is refused by free-tier hosted (`config push` is atomic, so it blocked every other setting), so recovery lands on a client page that adopts the fragment instead. That push also restored `enable_confirmations` on hosted, which a Phase 8 push had silently turned off.
 
 - **2026-08-31** — `8.4`, and the lesson of the phase. Google sign-in "did not log you in": the session was valid, but `getSessionUser()` returns null without a profile row, and the account being tested was created forty minutes **before** the trigger that creates profiles existed — so password login had been equally broken on it all along. Fixed as an idempotent backfill migration rather than a console `insert`, so it travels to every database. Two things settled on the way: Supabase **links** a Google identity to a pre-existing account on a matching verified email (one `user_id`, `providers: email,google`), and the app talks to the **hosted** project, not the local stack — every local verification in 8.1–8.3 was aimed at a database the app never opens, which is why `config push` was then needed to enable the provider where it actually mattered.
 

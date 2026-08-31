@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { GoogleMark } from "@/components/auth/google-mark";
 import { AvatarForm } from "@/components/profile/avatar-form";
+import { ConnectionRow } from "@/components/profile/connection-row";
 import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { DisplayNameForm } from "@/components/profile/display-name-form";
 import { ProfileSection } from "@/components/profile/profile-section";
@@ -9,7 +11,7 @@ import { SetPasswordForm } from "@/components/profile/set-password-form";
 import { requireUser } from "@/lib/auth";
 import { avatarUrl } from "@/lib/profile/avatar-url";
 import { getIdentities } from "@/lib/profile/connections";
-import { hasPassword } from "@/lib/profile/identities";
+import { describeConnections, hasPassword } from "@/lib/profile/identities";
 
 export async function generateMetadata() {
     const t = await getTranslations();
@@ -27,6 +29,7 @@ export default async function ProfilePage() {
 
     const stored = Boolean(user.profile.avatar_url);
     const passwordSet = hasPassword(identities);
+    const connections = describeConnections(identities);
 
     return (
         <div className="mx-auto w-full max-w-3xl px-5 py-12 md:py-16">
@@ -94,6 +97,19 @@ export default async function ProfilePage() {
                             </Link>
                         </p>
                     )}
+                </ProfileSection>
+
+                <ProfileSection
+                    title={t("connections")}
+                    description={t("connectionsHelp")}
+                >
+                    <div className="divide-y divide-rule">
+                        <ConnectionRow
+                            label={t("google")}
+                            mark={<GoogleMark />}
+                            connection={connections.google}
+                        />
+                    </div>
                 </ProfileSection>
             </div>
         </div>

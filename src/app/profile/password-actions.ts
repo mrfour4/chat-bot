@@ -82,11 +82,11 @@ export async function sendPasswordReset(
 
     const supabase = await createClient();
 
-    const confirm = new URL("/auth/confirm", origin);
-    confirm.searchParams.set("next", PROFILE_PASSWORD_PATH);
+    const landing = new URL("/auth/recover", origin);
+    landing.searchParams.set("next", PROFILE_PASSWORD_PATH);
 
     await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-        redirectTo: confirm.toString(),
+        redirectTo: landing.toString(),
     });
 
     return { notice: t("resetEmailSent") };
