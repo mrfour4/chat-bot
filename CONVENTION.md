@@ -185,6 +185,14 @@ question with no answer and no explanation looks like it was ignored.
 
 These caused real failures. Changing them will look harmless and will not be.
 
+- **`email_sent` cannot be raised on hosted while the built-in provider is used.**
+  The CLI silently omits it from a `config push` (`auth: up_to_date`) because the
+  setting requires SMTP. Locally it applies at once, since Mailpit is the mail
+  server — so email flows are tested locally, not on hosted.
+- **The admin API's `listUsers` fails on this database.** It scans every
+  `auth.users` row, and rows inserted by SQL leave token columns `NULL` where
+  GoTrue expects `''`: *"Database error finding users"*. Look the user up in
+  `public.profiles` and use `updateUserById`.
 - **The built-in Supabase email provider sends 2 emails per hour, project-wide.**
   Only custom SMTP raises it, and only custom SMTP allows custom templates. Every
   auth email — confirmation, recovery — shares that budget, so `enable_confirmations`
