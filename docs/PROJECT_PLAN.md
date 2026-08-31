@@ -720,7 +720,64 @@ a provider holding placeholder credentials.
 
 ---
 
-## 14. Changelog
+## 14. Phase 9 — The profile page
+
+**Asked for:** change avatar, change display name, change password, forgot/reset
+password, connect/disconnect Google — following the existing auth architecture.
+
+| # | What | Doc | Status |
+|---|------|-----|--------|
+| 9.1 | Schema — `avatar_url`, a safe UPDATE path, guard trigger | [9.1](phases/9.1-profile-schema.md) | ✅ |
+| 9.2 | The avatars bucket — private, signed, validated by content | [9.2](phases/9.2-avatar-storage.md) | ⏳ |
+| 9.3 | The page — display name and avatar | [9.3](phases/9.3-profile-page.md) | ⏳ |
+| 9.4 | Password — change it, or set a first one | [9.4](phases/9.4-password.md) | ⏳ |
+| 9.5 | Forgot password — the emailed recovery flow | [9.5](phases/9.5-reset-password.md) | ⏳ |
+| 9.6 | Google — connect and disconnect | [9.6](phases/9.6-link-google.md) | ⏳ |
+
+### The trap this phase had to avoid
+
+`profiles` has had **no UPDATE policy at all** since Phase 1, and the init
+migration says why: *"No UPDATE policy at all, so a user can never promote
+themselves to teacher."* RLS was doing that work alone. Underneath it, the
+table-level grant tells a different story:
+
+```
+authenticated | UPDATE | role
+authenticated | UPDATE | email
+authenticated | UPDATE | id
+```
+
+`authenticated` may update **every column**, `role` included. Adding the UPDATE
+policy this phase needs — so people can change their display name — would have
+turned self-promotion to teacher into a two-line request against PostgREST.
+
+So the write path is narrowed three ways rather than one (9.1): column-level
+grants, so Postgres refuses `role` before RLS is consulted; a policy restricted
+to your own row; and a guard trigger that raises if `role`, `email` or `id`
+changes, following the `documents_guard_immutable` pattern. Any one of them would
+do today. Together, re-widening a grant by accident does not silently reopen the
+hole.
+
+### Decisions
+
+**Avatars live in a private bucket, served by signed URL** — the same shape as
+`documents`, rather than a public bucket. An avatar is a photograph of a
+student; a permanent public URL is not something to hand out by default.
+
+**Content is checked, not trusted.** `File.type` comes from the extension, so
+the image bytes are checked for a real PNG/JPEG/WebP signature — the same
+reasoning as `%PDF-` in 2.1.2.
+
+**Changing a password requires the current one.** `secure_password_change` is
+`false`, so Supabase alone would let a stolen session set a new password
+silently. 9.4 re-authenticates with the old password first.
+
+**A Google-only account has no password to change**, so it is offered a way to
+*set* one instead, through the same recovery email as "forgot password".
+
+---
+
+## 15. Changelog
 
 - **2026-08-31** — `8.4`, and the lesson of the phase. Google sign-in "did not log you in": the session was valid, but `getSessionUser()` returns null without a profile row, and the account being tested was created forty minutes **before** the trigger that creates profiles existed — so password login had been equally broken on it all along. Fixed as an idempotent backfill migration rather than a console `insert`, so it travels to every database. Two things settled on the way: Supabase **links** a Google identity to a pre-existing account on a matching verified email (one `user_id`, `providers: email,google`), and the app talks to the **hosted** project, not the local stack — every local verification in 8.1–8.3 was aimed at a database the app never opens, which is why `config push` was then needed to enable the provider where it actually mattered.
 

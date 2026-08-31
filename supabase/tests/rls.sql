@@ -92,17 +92,33 @@ begin
      case when n = 1 then '' else 'the row was deleted' end);
 
   ---------------------------------------------------------------- 6
-  -- `profiles` deliberately has no UPDATE policy, so nobody self-promotes.
+  -- Self-promotion is refused. Since 9.1 this *raises* rather than quietly
+  -- affecting no rows: profiles now has an UPDATE policy so a user can change
+  -- their display name, and `role` is kept out of reach by a column grant,
+  -- which Postgres enforces with 42501 before RLS is consulted. This check used
+  -- to run the UPDATE bare and inspect the row afterwards; the stronger
+  -- behaviour made that abort the whole block.
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims',
     json_build_object('sub', student, 'role', 'authenticated')::text, true);
-  update public.profiles set role = 'teacher' where id = student;
+  blocked := false;
+  begin
+    update public.profiles set role = 'teacher' where id = student;
+  exception
+    -- Either brake is a pass: the column grant refuses with 42501, the guard
+    -- trigger with P0001. This check asks only "was it refused"; check 33 is
+    -- the one that names the trigger specifically.
+    when insufficient_privilege then blocked := true;
+    when raise_exception then blocked := true;
+  end;
   perform set_config('role', 'postgres', true);
   select count(*) into n from public.profiles
     where id = student and role = 'student';
   insert into rls_results values
-    ('student cannot self-promote to teacher', n = 1,
-     case when n = 1 then '' else 'the role was changed' end);
+    ('student cannot self-promote to teacher', blocked and n = 1,
+     case when not blocked then 'the update was not refused'
+          when n <> 1 then 'the role was changed'
+          else '' end);
 
   ---------------------------------------------------------------- 7
   perform set_config('role', 'authenticated', true);
@@ -429,6 +445,46 @@ begin
 
   delete from auth.users where id = google_user;
 
+  ---------------------------------------------------------------- 30
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', student, 'role', 'authenticated')::text, true);
+  update public.profiles set full_name = 'Học sinh mới' where id = student;
+  get diagnostics n = row_count;
+  perform set_config('role', 'postgres', true);
+  perform set_config('request.jwt.claims', null, true);
+  insert into rls_results values
+    ('a student can change their own display name', n = 1, n || ' rows renamed');
+
+  ---------------------------------------------------------------- 32
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', student, 'role', 'authenticated')::text, true);
+  update public.profiles set full_name = 'Bị đổi tên' where id = teacher;
+  get diagnostics n = row_count;
+  perform set_config('role', 'postgres', true);
+  perform set_config('request.jwt.claims', null, true);
+  insert into rls_results values
+    ('a student cannot rename another user', n = 0, n || ' rows renamed');
+
+  ---------------------------------------------------------------- 34
+  -- npm run promote:teacher runs as the service role, where auth.uid() is null.
+  -- Guarding every caller broke the only route to the teacher role.
+  perform set_config('role', 'service_role', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('role', 'service_role')::text, true);
+  blocked := false;
+  begin
+    update public.profiles set role = 'teacher' where id = student;
+  exception when others then blocked := true;
+  end;
+  perform set_config('role', 'postgres', true);
+  perform set_config('request.jwt.claims', null, true);
+  update public.profiles set role = 'student' where id = student;
+  insert into rls_results values
+    ('an admin script can still grant the teacher role', not blocked,
+     case when blocked then 'promote:teacher would fail' else '' end);
+
   perform set_config('storage.allow_delete_query', 'false', true);
 
   delete from public.documents where id = doc_id;
@@ -437,6 +493,39 @@ begin
   select current_user into current_role_name;
   raise notice 'finished as %', current_role_name;
 end $$;
+
+-- 33, outside the DO block on purpose.
+--
+-- Defence in depth: restoring a broad `grant update` -- one plausible future
+-- edit -- must not reopen self-promotion, because the guard trigger still
+-- refuses. It cannot live in the block above: a GRANT issued inside a PL/pgSQL
+-- block is not yet in effect for later statements of that same block, so the
+-- attempt failed on the column grant (42501) and never reached the trigger,
+-- which made the check test the wrong brake.
+grant update on public.profiles to authenticated;
+
+do $$
+declare
+  student constant uuid := '22222222-2222-2222-2222-222222222222';
+  blocked boolean := false;
+begin
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', student, 'role', 'authenticated')::text, true);
+  begin
+    update public.profiles set role = 'teacher' where id = student;
+  exception when raise_exception then blocked := true;
+  end;
+  perform set_config('role', 'postgres', true);
+  perform set_config('request.jwt.claims', null, true);
+  update public.profiles set role = 'student' where id = student;
+  insert into rls_results values
+    ('the trigger still refuses a role change without the column grant', blocked,
+     case when blocked then '' else 'nothing stopped the promotion' end);
+end $$;
+
+revoke update on public.profiles from authenticated;
+grant update (full_name, avatar_url) on public.profiles to authenticated;
 
 select
   case when passed then 'PASS  ' else 'FAIL  ' end || name ||
