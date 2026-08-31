@@ -65,6 +65,14 @@ lockfile and Markdown are excluded.
   list drifts further out of position the further you scroll.
 - **Ask for the next page before the end, not at it.** Derived from the last
   rendered virtual item, so scroll position has one source of truth.
+- **A scroll store's first snapshot is not a measurement.** `MessageScroller`
+  creates its state as `{start: false, end: false}` and corrects it in a layout
+  effect, so a passive effect on mount reads "at the top" for a viewport that is
+  about to be anchored at the end. Anything that fetches on reaching an edge
+  arms itself a frame after mount.
+- **A React-state flag cannot gate two calls in one commit.** `isPending` lands a
+  render later, and Strict Mode invokes mount effects twice. Single-flight
+  guards are refs, written before the call.
 - **Nothing permanent may sit at the top of `MessageScrollerContent`.** The
   scroller recognises a prepend by the element that used to be first having
   moved down, and restores scroll only then. A trigger or banner pinned at the

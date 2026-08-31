@@ -7,7 +7,7 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `6.10` — conventions ✅ · **PHASE 6 COMPLETE**
+**Last completed:** `6.11` — duplicate message keys ✅ · **PHASE 6 COMPLETE**
 **Current phase:** Phase 7 — testing, yours
 **State:** Phase 6 complete — ten small phases, one commit each. The two real
 bugs are fixed and covered: uploading was refused by our own RLS policy, and the
@@ -569,6 +569,7 @@ outright, and the chat scroller fetched in a loop.
 | 6.8 | Documents table | long file names, new tab, size only, download | [6.8](phases/6.8-documents-table.md) | ✅ |
 | 6.9 | Status filter | the English label on a Vietnamese menu | [6.9](phases/6.9-status-filter.md) | ✅ |
 | 6.10 | Conventions | comment strip, `CONVENTION.md`, this file | [6.10](phases/6.10-conventions.md) | ✅ |
+| 6.11 | Duplicate message keys | the older page fetched twice on mount | [6.11](phases/6.11-duplicate-message-keys.md) | ✅ |
 
 ### The two real bugs, and what caused them
 

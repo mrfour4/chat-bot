@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { useMessageScrollerScrollable } from "@/components/ui/message-scroller";
@@ -17,10 +17,16 @@ export function OlderMessagesTrigger({
 }) {
     const t = useTranslations("chat");
     const { start } = useMessageScrollerScrollable();
+    const [armed, setArmed] = useState(false);
 
     useEffect(() => {
-        if (hasOlder && !start && !loading) onReach();
-    }, [hasOlder, start, loading, onReach]);
+        const frame = window.requestAnimationFrame(() => setArmed(true));
+        return () => window.cancelAnimationFrame(frame);
+    }, []);
+
+    useEffect(() => {
+        if (armed && hasOlder && !start && !loading) onReach();
+    }, [armed, hasOlder, start, loading, onReach]);
 
     if (!loading) return null;
 

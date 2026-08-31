@@ -1,10 +1,11 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { askQuestion, fetchOlderMessages } from "@/lib/api/chat";
+import { prependMessages } from "@/lib/chat/merge";
 import { notifyError } from "@/lib/notify";
 import type { ChatMessage, HistoryTurn } from "@/types/chat";
 
@@ -40,6 +41,7 @@ export function useChat({
 
     const [cursor, setCursor] = useState<string | null>(initialCursor);
     const [restoreTo, setRestoreTo] = useState<string | null>(null);
+    const requested = useRef<string | null>(null);
 
     const send = useMutation({
         mutationFn: (payload: { question: string; history: HistoryTurn[] }) =>
@@ -74,10 +76,13 @@ export function useChat({
         mutationFn: fetchOlderMessages,
         onSuccess: (page) => {
             setCursor(page.nextCursor);
-            setMessages((current) => [...page.messages, ...current]);
+            setMessages((current) => prependMessages(current, page.messages));
             setRestoreTo(page.messages.at(-1)?.id ?? null);
         },
         onError: (error) => notifyError(t("loadOlderFailed"), error.message),
+        onSettled: () => {
+            requested.current = null;
+        },
     });
 
     const pending = send.isPending;
@@ -87,6 +92,9 @@ export function useChat({
 
     const loadOlder = useCallback(() => {
         if (!conversationId || !cursor || olderPending) return;
+        if (requested.current === cursor) return;
+
+        requested.current = cursor;
         olderMutate({ conversationId, before: cursor });
     }, [conversationId, cursor, olderPending, olderMutate]);
 
