@@ -3,6 +3,8 @@ import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 
+import { KATEX_OPTIONS } from "@/lib/chat/katex";
+
 const components: Components = {
     h1: ({ children }) => <h3 className="md-heading">{children}</h3>,
     h2: ({ children }) => <h3 className="md-heading">{children}</h3>,
@@ -58,18 +60,12 @@ const components: Components = {
     ),
 };
 
-const katexOptions = {
-    throwOnError: false,
-    strict: "ignore" as const,
-    trust: false,
-};
-
 export function Markdown({ children }: { children: string }) {
     return (
         <div className="markdown text-sm leading-relaxed">
             <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
-                rehypePlugins={[[rehypeKatex, katexOptions]]}
+                rehypePlugins={[[rehypeKatex, KATEX_OPTIONS]]}
                 components={components}
             >
                 {children}

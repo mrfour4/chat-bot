@@ -1,12 +1,5 @@
-import katex from "katex";
-
+import { renderMath } from "@/lib/chat/katex";
 import { splitMath } from "@/lib/chat/math";
-
-const KATEX_OPTIONS = {
-    throwOnError: false,
-    strict: "ignore" as const,
-    trust: false,
-};
 
 export function MathText({ children }: { children: string }) {
     const segments = splitMath(children);
@@ -24,10 +17,7 @@ export function MathText({ children }: { children: string }) {
                     <span
                         key={index}
                         dangerouslySetInnerHTML={{
-                            __html: katex.renderToString(segment.value, {
-                                ...KATEX_OPTIONS,
-                                displayMode: segment.display,
-                            }),
+                            __html: renderMath(segment.value, segment.display),
                         }}
                     />
                 ),

@@ -65,6 +65,13 @@ lockfile and Markdown are excluded.
   list drifts further out of position the further you scroll.
 - **Ask for the next page before the end, not at it.** Derived from the last
   rendered virtual item, so scroll position has one source of truth.
+- **KaTeX cannot measure Vietnamese, and says so as a warning about a font.**
+  Toned vowels live in Latin Extended Additional (`0x1E00–0x1EFF`), which is
+  absent from KaTeX's `scriptData`, so it neither has metrics nor substitutes
+  `M`'s the way it does for Cyrillic and CJK. The character still draws, in a box
+  of zero width and height, so everything after it is mispositioned. Metrics are
+  extended once in `lib/chat/katex.ts`; every KaTeX render goes through that
+  module so the extension cannot be bypassed.
 - **A quotation is rendered with `MathText`, an answer with `Markdown`.** A
   citation snippet is text from someone's document: Markdown would let it
   restructure itself, turning pipes into a table and `*` into a list the source

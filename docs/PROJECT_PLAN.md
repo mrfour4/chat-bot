@@ -7,7 +7,7 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `6.16` — notation in citations ✅ · **PHASE 6 COMPLETE**
+**Last completed:** `6.17` — Vietnamese in KaTeX ✅ · **PHASE 6 COMPLETE**
 **Current phase:** Phase 7 — testing, yours
 **State:** Phase 6 complete — ten small phases, one commit each. The two real
 bugs are fixed and covered: uploading was refused by our own RLS policy, and the
@@ -575,6 +575,7 @@ outright, and the chat scroller fetched in a loop.
 | 6.14 | Conversation header | same layout as the home intro; title in the tab | [6.14](phases/6.14-conversation-header.md) | ✅ |
 | 6.15 | Mathematical notation | KaTeX, so formulas read as formulas | [6.15](phases/6.15-math.md) | ✅ |
 | 6.16 | Notation in citations | math in a snippet, without letting markdown reformat a quotation | [6.16](phases/6.16-citation-math.md) | ✅ |
+| 6.17 | Vietnamese in KaTeX | metrics for Latin Extended Additional, so the layout is not zero-width | [6.17](phases/6.17-katex-vietnamese.md) | ✅ |
 
 ### The two real bugs, and what caused them
 
