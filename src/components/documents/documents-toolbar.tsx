@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 
 import { SearchInput } from "@/components/common";
@@ -39,6 +40,19 @@ export function DocumentsToolbar({
 }) {
     const t = useTranslations("documents");
 
+    const options = useMemo(
+        () => ["all", ...DOCUMENT_DISPLAY_STATUSES] as const,
+        [],
+    );
+
+    const labels = useMemo(
+        () =>
+            Object.fromEntries(
+                options.map((value) => [value, t(STATUS_KEYS[value])]),
+            ),
+        [options, t],
+    );
+
     return (
         <div className="mt-8 flex flex-wrap items-center gap-3">
             <SearchInput
@@ -51,6 +65,7 @@ export function DocumentsToolbar({
             />
 
             <Select
+                items={labels}
                 value={status}
                 onValueChange={(value) =>
                     onStatusChange(value as DocumentsStatusFilter)
@@ -64,9 +79,9 @@ export function DocumentsToolbar({
                 </SelectTrigger>
                 <SelectContent>
                     <SelectGroup>
-                        {["all", ...DOCUMENT_DISPLAY_STATUSES].map((value) => (
+                        {options.map((value) => (
                             <SelectItem key={value} value={value}>
-                                {t(STATUS_KEYS[value])}
+                                {labels[value]}
                             </SelectItem>
                         ))}
                     </SelectGroup>
