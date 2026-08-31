@@ -1,11 +1,6 @@
 "use client";
 
-import {
-    keepPreviousData,
-    useMutation,
-    useQuery,
-    useQueryClient,
-} from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 
@@ -16,6 +11,7 @@ import {
 } from "@/constants/documents";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useDocumentsRealtime } from "@/hooks/use-documents-realtime";
+import { useRefreshDocuments } from "@/hooks/use-refresh-documents";
 import {
     archiveDocument,
     deleteDocument,
@@ -44,7 +40,7 @@ function useReportingMutation<TVariables>(
     run: (variables: TVariables) => Promise<unknown>,
     successKey: string,
     failureKey: string,
-    onSettled: () => Promise<void>,
+    onSettled: () => void,
 ) {
     const t = useTranslations("documents");
 
@@ -52,7 +48,7 @@ function useReportingMutation<TVariables>(
         mutationFn: run,
         onSuccess: () => {
             notifySuccess(t(successKey));
-            return onSettled();
+            onSettled();
         },
         onError: (error: Error) => notifyError(t(failureKey), error.message),
     });
@@ -60,11 +56,11 @@ function useReportingMutation<TVariables>(
 
 export function useDocuments() {
     const t = useTranslations("documents");
-    const queryClient = useQueryClient();
-    const invalidate = () =>
-        queryClient.invalidateQueries({ queryKey: queryKeys.documents });
 
-    const live = useDocumentsRealtime(invalidate);
+    // A mutation and the Realtime broadcast it causes are two true signals about
+    // one change. Coalescing them is the fix; silencing either is not.
+    const refresh = useRefreshDocuments();
+    const live = useDocumentsRealtime(refresh);
 
     const [uploadFormKey, setUploadFormKey] = useState(0);
     const [search, setSearch] = useState("");
@@ -119,7 +115,7 @@ export function useDocuments() {
                 );
             }
 
-            return invalidate();
+            refresh();
         },
         onError: (error) => notifyError(t("uploadFailed"), error.message),
     });
@@ -128,31 +124,31 @@ export function useDocuments() {
         deleteDocument,
         "deletedTitle",
         "deleteFailed",
-        invalidate,
+        refresh,
     );
     const retry = useReportingMutation(
         retryDocument,
         "reindexingTitle",
         "retryFailed",
-        invalidate,
+        refresh,
     );
     const rename = useReportingMutation(
         renameDocument,
         "renamedTitle",
         "renameFailed",
-        invalidate,
+        refresh,
     );
     const archive = useReportingMutation(
         archiveDocument,
         "archivedTitle",
         "archiveFailed",
-        invalidate,
+        refresh,
     );
     const restore = useReportingMutation(
         unarchiveDocument,
         "restoredTitle",
         "restoreFailed",
-        invalidate,
+        refresh,
     );
 
     const changeFilter =
