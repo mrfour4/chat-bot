@@ -191,6 +191,30 @@ export async function claimForIndexing(
     return (data ?? []).length === 1;
 }
 
+export async function nextPendingDocument(
+    supabase: DocumentsClient,
+    skipIds: string[],
+): Promise<DocumentRow | null> {
+    let builder = supabase
+        .from("documents")
+        .select("*")
+        .eq("status", "pending")
+        .is("deleted_at", null)
+        .not("storage_path", "is", null);
+
+    if (skipIds.length > 0) {
+        builder = builder.not("id", "in", `(${skipIds.join(",")})`);
+    }
+
+    const { data, error } = await builder
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+    if (error) throw error;
+    return data;
+}
+
 export async function listStale(
     supabase: DocumentsClient,
     staleAfterMs: number,

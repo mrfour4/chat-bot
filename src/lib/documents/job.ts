@@ -10,15 +10,15 @@ import {
 import { getPdf } from "@/lib/documents/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function runIndexingJob(documentId: string): Promise<void> {
+export async function runIndexingJob(documentId: string): Promise<boolean> {
     try {
         const supabase = createAdminClient();
 
         const claimed = await claimForIndexing(supabase, documentId);
-        if (!claimed) return;
+        if (!claimed) return false;
 
         const document = await getDocument(supabase, documentId);
-        if (!document) return;
+        if (!document) return false;
 
         if (!document.storage_path) {
             await markFailed(
@@ -26,7 +26,7 @@ export async function runIndexingJob(documentId: string): Promise<void> {
                 documentId,
                 "Không tìm thấy tệp PDF đã lưu. Vui lòng tải lên lại.",
             );
-            return;
+            return true;
         }
 
         const bytes = await getPdf(supabase, document.storage_path);
@@ -36,7 +36,7 @@ export async function runIndexingJob(documentId: string): Promise<void> {
                 documentId,
                 "Không đọc được tệp PDF đã lưu. Vui lòng tải lên lại.",
             );
-            return;
+            return true;
         }
 
         const outcome = await indexDocument({
@@ -47,10 +47,11 @@ export async function runIndexingJob(documentId: string): Promise<void> {
 
         if (!outcome.ok) {
             await markFailed(supabase, documentId, outcome.message);
-            return;
+            return true;
         }
 
         await markReady(supabase, documentId, outcome.geminiDocumentName);
+        return true;
     } catch (error) {
         console.error("[indexing] job failed for", documentId, error);
 
@@ -61,5 +62,7 @@ export async function runIndexingJob(documentId: string): Promise<void> {
                 "Lập chỉ mục thất bại do lỗi hệ thống. Vui lòng thử lại.",
             );
         } catch {}
+
+        return true;
     }
 }

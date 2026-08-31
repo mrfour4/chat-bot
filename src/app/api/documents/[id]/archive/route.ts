@@ -4,7 +4,7 @@ import { apiMessages } from "@/lib/api/messages";
 
 import { getSessionUser, getTeacher } from "@/lib/auth";
 import { deleteFromStore } from "@/lib/documents/indexer";
-import { runIndexingJob } from "@/lib/documents/job";
+import { runIndexingQueue } from "@/lib/documents/queue";
 import {
     archiveDocument,
     getDocument,
@@ -98,7 +98,7 @@ export async function DELETE(
     }
 
     await unarchiveDocument(supabase, id, teacher.id);
-    after(() => runIndexingJob(id));
+    after(() => runIndexingQueue());
 
     return NextResponse.json({
         ...document,

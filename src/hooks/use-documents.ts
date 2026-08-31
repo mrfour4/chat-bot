@@ -24,7 +24,7 @@ import {
     requestReindex,
     retryDocument,
     unarchiveDocument,
-    uploadDocument,
+    uploadDocuments,
     type DocumentsPage,
 } from "@/lib/api/documents";
 import { isPending, isStale } from "@/lib/documents/status";
@@ -94,13 +94,37 @@ export function useDocuments() {
     });
 
     const upload = useMutation({
-        mutationFn: uploadDocument,
-        onSuccess: (document) => {
+        mutationFn: uploadDocuments,
+        onSuccess: (results) => {
             setUploadFormKey((key) => key + 1);
-            notifySuccess(
-                t("uploadedTitle"),
-                t("uploadedDescription", { title: document.title }),
-            );
+
+            const queued = results.filter(
+                (result) => result.outcome === "queued",
+            ).length;
+            const refused = results.length - queued;
+
+            // A mixed batch is the interesting case, so the two halves are
+            // reported separately rather than averaged into one verdict.
+            if (queued > 0) {
+                notifySuccess(
+                    t("uploadedTitle", { count: queued }),
+                    t("uploadedDescription", { count: queued }),
+                );
+            }
+
+            if (refused > 0) {
+                notifyError(
+                    t("uploadRefused", { count: refused }),
+                    results
+                        .filter((result) => result.outcome !== "queued")
+                        .map(
+                            (result) =>
+                                `${result.fileName}: ${result.message ?? ""}`,
+                        )
+                        .join("\n"),
+                );
+            }
+
             return invalidate();
         },
         onError: (error) => notifyError(t("uploadFailed"), error.message),

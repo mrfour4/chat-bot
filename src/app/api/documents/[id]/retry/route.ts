@@ -3,7 +3,7 @@ import { after, NextResponse } from "next/server";
 import { apiMessages } from "@/lib/api/messages";
 
 import { getSessionUser, getTeacher } from "@/lib/auth";
-import { runIndexingJob } from "@/lib/documents/job";
+import { runIndexingQueue } from "@/lib/documents/queue";
 import { getDocument, resetToPending } from "@/lib/documents/repo";
 import { createClient } from "@/lib/supabase/server";
 
@@ -47,7 +47,7 @@ export async function POST(
     }
 
     await resetToPending(supabase, id);
-    after(() => runIndexingJob(id));
+    after(() => runIndexingQueue());
 
     return NextResponse.json({ ...document, status: "pending" });
 }

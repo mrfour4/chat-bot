@@ -1,5 +1,6 @@
 import type { DocumentRow } from "@/lib/db";
 import { expectOk } from "@/lib/api/http";
+import type { UploadResult } from "@/app/api/documents/route";
 import type { DocumentListing } from "@/lib/documents/repo";
 
 export type DocumentsQuery = {
@@ -31,15 +32,16 @@ export async function fetchDocumentsPage(
     return (await response.json()) as DocumentsPage;
 }
 
-export async function uploadDocument(file: File): Promise<DocumentRow> {
+export async function uploadDocuments(files: File[]): Promise<UploadResult[]> {
     const body = new FormData();
-    body.append("file", file);
+    for (const file of files) body.append("file", file);
 
     const response = await expectOk(
         await fetch("/api/documents", { method: "POST", body }),
         "Tải lên thất bại. Vui lòng thử lại.",
     );
-    return (await response.json()) as DocumentRow;
+    const payload = (await response.json()) as { results: UploadResult[] };
+    return payload.results;
 }
 
 export async function deleteDocument(id: string): Promise<void> {

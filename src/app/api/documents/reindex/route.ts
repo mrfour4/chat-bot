@@ -3,7 +3,7 @@ import { after, NextResponse } from "next/server";
 import { apiMessages } from "@/lib/api/messages";
 
 import { getSessionUser, getTeacher } from "@/lib/auth";
-import { runIndexingJob } from "@/lib/documents/job";
+import { runIndexingQueue } from "@/lib/documents/queue";
 import { listStale, resetToPending } from "@/lib/documents/repo";
 import { STALE_AFTER_MS } from "@/lib/documents/status";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -42,8 +42,9 @@ export async function POST(request: Request) {
 
     for (const document of stale) {
         await resetToPending(supabase, document.id);
-        after(() => runIndexingJob(document.id));
     }
+
+    if (stale.length > 0) after(() => runIndexingQueue());
 
     return NextResponse.json({
         requeued: stale.map((document) => document.id),

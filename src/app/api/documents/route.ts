@@ -2,13 +2,13 @@ import { after, NextResponse } from "next/server";
 
 import { apiMessages, uploadMessageKey } from "@/lib/api/messages";
 
-import { getSessionUser, getTeacher } from "@/lib/auth";
 import {
     DOCUMENTS_MAX_PAGE_SIZE,
     DOCUMENTS_PAGE_SIZE,
 } from "@/constants/documents";
+import { getSessionUser, getTeacher } from "@/lib/auth";
 import { sha256Hex } from "@/lib/documents/checksum";
-import { runIndexingJob } from "@/lib/documents/job";
+import { runIndexingQueue } from "@/lib/documents/queue";
 import {
     createDocument,
     findByChecksum,
@@ -21,11 +21,21 @@ import { isDisplayStatus } from "@/lib/documents/status";
 import { objectPath, putPdf } from "@/lib/documents/storage";
 import { deriveTitle } from "@/lib/documents/title";
 import { MAX_UPLOAD_BYTES, validateUpload } from "@/lib/documents/validate";
+import type { DocumentRow } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 
-export const maxDuration = 90;
+export const maxDuration = 300;
 
 const MAX_MEGABYTES = Math.round(MAX_UPLOAD_BYTES / (1024 * 1024));
+
+export type UploadOutcome = "queued" | "duplicate" | "rejected";
+
+export type UploadResult = {
+    fileName: string;
+    outcome: UploadOutcome;
+    message?: string;
+    document?: DocumentRow;
+};
 
 function fail(status: number, code: string, message: string) {
     return NextResponse.json({ code, message }, { status });
@@ -76,15 +86,39 @@ export async function POST(request: Request) {
     const teacher = await getTeacher();
     if (!teacher) return denyReason();
 
-    const formData = await request.formData();
-    const file = formData.get("file");
-
     const t = await apiMessages();
+    const formData = await request.formData();
 
-    if (!(file instanceof File)) {
+    const files = formData
+        .getAll("file")
+        .filter((entry): entry is File => entry instanceof File);
+
+    if (files.length === 0) {
         return fail(400, "no-file", t("noFileInRequest"));
     }
 
+    const supabase = await createClient();
+
+    // Sequential, so that one file's rejection cannot take the others with it
+    // and so the results come back in the order they were chosen.
+    const results: UploadResult[] = [];
+    for (const file of files) {
+        results.push(await store(supabase, teacher.id, file, t));
+    }
+
+    if (results.some((result) => result.outcome === "queued")) {
+        after(() => runIndexingQueue());
+    }
+
+    return NextResponse.json({ results }, { status: 201 });
+}
+
+async function store(
+    supabase: Awaited<ReturnType<typeof createClient>>,
+    teacherId: string,
+    file: File,
+    t: Awaited<ReturnType<typeof apiMessages>>,
+): Promise<UploadResult> {
     const bytes = new Uint8Array(await file.arrayBuffer());
 
     const validation = validateUpload({
@@ -93,38 +127,32 @@ export async function POST(request: Request) {
         bytes,
     });
     if (!validation.ok) {
-        return fail(
-            400,
-            validation.code,
-            t(uploadMessageKey(validation.code), { size: MAX_MEGABYTES }),
-        );
+        return {
+            fileName: file.name,
+            outcome: "rejected",
+            message: t(uploadMessageKey(validation.code), {
+                size: MAX_MEGABYTES,
+            }),
+        };
     }
 
-    const supabase = await createClient();
     const checksum = await sha256Hex(bytes);
-
     const existing = await findByChecksum(supabase, checksum);
 
     if (existing?.archived_at) {
-        return NextResponse.json(
-            {
-                code: "archived-duplicate",
-                message: t("archivedDuplicate", { title: existing.title }),
-                existing: { id: existing.id, title: existing.title },
-            },
-            { status: 409 },
-        );
+        return {
+            fileName: file.name,
+            outcome: "duplicate",
+            message: t("archivedDuplicate", { title: existing.title }),
+        };
     }
 
     if (existing && existing.status !== "failed") {
-        return NextResponse.json(
-            {
-                code: "duplicate",
-                message: t("duplicate", { title: existing.title }),
-                existing: { id: existing.id, title: existing.title },
-            },
-            { status: 409 },
-        );
+        return {
+            fileName: file.name,
+            outcome: "duplicate",
+            message: t("duplicate", { title: existing.title }),
+        };
     }
 
     const document =
@@ -134,18 +162,19 @@ export async function POST(request: Request) {
             fileName: file.name,
             fileSize: bytes.length,
             checksum,
-            uploadedBy: teacher.id,
+            uploadedBy: teacherId,
         }));
 
-    const path = objectPath(teacher.id, document.id);
+    const path = objectPath(teacherId, document.id);
     const stored = await putPdf(supabase, { path, bytes });
 
     if (!stored.ok) {
         await markFailed(supabase, document.id, stored.message);
-        return NextResponse.json(
-            { ...document, status: "failed", error_message: stored.message },
-            { status: 201 },
-        );
+        return {
+            fileName: file.name,
+            outcome: "rejected",
+            message: stored.message,
+        };
     }
 
     await setStoragePath(supabase, document.id, path);
@@ -154,15 +183,14 @@ export async function POST(request: Request) {
         await resetToPending(supabase, document.id);
     }
 
-    after(() => runIndexingJob(document.id));
-
-    return NextResponse.json(
-        {
+    return {
+        fileName: file.name,
+        outcome: "queued",
+        document: {
             ...document,
             status: "pending",
             storage_path: path,
             error_message: null,
         },
-        { status: 201 },
-    );
+    };
 }

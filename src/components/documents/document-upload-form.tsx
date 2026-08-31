@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { MAX_UPLOAD_BYTES } from "@/lib/documents/validate";
 import { useFieldErrors } from "@/hooks/use-field-errors";
-import { uploadSchema } from "@/lib/validation/upload";
+import { MAX_UPLOAD_FILES, uploadSchema } from "@/lib/validation/upload";
 
 const MAX_MEGABYTES = Math.round(MAX_UPLOAD_BYTES / (1024 * 1024));
 
@@ -23,16 +23,16 @@ export function DocumentUploadForm({
     onUpload,
 }: {
     uploading: boolean;
-    onUpload: (file: File) => void;
+    onUpload: (files: File[]) => void;
 }) {
     const t = useTranslations("documents");
     const translateErrors = useFieldErrors();
 
     const form = useForm({
-        defaultValues: { file: null as File | null },
+        defaultValues: { files: [] as File[] },
         validators: { onChange: uploadSchema },
         onSubmit: ({ value }) => {
-            if (value.file) onUpload(value.file);
+            if (value.files.length > 0) onUpload(value.files);
         },
     });
 
@@ -45,7 +45,7 @@ export function DocumentUploadForm({
             }}
             className="mt-8 rounded-lg border border-rule bg-panel/60 p-5"
         >
-            <form.Field name="file">
+            <form.Field name="files">
                 {(field) => {
                     const errors = field.state.meta.errors;
                     const invalid =
@@ -61,22 +61,26 @@ export function DocumentUploadForm({
                                 <Input
                                     id="document-file"
                                     type="file"
+                                    multiple
                                     accept="application/pdf,.pdf"
                                     disabled={uploading}
                                     aria-invalid={invalid || undefined}
                                     onBlur={field.handleBlur}
                                     onChange={(event) => {
-                                        field.handleChange(
-                                            event.target.files?.[0] ?? null,
-                                        );
+                                        field.handleChange([
+                                            ...(event.target.files ?? []),
+                                        ]);
                                     }}
                                     className="h-9 min-w-0 flex-1 border-rule bg-paper py-1.5 text-ink-soft file:mr-3 file:cursor-pointer file:font-medium file:text-ink"
                                 />
 
                                 <form.Subscribe
-                                    selector={(state) => state.canSubmit}
+                                    selector={(state) => ({
+                                        canSubmit: state.canSubmit,
+                                        count: state.values.files.length,
+                                    })}
                                 >
-                                    {(canSubmit) => (
+                                    {({ canSubmit, count }) => (
                                         <Button
                                             type="submit"
                                             disabled={!canSubmit || uploading}
@@ -84,7 +88,7 @@ export function DocumentUploadForm({
                                             {uploading && <Spinner />}
                                             {uploading
                                                 ? t("uploading")
-                                                : t("upload")}
+                                                : t("upload", { count })}
                                         </Button>
                                     )}
                                 </form.Subscribe>
@@ -94,7 +98,10 @@ export function DocumentUploadForm({
                                 <FieldError errors={translateErrors(errors)} />
                             ) : (
                                 <FieldDescription>
-                                    {t("uploadHint", { size: MAX_MEGABYTES })}
+                                    {t("uploadHint", {
+                                        size: MAX_MEGABYTES,
+                                        max: MAX_UPLOAD_FILES,
+                                    })}
                                 </FieldDescription>
                             )}
                         </Field>
