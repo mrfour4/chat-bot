@@ -180,7 +180,8 @@
         "sendResetLink": "Send link",
         "backToSignIn": "Back to sign in",
         "forgotPassword": "Forgot your password?",
-        "errorRecovery": "That password reset link could not be used. Open it in the same browser you requested it from, or request a new link."
+        "errorRecovery": "That password reset link could not be used. Open it in the same browser you requested it from, or request a new link.",
+        "noticePasswordReset": "Your password has been changed. Please sign in with the new one."
     },
     "validation": {
         "email": "That is not a valid email address.",

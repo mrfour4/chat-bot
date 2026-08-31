@@ -7,7 +7,7 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `9.9` — recovery verified end to end ✅ · **PHASE 9 COMPLETE**
+**Last completed:** `9.10` — sign in again after a reset ✅ · **PHASE 9 COMPLETE**
 **⚠ Testing configuration in place:** the app points at the **local** stack
 (`.env.local`, hosted values commented just above), and `email_sent = 200` in
 `config.toml` is marked TEMPORARY. Both must be reverted before real use —
@@ -740,6 +740,7 @@ password, connect/disconnect Google — following the existing auth architecture
 | 9.7 | Feedback — reset link, avatar upload, layout | [9.7](phases/9.7-feedback.md) | ✅ |
 | 9.8 | Say when you refuse — rate limits, clipped menus | [9.8](phases/9.8-rate-limit-feedback.md) | ✅ |
 | 9.9 | Local email testing — recovery verified end to end | [9.9](phases/9.9-local-email-testing.md) | ✅ |
+| 9.10 | After a reset, sign in again | [9.10](phases/9.10-reset-then-sign-in.md) | ✅ |
 
 ### The trap this phase had to avoid
 

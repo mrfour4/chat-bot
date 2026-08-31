@@ -2,6 +2,7 @@
 
 import { getTranslations } from "next-intl/server";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth";
 import { authErrorKind } from "@/lib/auth/auth-error";
@@ -68,6 +69,29 @@ export async function setPassword(input: unknown): Promise<ProfileFormState> {
     revalidatePath(PROFILE_PATH);
     revalidatePath("/", "layout");
     return { notice: t("passwordSet") };
+}
+
+export async function completePasswordReset(
+    input: unknown,
+): Promise<ProfileFormState> {
+    const t = await getTranslations("serverProfile");
+
+    const parsed = setPasswordSchema.safeParse(input);
+    if (!parsed.success) return { error: t("passwordInvalid") };
+
+    await requireUser();
+    const supabase = await createClient();
+
+    const { error } = await supabase.auth.updateUser({
+        password: parsed.data.newPassword,
+    });
+
+    if (error) return { error: t("passwordRejected") };
+
+    await supabase.auth.signOut();
+
+    revalidatePath("/", "layout");
+    redirect("/login?notice=password-reset");
 }
 
 export async function sendPasswordReset(

@@ -8,6 +8,7 @@ import { ChangePasswordForm } from "@/components/profile/change-password-form";
 import { DisplayNameForm } from "@/components/profile/display-name-form";
 import { ProfileSection } from "@/components/profile/profile-section";
 import { SetPasswordForm } from "@/components/profile/set-password-form";
+import { setPassword } from "@/app/profile/password-actions";
 import { requireUser } from "@/lib/auth";
 import { avatarUrl } from "@/lib/profile/avatar-url";
 import { getIdentities } from "@/lib/profile/connections";
@@ -85,7 +86,11 @@ export default async function ProfilePage() {
                     title={t("password")}
                     description={passwordSet ? undefined : t("noPasswordYet")}
                 >
-                    {passwordSet ? <ChangePasswordForm /> : <SetPasswordForm />}
+                    {passwordSet ? (
+                        <ChangePasswordForm />
+                    ) : (
+                        <SetPasswordForm action={setPassword} />
+                    )}
 
                     {passwordSet && (
                         <p className="mt-4 text-sm">

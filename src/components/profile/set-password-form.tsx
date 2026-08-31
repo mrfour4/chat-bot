@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import type { ProfileFormState } from "@/app/profile/actions";
-import { setPassword } from "@/app/profile/password-actions";
 import { AuthField } from "@/components/auth/auth-field";
 import { AuthResult } from "@/components/auth/auth-result";
 import { AuthSubmit } from "@/components/auth/auth-submit";
@@ -13,7 +12,11 @@ import { FieldGroup } from "@/components/ui/field";
 import { notifyError, notifySuccess } from "@/lib/notify";
 import { setPasswordSchema } from "@/lib/validation/profile";
 
-export function SetPasswordForm() {
+export function SetPasswordForm({
+    action,
+}: {
+    action: (input: { newPassword: string }) => Promise<ProfileFormState>;
+}) {
     const t = useTranslations("profile");
     const [result, setResult] = useState<ProfileFormState>({});
 
@@ -22,7 +25,7 @@ export function SetPasswordForm() {
         validators: { onChange: setPasswordSchema },
         onSubmit: async ({ value }) => {
             setResult({});
-            const outcome = await setPassword(value);
+            const outcome = await action(value);
             setResult(outcome);
             if (outcome.error) notifyError(t("failed"), outcome.error);
             if (outcome.notice) {

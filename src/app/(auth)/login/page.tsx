@@ -1,4 +1,4 @@
-import { TriangleAlertIcon } from "lucide-react";
+import { CircleCheckIcon, TriangleAlertIcon } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -7,6 +7,7 @@ import { GoogleButton, SignInForm, SignUpForm } from "@/components/auth";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getSessionUser } from "@/lib/auth";
 import { loginErrorKey } from "@/lib/auth/login-error";
+import { loginNoticeKey } from "@/lib/auth/login-notice";
 import { googleAuthEnabled } from "@/lib/env";
 
 export async function generateMetadata() {
@@ -17,15 +18,16 @@ export async function generateMetadata() {
 export default async function LoginPage({
     searchParams,
 }: {
-    searchParams: Promise<{ mode?: string; error?: string }>;
+    searchParams: Promise<{ mode?: string; error?: string; notice?: string }>;
 }) {
     if (await getSessionUser()) redirect("/");
 
     const t = await getTranslations("auth");
 
-    const { mode, error } = await searchParams;
+    const { mode, error, notice } = await searchParams;
     const isSignUp = mode === "signup";
     const errorKey = loginErrorKey(error);
+    const noticeKey = loginNoticeKey(notice);
     const oauth = googleAuthEnabled() ? <GoogleButton /> : undefined;
 
     return (
@@ -68,6 +70,13 @@ export default async function LoginPage({
             </div>
 
             <div className="md:pt-11">
+                {noticeKey && (
+                    <Alert className="mb-4">
+                        <CircleCheckIcon />
+                        <AlertDescription>{t(noticeKey)}</AlertDescription>
+                    </Alert>
+                )}
+
                 {errorKey && (
                     <Alert variant="destructive" className="mb-4">
                         <TriangleAlertIcon />

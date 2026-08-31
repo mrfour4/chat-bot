@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { completePasswordReset } from "@/app/profile/password-actions";
 import { SetPasswordForm } from "@/components/profile/set-password-form";
 import { requireUser } from "@/lib/auth";
 
@@ -26,7 +27,7 @@ export default async function NewPasswordPage() {
             </p>
 
             <div className="mt-8 rounded-lg border border-rule bg-surface p-6">
-                <SetPasswordForm />
+                <SetPasswordForm action={completePasswordReset} />
             </div>
 
             <p className="mt-6 text-center text-sm">
