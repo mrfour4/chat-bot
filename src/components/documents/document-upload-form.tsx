@@ -72,8 +72,6 @@ export function DocumentUploadForm({
                         }
                     };
 
-                    // Nothing chosen yet is not an error, it is the starting
-                    // state; only a selection that cannot be sent is.
                     const invalid = Boolean(refusal) && files.length > 0;
 
                     return (

@@ -57,8 +57,6 @@ function useReportingMutation<TVariables>(
 export function useDocuments() {
     const t = useTranslations("documents");
 
-    // A mutation and the Realtime broadcast it causes are two true signals about
-    // one change. Coalescing them is the fix; silencing either is not.
     const refresh = useRefreshDocuments();
     const live = useDocumentsRealtime(refresh);
 
@@ -162,9 +160,6 @@ export function useDocuments() {
             setPage(0);
         };
 
-    // A term typed but not yet queried is a search in flight, not a result.
-    // Without this the "nothing matched" state shows for the old term while the
-    // new one settles, which is the flicker on clearing the box.
     const settling = search !== debouncedSearch;
 
     return {

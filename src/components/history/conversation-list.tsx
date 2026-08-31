@@ -61,7 +61,6 @@ export function ConversationList({
 
     if (loading) return <HistorySkeleton />;
     if (conversations.length === 0) {
-        // A term typed but not yet queried is a search in flight, not a result.
         if (settling) return <HistorySkeleton />;
         return filtered ? <HistoryNoMatches /> : <HistoryEmpty />;
     }

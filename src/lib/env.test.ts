@@ -22,8 +22,6 @@ async function load(values: Partial<Record<(typeof KEYS)[number], string>>) {
         process.env[key] = value;
     }
 
-    // publicEnv is read once at import, the way NEXT_PUBLIC_ values are inlined
-    // at build, so the module has to be re-imported after the environment moves.
     vi.resetModules();
     return (await import("@/lib/env")).serverEnv;
 }

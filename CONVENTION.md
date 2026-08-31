@@ -65,6 +65,23 @@ lockfile and Markdown are excluded.
   list drifts further out of position the further you scroll.
 - **Ask for the next page before the end, not at it.** Derived from the last
   rendered virtual item, so scroll position has one source of truth.
+- **Nothing permanent may sit at the top of `MessageScrollerContent`.** The
+  scroller recognises a prepend by the element that used to be first having
+  moved down, and restores scroll only then. A trigger or banner pinned at the
+  top is always index `0`, so the restore never runs and an infinite-scroll list
+  refetches until it is exhausted. Such a control goes beside the viewport, not
+  inside the content.
+- **A tooltip on a disabled control goes on the wrapper.** A disabled button
+  dispatches no pointer events, so a tooltip attached to it never opens; the
+  trigger is a wrapping element and the button inside it is `pointer-events-none`.
+- **`Select.Value` reads the Root's `items`, not the selected `SelectItem`.**
+  Without that map it prints `String(value)`, which looks translated whenever
+  the values happen to be English words. Any `Select` whose labels are
+  translated passes `items`.
+- **`truncate` does nothing in a table cell without `table-fixed` and
+  `max-w-0`.** `table-layout: auto` widens the column to its widest content
+  instead of clipping, so one long unbroken filename pushes the whole table
+  sideways.
 
 ## 3. Forms
 
@@ -110,6 +127,11 @@ question with no answer and no explanation looks like it was ignored.
   Vietnamese; an English answer would be an unverified translation of a
   Vietnamese regulation, and its citations would still point at Vietnamese
   text. The interface is bilingual; the evidence is not translated.
+- **Two i18n tests, and they catch different things.** Key *parity* proves `en`
+  and `vi` agree; it says nothing about a key neither file has. A component
+  referencing a key that was never added passes parity and throws
+  `MISSING_MESSAGE` at render, so a second test scans the source for literal
+  `t("…")` calls and resolves each one in both catalogues.
 
 ## 6. Data access and authorization
 
@@ -200,6 +222,21 @@ These caused real failures. Changing them will look harmless and will not be.
   offsets into the *completed* answer, so the metadata that decides whether an
   answer may be shown necessarily arrives last. Streaming would mean publishing
   a possible fabrication and retracting it.
+
+- **`documents.updated_by` is stamped by a `BEFORE UPDATE` trigger, not by
+  routes.** `documents_update_teacher` requires `updated_by = auth.uid()` in its
+  `WITH CHECK`, so any update on a user's client that does not set it is refused
+  with 42501 — worded "new row violates row-level security policy", which reads
+  like an insert failure and is not one. The trigger leaves an explicitly set
+  value alone, and does nothing under service role, so background jobs do not
+  claim someone's edit.
+- **Only upload, restore, retry and the cron sweep may call Gemini.** Renaming,
+  archiving, deleting, searching and paging change nothing about the index. A
+  client must never trigger the recovery sweep: it re-ran on every refetch and
+  spent quota on documents that were only ever going to look stale.
+- **`GEMINI_BASE_URL` makes Gemini unreachable, not merely unused.** It rewrites
+  the host on every request, and when it is set the API key and store name fall
+  back to placeholders, so local work cannot spend quota by accident.
 
 ## 8. Background work
 

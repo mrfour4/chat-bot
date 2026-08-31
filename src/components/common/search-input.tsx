@@ -54,8 +54,6 @@ export function SearchInput({
                         aria-label={t("clearSearch")}
                         onClick={() => {
                             onChange("");
-                            // Clearing a search box and losing your place in the
-                            // page is worse than having no button at all.
                             inputRef.current?.focus();
                         }}
                     >

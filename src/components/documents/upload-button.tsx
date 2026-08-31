@@ -28,8 +28,6 @@ export function UploadButton({
         <Button
             type="submit"
             disabled={Boolean(refusal) || uploading}
-            // A disabled button dispatches no pointer events, so the tooltip on
-            // the wrapper would never open with the pointer over the button.
             className={refusal ? "pointer-events-none" : undefined}
         >
             {uploading && <Spinner />}

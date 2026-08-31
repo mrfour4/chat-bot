@@ -7,11 +7,11 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `5.10` — conventions ✅ · **PHASE 5 COMPLETE**
-**Current phase:** `6.10` — conventions
-**State:** Phase 6 planned in §11: ten small phases from your eight UI reports
-and the reindexing follow-up. Two are bug fixes, not polish — uploading fails at
-RLS, and the chat fetches older messages in a loop.
+**Last completed:** `6.10` — conventions ✅ · **PHASE 6 COMPLETE**
+**Current phase:** Phase 7 — testing, yours
+**State:** Phase 6 complete — ten small phases, one commit each. The two real
+bugs are fixed and covered: uploading was refused by our own RLS policy, and the
+chat refetched older messages in a loop.
 **Blocked on:** nothing. No Gemini quota is spent: `GEMINI_BASE_URL` points every
 call at `npm run mock:gemini` on `127.0.0.1`.
 
@@ -568,7 +568,7 @@ outright, and the chat scroller fetched in a loop.
 | 6.7 | Search | clear button, pending indicator, calm empty states | [6.7](phases/6.7-search.md) | ✅ |
 | 6.8 | Documents table | long file names, new tab, size only, download | [6.8](phases/6.8-documents-table.md) | ✅ |
 | 6.9 | Status filter | the English label on a Vietnamese menu | [6.9](phases/6.9-status-filter.md) | ✅ |
-| 6.10 | Conventions | comment strip, `CONVENTION.md`, this file | [6.10](phases/6.10-conventions.md) | ⏳ |
+| 6.10 | Conventions | comment strip, `CONVENTION.md`, this file | [6.10](phases/6.10-conventions.md) | ✅ |
 
 ### The two real bugs, and what caused them
 
@@ -634,6 +634,8 @@ checked against whether that document actually indexed.
 ---
 
 ## 13. Changelog
+
+- **2026-08-31** — Phase 6 complete. Two of the ten were genuine bugs rather than polish. Uploading had been broken since 5.3: `documents_update_teacher` requires `updated_by = auth.uid()`, and the upload route's `setStoragePath` never set it, so every upload failed at 42501 — a message Postgres words as "new row", which is why it read as an insert problem. A `BEFORE UPDATE` trigger now stamps the column, because the rule belongs to the table rather than to whichever route remembers it. The chat's infinite fetch was not a threshold: the scroller restores scroll on a prepend only when the previously-first element has moved down, and our "older messages" trigger was that element and never moved. Also: the client-driven reindex sweep is gone, so nothing but upload, restore, retry and cron can reach Gemini; and `keys.test.ts` was written after the dev log caught a `MISSING_MESSAGE` that catalogue parity could never have found.
 
 - **2026-08-30** — Phase 1 complete, merged to `main`. Scaffold, auth, design system, shadcn/ui on Base UI; schema under Supabase CLI control (local stack on 544xx, applied and verified on both local and hosted); types generated; `/api/health` green. Node scripts renamed to `.mts`; teacher promotion verified on hosted.
 - **2026-08-30** — TanStack AI evaluated from package source: adopted client-side only, because its Gemini adapter drops `groundingMetadata` (§5.11). Test PDFs parsed: `iuh.pdf` is a pure scan with no font resources, making OCR support an open risk with a silent failure mode (§5.12).
