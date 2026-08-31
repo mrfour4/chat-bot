@@ -21,6 +21,7 @@
         "db:push": "supabase db push",
         "db:types": "supabase gen types typescript --local > src/lib/database.types.ts",
         "db:diff": "supabase db diff",
+        "seed:test": "node --env-file-if-exists=.env.local scripts/seed-test-data.mts",
         "promote:teacher": "node --env-file-if-exists=.env.local scripts/promote-teacher.mts"
     },
     "dependencies": {
