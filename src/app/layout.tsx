@@ -10,6 +10,7 @@ import {
 import { AppProviders } from "@/providers";
 import { SiteHeader } from "@/components/layout";
 import { getSessionUser } from "@/lib/auth";
+import { avatarUrl } from "@/lib/profile/avatar-url";
 
 import "katex/dist/katex.min.css";
 import "./globals.css";
@@ -46,6 +47,7 @@ export default async function RootLayout({
     children,
 }: Readonly<{ children: React.ReactNode }>) {
     const [user, locale] = await Promise.all([getSessionUser(), getLocale()]);
+    const picture = user ? await avatarUrl(user) : null;
 
     return (
         <html
@@ -56,7 +58,7 @@ export default async function RootLayout({
             <body className="flex h-dvh flex-col overflow-hidden">
                 <NextIntlClientProvider>
                     <AppProviders>
-                        <SiteHeader user={user} />
+                        <SiteHeader user={user} avatarUrl={picture} />
                         <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
                             {children}
                         </main>

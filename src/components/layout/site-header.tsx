@@ -11,7 +11,13 @@ import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/lib/auth";
 import type { NavItem } from "@/components/layout/site-nav";
 
-export function SiteHeader({ user }: { user: SessionUser | null }) {
+export function SiteHeader({
+    user,
+    avatarUrl,
+}: {
+    user: SessionUser | null;
+    avatarUrl: string | null;
+}) {
     const t = useTranslations("nav");
     const tc = useTranslations("common");
     const isTeacher = user?.profile.role === "teacher";
@@ -43,7 +49,7 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
                     <LanguageSwitcher />
 
                     {user ? (
-                        <UserMenu user={user} />
+                        <UserMenu user={user} avatarUrl={avatarUrl} />
                     ) : (
                         <Link
                             href="/login"

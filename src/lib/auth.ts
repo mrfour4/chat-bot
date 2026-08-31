@@ -7,6 +7,7 @@ export interface SessionUser {
     id: string;
     email: string;
     profile: Profile;
+    googlePicture: string | null;
 }
 
 export async function getSessionUser(): Promise<SessionUser | null> {
@@ -26,7 +27,24 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
         if (!profile) return null;
 
-        return { id: user.id, email: user.email ?? profile.email, profile };
+        const metadata = user.user_metadata as {
+            avatar_url?: unknown;
+            picture?: unknown;
+        };
+
+        const picture =
+            typeof metadata?.avatar_url === "string"
+                ? metadata.avatar_url
+                : typeof metadata?.picture === "string"
+                  ? metadata.picture
+                  : null;
+
+        return {
+            id: user.id,
+            email: user.email ?? profile.email,
+            profile,
+            googlePicture: picture,
+        };
     } catch {
         return null;
     }
