@@ -215,15 +215,23 @@ password_requirements = ""
 [auth.rate_limit]
 # Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
 #
-# TEMPORARY -- raised from 2 for testing (9.9). Two per hour is the built-in
-# provider's cap and is unusable while exercising sign-up and password recovery.
-# Locally this takes effect immediately, because Mailpit is the mail server and
-# has no limit of its own.
+# This value is inert until custom SMTP is configured, in both directions:
+#   - hosted ignores it. `supabase config push` omits the setting entirely while
+#     the built-in provider is in use and reports `auth: up_to_date`. The
+#     provider's own cap of 2 per hour applies regardless.
+#   - locally it is overridden. The CLI hardcodes
+#     GOTRUE_RATE_LIMIT_EMAIL_SENT=360000 for the local stack whatever this says
+#     -- verified by setting 5 and 200 and reading the container both times --
+#     because Mailpit is the mail server and has no quota.
 #
-# REVERT BEFORE REAL USE: put this back to a sane figure once custom SMTP is
-# configured. Real students never need hundreds of emails an hour, and a high
-# limit turns the reset form into a way to flood somebody's inbox.
-email_sent = 200
+# It was briefly 200 while testing recovery in 9.9. That changed nothing: local
+# was already unlimited, which is the real reason local testing works. Left at 2
+# to match the built-in provider, so this file states the truth about hosted.
+#
+# When custom SMTP is configured, this starts to matter -- set something like 30.
+# A high limit turns the reset form, which accepts any address, into a way to
+# send a hundred emails an hour into somebody else's inbox.
+email_sent = 2
 # Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.
 sms_sent = 30
 # Number of anonymous sign-ins that can be made per hour per IP address. Requires enable_anonymous_sign_ins = true.

@@ -185,10 +185,12 @@ question with no answer and no explanation looks like it was ignored.
 
 These caused real failures. Changing them will look harmless and will not be.
 
-- **`email_sent` cannot be raised on hosted while the built-in provider is used.**
-  The CLI silently omits it from a `config push` (`auth: up_to_date`) because the
-  setting requires SMTP. Locally it applies at once, since Mailpit is the mail
-  server — so email flows are tested locally, not on hosted.
+- **`email_sent` is inert until custom SMTP is configured.** Hosted never receives
+  it — `config push` omits the setting while the built-in provider is in use and
+  reports `auth: up_to_date`, so that provider's cap of 2 per hour stands. Locally
+  the CLI hardcodes `GOTRUE_RATE_LIMIT_EMAIL_SENT=360000` whatever the file says.
+  Email flows are therefore tested locally because local has no quota at all, not
+  because anything was configured.
 - **The admin API's `listUsers` fails on this database.** It scans every
   `auth.users` row, and rows inserted by SQL leave token columns `NULL` where
   GoTrue expects `''`: *"Database error finding users"*. Look the user up in
