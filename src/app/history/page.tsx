@@ -1,11 +1,9 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
-import { ConversationList } from "@/components/history";
+import { HistoryPanel } from "@/components/history";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
-import { listConversationSummaries } from "@/lib/chat/conversations";
-import { createClient } from "@/lib/supabase/server";
 
 export async function generateMetadata() {
     const t = await getTranslations();
@@ -15,9 +13,6 @@ export async function generateMetadata() {
 export default async function HistoryPage() {
     await requireUser();
     const t = await getTranslations("history");
-    const supabase = await createClient();
-
-    const conversations = await listConversationSummaries(supabase);
 
     return (
         <div className="mx-auto max-w-3xl px-5 py-12 md:py-16">
@@ -34,7 +29,7 @@ export default async function HistoryPage() {
                 />
             </div>
 
-            <ConversationList conversations={conversations} />
+            <HistoryPanel />
         </div>
     );
 }

@@ -56,7 +56,25 @@
         "emptyDescription": "Câu hỏi bạn đặt khi đã đăng nhập sẽ được lưu lại ở đây.",
         "emptyAction": "Đặt câu hỏi",
         "messageCount": "{count} tin nhắn",
-        "metaTitle": "Lịch sử"
+        "metaTitle": "Lịch sử",
+        "searchPlaceholder": "Tìm theo tên cuộc trò chuyện…",
+        "searchLabel": "Tìm cuộc trò chuyện",
+        "actionsLabel": "Hành động cho cuộc trò chuyện",
+        "rename": "Đổi tên",
+        "delete": "Xoá",
+        "renameTitle": "Đổi tên cuộc trò chuyện",
+        "renameDescription": "Tên này chỉ hiện trong lịch sử của bạn.",
+        "titleLabel": "Tên cuộc trò chuyện",
+        "renamedTitle": "Đã đổi tên",
+        "renameFailed": "Không đổi được tên",
+        "deleteTitle": "Xoá cuộc trò chuyện này?",
+        "deleteDescription": "{count, plural, other {Cuộc trò chuyện và toàn bộ # tin nhắn trong đó sẽ bị xoá vĩnh viễn. Không thể hoàn tác.}}",
+        "deleteConfirm": "Xoá cuộc trò chuyện",
+        "deletedTitle": "Đã xoá cuộc trò chuyện",
+        "deleteFailed": "Không xoá được cuộc trò chuyện",
+        "noMatchesTitle": "Không có cuộc trò chuyện nào khớp",
+        "noMatchesDescription": "Thử một từ khoá khác.",
+        "loadingMore": "Đang tải thêm…"
     },
     "documents": {
         "eyebrow": "Quản lý tài liệu",
@@ -191,7 +209,8 @@
         "uploadWrongMime": "Chỉ chấp nhận tệp PDF.",
         "uploadNotAPdf": "Tệp này không phải là PDF hợp lệ.",
         "invalidTitle": "Tên tài liệu không hợp lệ.",
-        "archivedDuplicate": "Tài liệu này đang được lưu trữ với tên “{title}”. Hãy khôi phục thay vì tải lên lại."
+        "archivedDuplicate": "Tài liệu này đang được lưu trữ với tên “{title}”. Hãy khôi phục thay vì tải lên lại.",
+        "conversationNotFound": "Không tìm thấy cuộc trò chuyện."
     },
     "theme": {
         "label": "Giao diện",

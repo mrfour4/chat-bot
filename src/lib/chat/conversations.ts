@@ -75,20 +75,86 @@ export async function getConversation(
 
 export type ConversationSummary = Conversation & { messageCount: number };
 
-export async function listConversationSummaries(
+export type ConversationPage = {
+    conversations: ConversationSummary[];
+    nextCursor: MessageCursor | null;
+};
+
+// The same wildcards that bite the documents search bite here.
+function escapeLike(value: string): string {
+    return value.replace(/[\\%_]/g, (character) => `\\${character}`);
+}
+
+export async function listConversationPage(
     supabase: ChatClient,
-): Promise<ConversationSummary[]> {
-    const { data, error } = await supabase
-        .from("conversations")
-        .select("*, messages(count)")
-        .order("created_at", { ascending: false });
+    input: {
+        search?: string;
+        before?: MessageCursor | null;
+        limit: number;
+    },
+): Promise<ConversationPage> {
+    let builder = supabase.from("conversations").select("*, messages(count)");
+
+    if (input.before) {
+        builder = builder.or(
+            `created_at.lt.${input.before.createdAt},` +
+                `and(created_at.eq.${input.before.createdAt},` +
+                `id.lt.${input.before.id})`,
+        );
+    }
+
+    const search = input.search?.trim();
+    if (search) {
+        builder = builder.ilike("title", `%${escapeLike(search)}%`);
+    }
+
+    const { data, error } = await builder
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(input.limit + 1);
 
     if (error) throw error;
 
-    return (data ?? []).map(({ messages, ...conversation }) => ({
-        ...conversation,
-        messageCount: messages?.[0]?.count ?? 0,
-    }));
+    const rows = data ?? [];
+    const hasMore = rows.length > input.limit;
+    const page = hasMore ? rows.slice(0, input.limit) : rows;
+    const oldest = page.at(-1);
+
+    return {
+        conversations: page.map(({ messages, ...conversation }) => ({
+            ...conversation,
+            messageCount: messages?.[0]?.count ?? 0,
+        })),
+        nextCursor:
+            hasMore && oldest
+                ? { createdAt: oldest.created_at, id: oldest.id }
+                : null,
+    };
+}
+
+export async function renameConversation(
+    supabase: ChatClient,
+    id: string,
+    title: string,
+): Promise<void> {
+    const { error } = await supabase
+        .from("conversations")
+        .update({ title })
+        .eq("id", id);
+
+    if (error) throw error;
+}
+
+export async function deleteConversation(
+    supabase: ChatClient,
+    id: string,
+): Promise<void> {
+    const { error } = await supabase
+        .from("conversations")
+        .delete()
+        .eq("id", id);
+
+    if (error) throw error;
 }
 
 export type MessageCursor = { createdAt: string; id: string };

@@ -56,7 +56,25 @@
         "emptyDescription": "Questions you ask while signed in are saved here.",
         "emptyAction": "Ask a question",
         "messageCount": "{count, plural, one {# message} other {# messages}}",
-        "metaTitle": "History"
+        "metaTitle": "History",
+        "searchPlaceholder": "Search conversations…",
+        "searchLabel": "Search conversations",
+        "actionsLabel": "Conversation actions",
+        "rename": "Rename",
+        "delete": "Delete",
+        "renameTitle": "Rename conversation",
+        "renameDescription": "This name appears only in your history.",
+        "titleLabel": "Conversation name",
+        "renamedTitle": "Conversation renamed",
+        "renameFailed": "Could not rename the conversation",
+        "deleteTitle": "Delete this conversation?",
+        "deleteDescription": "{count, plural, one {The conversation and its # message will be permanently deleted. This cannot be undone.} other {The conversation and all # messages in it will be permanently deleted. This cannot be undone.}}",
+        "deleteConfirm": "Delete conversation",
+        "deletedTitle": "Conversation deleted",
+        "deleteFailed": "Could not delete the conversation",
+        "noMatchesTitle": "No conversations match",
+        "noMatchesDescription": "Try a different search term.",
+        "loadingMore": "Loading more…"
     },
     "documents": {
         "eyebrow": "Document management",
@@ -191,7 +209,8 @@
         "uploadWrongMime": "PDF files only.",
         "uploadNotAPdf": "That file is not a valid PDF.",
         "invalidTitle": "That document name is not valid.",
-        "archivedDuplicate": "This document is archived as “{title}”. Restore it instead of uploading it again."
+        "archivedDuplicate": "This document is archived as “{title}”. Restore it instead of uploading it again.",
+        "conversationNotFound": "Conversation not found."
     },
     "theme": {
         "label": "Theme",
