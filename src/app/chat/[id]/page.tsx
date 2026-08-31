@@ -66,6 +66,7 @@ export default async function ConversationPage({
                         variant="ghost"
                         size="sm"
                         className="doc-ref shrink-0"
+                        nativeButton={false}
                         render={<Link href="/">{t("new")}</Link>}
                     />
                 </div>

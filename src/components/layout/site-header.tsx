@@ -48,6 +48,7 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
                             variant="outline"
                             size="sm"
                             className="shrink-0"
+                            nativeButton={false}
                             render={<Link href="/login">{t("signIn")}</Link>}
                         />
                     )}

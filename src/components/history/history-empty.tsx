@@ -25,7 +25,10 @@ export function HistoryEmpty() {
                 <EmptyDescription>{t("emptyDescription")}</EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
-                <Button render={<Link href="/">{t("emptyAction")}</Link>} />
+                <Button
+                    nativeButton={false}
+                    render={<Link href="/">{t("emptyAction")}</Link>}
+                />
             </EmptyContent>
         </Empty>
     );

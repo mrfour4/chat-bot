@@ -25,6 +25,7 @@ export default async function HistoryPage() {
                 </div>
                 <Button
                     className="shrink-0"
+                    nativeButton={false}
                     render={<Link href="/">{t("newQuestion")}</Link>}
                 />
             </div>
