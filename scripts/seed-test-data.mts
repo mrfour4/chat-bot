@@ -2,8 +2,9 @@
  * Fills the database with enough rows to make paging, virtualization,
  * searching and filtering real things you can see.
  *
- *   npm run seed:test -- <email>          create
- *   npm run seed:test -- <email> --clean  remove everything it created
+ *   npm run seed:test -- <email>                 create everything
+ *   npm run seed:test -- <email> --messages 200  one long conversation only
+ *   npm run seed:test -- <email> --clean         remove everything it created
  *
  * Every row it writes is prefixed with a marker, and `--clean` deletes exactly
  * the rows carrying it. Nothing else is touched, so this is safe to run
@@ -48,8 +49,19 @@ const QUESTIONS = [
     "Chỉ tiêu năm nay thay đổi thế nào?",
 ];
 
+const LONG_CONVERSATION = `${MARK} Hội thoại dài`;
+
 const email = process.argv[2];
 const clean = process.argv.includes("--clean");
+
+// `--messages [n]` seeds one conversation and nothing else, so it can be run
+// against a database that already has seeded rows without disturbing them.
+const messagesFlag = process.argv.indexOf("--messages");
+const onlyMessages = messagesFlag !== -1;
+const messageCount = onlyMessages
+    ? Number.parseInt(process.argv[messagesFlag + 1] ?? "", 10) ||
+      MESSAGES_IN_LONG_CONVERSATION
+    : MESSAGES_IN_LONG_CONVERSATION;
 
 if (!email) {
     console.error("Usage: npm run seed:test -- <teacher-email> [--clean]");
@@ -87,6 +99,14 @@ if (clean) {
     process.exit(0);
 }
 
+if (onlyMessages) {
+    await seedLongConversation(profile.id, messageCount);
+    console.log(
+        `\nDone. Remove it with: npm run seed:test -- ${email} --clean`,
+    );
+    process.exit(0);
+}
+
 if (profile.role !== "teacher") {
     console.error(
         `${email} is a ${profile.role}. Seeded documents need a teacher: ` +
@@ -102,6 +122,50 @@ await seedConversations(profile.id);
 console.log(
     `\nDone. Remove it all with: npm run seed:test -- ${email} --clean`,
 );
+
+async function seedLongConversation(userId: string, total: number) {
+    const { count: removed } = await supabase
+        .from("conversations")
+        .delete({ count: "exact" })
+        .eq("user_id", userId)
+        .like("title", `${LONG_CONVERSATION}%`);
+
+    if (removed)
+        console.log(`Removed ${removed} earlier long conversation(s).`);
+
+    const conversation = {
+        id: randomUUID(),
+        user_id: userId,
+        title: `${LONG_CONVERSATION} — ${total} tin nhắn`,
+        created_at: new Date(Date.now() - total * 60_000).toISOString(),
+    };
+
+    const { error } = await supabase.from("conversations").insert(conversation);
+
+    if (error) {
+        console.error("Could not seed the conversation:", error.message);
+        process.exit(1);
+    }
+
+    const messages = turns(conversation, Math.ceil(total / 2)).slice(0, total);
+
+    for (let start = 0; start < messages.length; start += 500) {
+        const { error: messageError } = await supabase
+            .from("messages")
+            .insert(messages.slice(start, start + 500));
+
+        if (messageError) {
+            console.error("Could not seed messages:", messageError.message);
+            process.exit(1);
+        }
+    }
+
+    console.log(
+        `Seeded "${conversation.title}" with ${messages.length} messages ` +
+            `(${Math.ceil(messages.length / 25)} pages of 25).`,
+    );
+    console.log(`  /chat/${conversation.id}`);
+}
 
 async function removeSeed() {
     const { count: documents } = await supabase
@@ -179,6 +243,59 @@ async function seedDocuments(uploadedBy: string) {
     );
 }
 
+// Both halves of a turn share a timestamp, which is what the (created_at, id)
+// cursor exists for: paging that ordered on the timestamp alone would repeat or
+// skip a message at every page boundary.
+function turns(
+    conversation: { id: string; created_at: string },
+    count: number,
+) {
+    return Array.from({ length: count }, (_, turn) => {
+        const at = new Date(
+            Date.parse(conversation.created_at) + turn * 60_000,
+        ).toISOString();
+
+        return [
+            {
+                id: randomUUID(),
+                conversation_id: conversation.id,
+                role: "user",
+                content: `${QUESTIONS[turn % QUESTIONS.length]} (lượt ${turn + 1})`,
+                citations: [],
+                created_at: at,
+            },
+            {
+                id: randomUUID(),
+                conversation_id: conversation.id,
+                role: "assistant",
+                content: answer(turn),
+                citations: [],
+                created_at: at,
+            },
+        ];
+    }).flat();
+}
+
+// Every fifth answer carries LaTeX, so the KaTeX rendering from 6.15 can be
+// checked without spending a Gemini call on it.
+function answer(turn: number): string {
+    const body =
+        `Theo tài liệu tuyển sinh, **thông tin ở lượt ${turn + 1}** ` +
+        "được nêu trong phần quy định chung.\n\n" +
+        "- Mục thứ nhất\n- Mục thứ hai\n";
+
+    if (turn % 5 !== 0) return body;
+
+    return (
+        body +
+        "\nĐiểm xét tuyển được tính theo công thức:\n\n" +
+        "$$\n\\text{ĐXT} = \\frac{\\text{THPT}_\\text{ĐT} + " +
+        "\\text{THPT}_\\text{QĐ}}{2} + \\text{ĐUT}\n$$\n\n" +
+        "trong đó $\\text{THPT}_\\text{ĐT}$ là điểm thi tốt nghiệp và " +
+        "$\\text{ĐUT}$ là điểm ưu tiên.\n"
+    );
+}
+
 async function seedConversations(userId: string) {
     const conversations = Array.from({ length: CONVERSATIONS }, (_, index) => ({
         id: randomUUID(),
@@ -197,40 +314,12 @@ async function seedConversations(userId: string) {
 
     // Every conversation gets a couple of turns; the first gets enough to page
     // through eight times, which is what message paging needs to be visible.
-    const messages = conversations.flatMap((conversation, index) => {
-        const turns =
-            index === 0 ? MESSAGES_IN_LONG_CONVERSATION / 2 : 1 + (index % 3);
-
-        return Array.from({ length: turns }, (_, turn) => {
-            // Both halves of a turn share a timestamp, which is what the
-            // (created_at, id) cursor exists for.
-            const at = new Date(
-                Date.parse(conversation.created_at) + turn * 60_000,
-            ).toISOString();
-
-            return [
-                {
-                    id: randomUUID(),
-                    conversation_id: conversation.id,
-                    role: "user",
-                    content: `${QUESTIONS[turn % QUESTIONS.length]} (lượt ${turn + 1})`,
-                    citations: [],
-                    created_at: at,
-                },
-                {
-                    id: randomUUID(),
-                    conversation_id: conversation.id,
-                    role: "assistant",
-                    content:
-                        `Theo tài liệu tuyển sinh, **thông tin ở lượt ${turn + 1}** ` +
-                        "được nêu trong phần quy định chung.\n\n" +
-                        "- Mục thứ nhất\n- Mục thứ hai\n",
-                    citations: [],
-                    created_at: at,
-                },
-            ];
-        }).flat();
-    });
+    const messages = conversations.flatMap((conversation, index) =>
+        turns(
+            conversation,
+            index === 0 ? MESSAGES_IN_LONG_CONVERSATION / 2 : 1 + (index % 3),
+        ),
+    );
 
     for (let start = 0; start < messages.length; start += 500) {
         const { error: messageError } = await supabase
