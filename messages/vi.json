@@ -171,7 +171,9 @@
         "failed": "Không thành công",
         "errorOauth": "Đăng nhập bằng Google không thành công. Vui lòng thử lại.",
         "errorOauthCancelled": "Bạn đã huỷ đăng nhập bằng Google.",
-        "errorConfirm": "Liên kết xác nhận không còn hiệu lực. Vui lòng đăng nhập lại."
+        "errorConfirm": "Liên kết xác nhận không còn hiệu lực. Vui lòng đăng nhập lại.",
+        "continueWithGoogle": "Tiếp tục với Google",
+        "or": "hoặc"
     },
     "validation": {
         "email": "Email không hợp lệ.",

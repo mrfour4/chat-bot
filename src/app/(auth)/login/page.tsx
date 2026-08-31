@@ -3,10 +3,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
-import { SignInForm, SignUpForm } from "@/components/auth";
+import { GoogleButton, SignInForm, SignUpForm } from "@/components/auth";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getSessionUser } from "@/lib/auth";
 import { loginErrorKey } from "@/lib/auth/login-error";
+import { googleAuthEnabled } from "@/lib/env";
 
 export async function generateMetadata() {
     const t = await getTranslations();
@@ -25,6 +26,7 @@ export default async function LoginPage({
     const { mode, error } = await searchParams;
     const isSignUp = mode === "signup";
     const errorKey = loginErrorKey(error);
+    const oauth = googleAuthEnabled() ? <GoogleButton /> : undefined;
 
     return (
         <div className="mx-auto grid max-w-5xl gap-12 px-5 py-16 md:grid-cols-[1fr_360px] md:py-24">
@@ -73,7 +75,11 @@ export default async function LoginPage({
                     </Alert>
                 )}
 
-                {isSignUp ? <SignUpForm /> : <SignInForm />}
+                {isSignUp ? (
+                    <SignUpForm oauth={oauth} />
+                ) : (
+                    <SignInForm oauth={oauth} />
+                )}
                 <p className="mt-6 text-center text-sm text-ink-soft">
                     {isSignUp ? t("haveAccount") : t("noAccount")}
                     <Link

@@ -185,6 +185,32 @@ question with no answer and no explanation looks like it was ignored.
 
 These caused real failures. Changing them will look harmless and will not be.
 
+- **The Supabase CLI reads `.env.local`.** `env()` substitution in
+  `config.toml` resolves from the same file Next.js uses, so a value like
+  `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` feeds both the local stack and the
+  app. Verified by reading the auth container's environment after a restart.
+  Both `supabase start` and `next dev` read it **only at boot** — a hot reload
+  will not pick up a change.
+- **The two OAuth callbacks are not interchangeable.** Google Cloud Console must
+  be given *Supabase's* callback
+  (`http://127.0.0.1:54421/auth/v1/callback` locally, `https://<ref>.supabase.co/auth/v1/callback`
+  hosted) — that is the `redirect_uri` GoTrue sends, and Google matches it
+  exactly. This app's `/auth/callback` belongs in `additional_redirect_urls`.
+  Swapping them yields `redirect_uri_mismatch`. The official Supabase guide's
+  example shows the app URL in Google's list; it is wrong.
+- **Start an OAuth flow from a server action, not the browser client.**
+  `@supabase/ssr` flushes a cookie immediately for any key ending
+  `-code-verifier`, so the PKCE verifier lands in an `HttpOnly` cookie. The
+  browser client stores the same value where page scripts can read it.
+- **Never pass a `flowId` to `exchangeCodeForSession` here.** `auth-js` keys
+  verifiers per flow, but `@supabase/ssr` leaves
+  `appendPkceFlowIdToRedirects` off, so `sb_flow_id` never reaches the callback.
+  With no flow id the SDK reads the fixed key it dual-writes; with a wrong one it
+  submits another flow's verifier and burns the single-use auth code.
+- **`enabled` in `config.toml` cannot be env-gated.** `env()` substitution works
+  on strings only, so a provider is on or off in committed config. Gate the *UI*
+  on the credential instead, or a clone with no credentials shows a button that
+  fails at the provider.
 - **Gemini `customMetadata` keys must be lowercase.** With the key stored as
   `documentId`, a `metadataFilter` of `documentId=…` matches **zero chunks** and
   so does `documentid=…`; the same value under `docid` matches. Hyphens in the

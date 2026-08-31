@@ -7,10 +7,12 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `8.1` — the Google provider ✅
+**Last completed:** `8.3` — the Google button ✅ · **PHASE 8 COMPLETE, pending your Google Cloud Console steps**
 **Current phase:** Phase 7 — testing, yours
-**Google sign-in:** Phase 8 in progress — provider configured (8.1), flow and
-button next.
+**Google sign-in:** code complete and verified as far as it can be without
+credentials. **Your turn:** the Google Cloud Console walkthrough in
+[8.1](phases/8.1-google-provider.md), then restart `supabase` and `next dev`.
+Nothing is hardcoded to localhost; the Vercel checklist is in the same doc.
 **State:** Phase 6 complete — ten small phases, one commit each. The two real
 bugs are fixed and covered: uploading was refused by our own RLS policy, and the
 chat refetched older messages in a loop.
@@ -650,8 +652,8 @@ to Vercel later.
 | # | What | Doc | Status |
 |---|------|-----|--------|
 | 8.1 | The Google provider — `config.toml`, env vars, Cloud Console walkthrough | [8.1](phases/8.1-google-provider.md) | ✅ |
-| 8.2 | The flow — server action, callback route, origin derivation | [8.2](phases/8.2-oauth-flow.md) | ⏳ |
-| 8.3 | The button — login UI, gated on configuration | [8.3](phases/8.3-google-button.md) | ⏳ |
+| 8.2 | The flow — server action, callback route, origin derivation | [8.2](phases/8.2-oauth-flow.md) | ✅ |
+| 8.3 | The button — login UI, gated on configuration | [8.3](phases/8.3-google-button.md) | ✅ |
 
 ### What the SDK decided for us
 
@@ -712,6 +714,8 @@ a provider holding placeholder credentials.
 ---
 
 ## 14. Changelog
+
+- **2026-08-31** — Phase 8, Google sign-in. Three findings from reading `@supabase/ssr` and `auth-js` rather than recalling them, each of which changed the code: the server cookie adapter flushes immediately for keys ending `-code-verifier`, so a **server action** puts the PKCE verifier in an `HttpOnly` cookie where the browser client would not; `appendPkceFlowIdToRedirects` is off in `@supabase/ssr`, so `sb_flow_id` never arrives and the callback must pass **no** `flowId` (submitting another flow's verifier would burn the single-use code); and the CLI reads `.env.local`, so one file feeds both the local stack and Next. Two pre-existing bugs surfaced: `additional_redirect_urls` held `https://127.0.0.1:3000` — wrong scheme, no path — so no OAuth callback could ever have matched it, and the login page had never read the `?error=confirm` that `/auth/confirm` has redirected with since Phase 1. The official Supabase guide shows the app's own `/auth/callback` under Google's redirect URIs; the 302 Supabase actually sends carries `redirect_uri=…:54421/auth/v1/callback`, so that is what the phase doc tells you to register. RLS check 29 now proves `handle_new_user` turns a Google-shaped identity into a profile, falsified by pointing the trigger at `given_name`.
 
 - **2026-08-31** — Phase 6 complete. Two of the ten were genuine bugs rather than polish. Uploading had been broken since 5.3: `documents_update_teacher` requires `updated_by = auth.uid()`, and the upload route's `setStoragePath` never set it, so every upload failed at 42501 — a message Postgres words as "new row", which is why it read as an insert problem. A `BEFORE UPDATE` trigger now stamps the column, because the rule belongs to the table rather than to whichever route remembers it. The chat's infinite fetch was not a threshold: the scroller restores scroll on a prepend only when the previously-first element has moved down, and our "older messages" trigger was that element and never moved. Also: the client-driven reindex sweep is gone, so nothing but upload, restore, retry and cron can reach Gemini; and `keys.test.ts` was written after the dev log caught a `MISSING_MESSAGE` that catalogue parity could never have found.
 

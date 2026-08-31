@@ -2,9 +2,10 @@
 
 import { useForm } from "@tanstack/react-form";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { signIn, type AuthFormState } from "@/app/(auth)/actions";
+import { AuthDivider } from "@/components/auth/auth-divider";
 import { AuthField } from "@/components/auth/auth-field";
 import { AuthResult } from "@/components/auth/auth-result";
 import { AuthSubmit } from "@/components/auth/auth-submit";
@@ -12,7 +13,7 @@ import { FieldGroup } from "@/components/ui/field";
 import { notifyError } from "@/lib/notify";
 import { signInSchema } from "@/lib/validation/auth";
 
-export function SignInForm() {
+export function SignInForm({ oauth }: { oauth?: ReactNode }) {
     const t = useTranslations("auth");
     const [result, setResult] = useState<AuthFormState>({});
 
@@ -37,6 +38,13 @@ export function SignInForm() {
             className="rounded-lg border border-rule bg-surface p-6"
         >
             <FieldGroup>
+                {oauth && (
+                    <>
+                        {oauth}
+                        <AuthDivider />
+                    </>
+                )}
+
                 <form.Field name="email">
                     {(field) => (
                         <AuthField

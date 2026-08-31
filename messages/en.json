@@ -171,7 +171,9 @@
         "failed": "That did not work",
         "errorOauth": "Google sign-in did not complete. Please try again.",
         "errorOauthCancelled": "You cancelled Google sign-in.",
-        "errorConfirm": "That confirmation link is no longer valid. Please sign in again."
+        "errorConfirm": "That confirmation link is no longer valid. Please sign in again.",
+        "continueWithGoogle": "Continue with Google",
+        "or": "or"
     },
     "validation": {
         "email": "That is not a valid email address.",
