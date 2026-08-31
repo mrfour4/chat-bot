@@ -6,7 +6,7 @@ import {
     useQuery,
     useQueryClient,
 } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 import {
@@ -21,13 +21,12 @@ import {
     deleteDocument,
     fetchDocumentsPage,
     renameDocument,
-    requestReindex,
     retryDocument,
     unarchiveDocument,
     uploadDocuments,
     type DocumentsPage,
 } from "@/lib/api/documents";
-import { isPending, isStale } from "@/lib/documents/status";
+import { isPending } from "@/lib/documents/status";
 import type { DocumentDisplayStatus } from "@/lib/documents/status";
 import { notifyError, notifySuccess } from "@/lib/notify";
 import { queryKeys } from "@/lib/query/keys";
@@ -155,15 +154,6 @@ export function useDocuments() {
         "restoreFailed",
         invalidate,
     );
-
-    useEffect(() => {
-        if (!data.documents.some((document) => isStale(document))) return;
-
-        requestReindex()
-            .then(invalidate)
-            .catch(() => {});
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [data]);
 
     const changeFilter =
         <T>(set: (value: T) => void) =>

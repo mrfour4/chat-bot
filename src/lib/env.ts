@@ -28,7 +28,17 @@ export function requirePublicEnv() {
     };
 }
 
+const MOCK_API_KEY = "mock-key";
+
+const MOCK_FILE_SEARCH_STORE = "fileSearchStores/mock";
+
+function mockingGemini(): boolean {
+    return Boolean(process.env.GEMINI_BASE_URL);
+}
+
 export function serverEnv() {
+    const mocking = mockingGemini();
+
     return {
         ...requirePublicEnv(),
         supabaseSecretKey: required(
@@ -36,10 +46,14 @@ export function serverEnv() {
             process.env.SUPABASE_SECRET_KEY ??
                 process.env.SUPABASE_SERVICE_ROLE_KEY,
         ),
-        geminiApiKey: required("GEMINI_API_KEY", process.env.GEMINI_API_KEY),
+        geminiApiKey: mocking
+            ? (process.env.GEMINI_API_KEY ?? MOCK_API_KEY)
+            : required("GEMINI_API_KEY", process.env.GEMINI_API_KEY),
 
         geminiModel: process.env.GEMINI_MODEL || "gemini-3.6-flash",
 
-        fileSearchStore: process.env.GEMINI_FILE_SEARCH_STORE ?? "",
+        fileSearchStore:
+            process.env.GEMINI_FILE_SEARCH_STORE ||
+            (mocking ? MOCK_FILE_SEARCH_STORE : ""),
     };
 }

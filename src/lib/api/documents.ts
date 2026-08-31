@@ -86,7 +86,3 @@ export async function retryDocument(id: string): Promise<void> {
         "Không thử lại được. Vui lòng thử lại.",
     );
 }
-
-export async function requestReindex(): Promise<void> {
-    await fetch("/api/documents/reindex", { method: "POST" });
-}
