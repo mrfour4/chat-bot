@@ -185,6 +185,20 @@ question with no answer and no explanation looks like it was ignored.
 
 These caused real failures. Changing them will look harmless and will not be.
 
+- **The app uses the HOSTED Supabase, not the local stack.**
+  `NEXT_PUBLIC_SUPABASE_URL` in `.env.local` is `https://<ref>.supabase.co`. The
+  local stack exists for `npm run test:rls` and for applying migrations before
+  they are pushed. Verifying auth or data against `127.0.0.1:54421` therefore
+  proves nothing about what the running app sees — check the URL first.
+- **A session without a profile row looks like being signed out.**
+  `getSessionUser()` returns `null` when the profile is missing, so the header
+  offers "Đăng nhập" to someone who is genuinely authenticated. Any account
+  created before `handle_new_user` existed is in this state; the
+  `backfill_missing_profiles` migration closes it.
+- **Supabase links a new OAuth identity to an existing verified email.** Signing
+  in with Google on an address that already has a password account does not
+  create a second user; `auth.identities` gains a row against the same
+  `user_id`. One account, one history.
 - **The Supabase CLI reads `.env.local`.** `env()` substitution in
   `config.toml` resolves from the same file Next.js uses, so a value like
   `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` feeds both the local stack and the

@@ -7,12 +7,18 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `8.3` — the Google button ✅ · **PHASE 8 COMPLETE, pending your Google Cloud Console steps**
+**Last completed:** `8.4` — backfilled the missing profile ✅ · **PHASE 8 COMPLETE, Google sign-in working on hosted**
 **Current phase:** Phase 7 — testing, yours
-**Google sign-in:** code complete and verified as far as it can be without
-credentials. **Your turn:** the Google Cloud Console walkthrough in
-[8.1](phases/8.1-google-provider.md), then restart `supabase` and `next dev`.
-Nothing is hardcoded to localhost; the Vercel checklist is in the same doc.
+**Google sign-in:** working against the **hosted** project, which is what
+`.env.local` points the app at — see the warning below. Automatic account
+linking on a matching verified email is confirmed ([8.4](phases/8.4-missing-profile.md)).
+
+**Read this before debugging auth:** `NEXT_PUBLIC_SUPABASE_URL` is the hosted
+project, so the app does **not** use the local stack even though it is running.
+Local `supabase` serves `npm run test:rls` and migrations; the app's data lives
+on hosted (15 documents, 8 conversations, 424 messages). Checking the local
+stack proves nothing about what the app sees — that mistake cost a round trip in
+Phase 8.
 **State:** Phase 6 complete — ten small phases, one commit each. The two real
 bugs are fixed and covered: uploading was refused by our own RLS policy, and the
 chat refetched older messages in a loop.
@@ -654,6 +660,7 @@ to Vercel later.
 | 8.1 | The Google provider — `config.toml`, env vars, Cloud Console walkthrough | [8.1](phases/8.1-google-provider.md) | ✅ |
 | 8.2 | The flow — server action, callback route, origin derivation | [8.2](phases/8.2-oauth-flow.md) | ✅ |
 | 8.3 | The button — login UI, gated on configuration | [8.3](phases/8.3-google-button.md) | ✅ |
+| 8.4 | Signed in but shown the login button — backfill missing profiles | [8.4](phases/8.4-missing-profile.md) | ✅ |
 
 ### What the SDK decided for us
 
@@ -714,6 +721,8 @@ a provider holding placeholder credentials.
 ---
 
 ## 14. Changelog
+
+- **2026-08-31** — `8.4`, and the lesson of the phase. Google sign-in "did not log you in": the session was valid, but `getSessionUser()` returns null without a profile row, and the account being tested was created forty minutes **before** the trigger that creates profiles existed — so password login had been equally broken on it all along. Fixed as an idempotent backfill migration rather than a console `insert`, so it travels to every database. Two things settled on the way: Supabase **links** a Google identity to a pre-existing account on a matching verified email (one `user_id`, `providers: email,google`), and the app talks to the **hosted** project, not the local stack — every local verification in 8.1–8.3 was aimed at a database the app never opens, which is why `config push` was then needed to enable the provider where it actually mattered.
 
 - **2026-08-31** — Phase 8, Google sign-in. Three findings from reading `@supabase/ssr` and `auth-js` rather than recalling them, each of which changed the code: the server cookie adapter flushes immediately for keys ending `-code-verifier`, so a **server action** puts the PKCE verifier in an `HttpOnly` cookie where the browser client would not; `appendPkceFlowIdToRedirects` is off in `@supabase/ssr`, so `sb_flow_id` never arrives and the callback must pass **no** `flowId` (submitting another flow's verifier would burn the single-use code); and the CLI reads `.env.local`, so one file feeds both the local stack and Next. Two pre-existing bugs surfaced: `additional_redirect_urls` held `https://127.0.0.1:3000` — wrong scheme, no path — so no OAuth callback could ever have matched it, and the login page had never read the `?error=confirm` that `/auth/confirm` has redirected with since Phase 1. The official Supabase guide shows the app's own `/auth/callback` under Google's redirect URIs; the 302 Supabase actually sends carries `redirect_uri=…:54421/auth/v1/callback`, so that is what the phase doc tells you to register. RLS check 29 now proves `handle_new_user` turns a Google-shaped identity into a profile, falsified by pointing the trigger at `given_name`.
 
