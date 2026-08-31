@@ -6,7 +6,8 @@ import { SealMark } from "@/components/layout/seal-mark";
 import { SiteNav } from "@/components/layout/site-nav";
 import { ThemeSwitcher } from "@/components/layout/theme-switcher";
 import { UserMenu } from "@/components/layout/user-menu";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/lib/auth";
 import type { NavItem } from "@/components/layout/site-nav";
 
@@ -44,13 +45,18 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
                     {user ? (
                         <UserMenu user={user} />
                     ) : (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="shrink-0"
-                            nativeButton={false}
-                            render={<Link href="/login">{t("signIn")}</Link>}
-                        />
+                        <Link
+                            href="/login"
+                            className={cn(
+                                buttonVariants({
+                                    variant: "outline",
+                                    size: "sm",
+                                }),
+                                "shrink-0",
+                            )}
+                        >
+                            {t("signIn")}
+                        </Link>
                     )}
                 </div>
             </div>

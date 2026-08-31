@@ -3,7 +3,8 @@ import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 
 import { AskBox } from "@/components/chat";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/types/chat";
 import { requireUser } from "@/lib/auth";
 import {
@@ -62,13 +63,15 @@ export default async function ConversationPage({
             <div className="mx-auto w-full max-w-2xl shrink-0 border-b border-rule px-5 pt-8 pb-5">
                 <div className="flex items-baseline justify-between gap-4">
                     <p className="eyebrow">{t("eyebrow")}</p>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="doc-ref shrink-0"
-                        nativeButton={false}
-                        render={<Link href="/">{t("new")}</Link>}
-                    />
+                    <Link
+                        href="/"
+                        className={cn(
+                            buttonVariants({ variant: "ghost", size: "sm" }),
+                            "doc-ref shrink-0",
+                        )}
+                    >
+                        {t("new")}
+                    </Link>
                 </div>
                 <h1 className="mt-2 font-display text-2xl font-semibold tracking-tight">
                     {conversation.title ?? t("untitled")}

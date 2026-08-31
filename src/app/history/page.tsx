@@ -2,7 +2,8 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { HistoryPanel } from "@/components/history";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { requireUser } from "@/lib/auth";
 
 export async function generateMetadata() {
@@ -23,11 +24,9 @@ export default async function HistoryPage() {
                         {t("title")}
                     </h1>
                 </div>
-                <Button
-                    className="shrink-0"
-                    nativeButton={false}
-                    render={<Link href="/">{t("newQuestion")}</Link>}
-                />
+                <Link href="/" className={cn(buttonVariants(), "shrink-0")}>
+                    {t("newQuestion")}
+                </Link>
             </div>
 
             <HistoryPanel />

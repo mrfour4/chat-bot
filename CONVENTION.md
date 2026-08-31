@@ -52,6 +52,12 @@ lockfile and Markdown are excluded.
 - **Do not overwrite `components/ui/*` from the CLI** without deciding to. The
   install prompt is declined by default.
 
+- **A link that looks like a button is a `<Link>` with `buttonVariants()`,
+  never `<Button render={<a/>}>`.** Base UI's Button applies `role="button"`
+  whenever `nativeButton` is false (`useButton.js`), which overrides the link
+  role: the element stops being announced as a link, and "open in new tab"
+  stops being announced at all. `nativeButton={false}` silences the console
+  warning and causes the very problem the warning is about.
 - **Chat uses `MessageScroller`, history uses `useVirtualizer`.** The scroller
   already virtualizes (`content-visibility: auto` on every item), preserves
   scroll on prepend, and reports reaching the top. A plain list has none of

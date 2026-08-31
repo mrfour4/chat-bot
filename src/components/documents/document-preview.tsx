@@ -1,7 +1,8 @@
 import { useTranslations } from "next-intl";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import type { DocumentRow } from "@/lib/db";
+import { cn } from "@/lib/utils";
 
 export function DocumentPreview({
     document,
@@ -17,25 +18,26 @@ export function DocumentPreview({
     return (
         <div className="mt-4">
             <div className="flex flex-wrap items-center gap-3 pb-3">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    render={<a href={`${href}?download=1`}>{t("download")}</a>}
-                />
-                <Button
-                    variant="link"
-                    size="sm"
-                    className="text-ink-soft"
-                    render={
-                        <a
-                            href={href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            {t("openInNewTab")}
-                        </a>
-                    }
-                />
+                <a
+                    href={`${href}?download=1`}
+                    className={buttonVariants({
+                        variant: "outline",
+                        size: "sm",
+                    })}
+                >
+                    {t("download")}
+                </a>
+                <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(
+                        buttonVariants({ variant: "link", size: "sm" }),
+                        "text-ink-soft",
+                    )}
+                >
+                    {t("openInNewTab")}
+                </a>
                 <Button
                     variant="ghost"
                     size="sm"

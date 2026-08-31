@@ -2,7 +2,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { MessageSquareIcon } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
     Empty,
     EmptyContent,
@@ -25,10 +25,9 @@ export function HistoryEmpty() {
                 <EmptyDescription>{t("emptyDescription")}</EmptyDescription>
             </EmptyHeader>
             <EmptyContent>
-                <Button
-                    nativeButton={false}
-                    render={<Link href="/">{t("emptyAction")}</Link>}
-                />
+                <Link href="/" className={buttonVariants()}>
+                    {t("emptyAction")}
+                </Link>
             </EmptyContent>
         </Empty>
     );
