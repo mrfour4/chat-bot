@@ -99,16 +99,19 @@
         margin-block: 0.75em;
     }
 
-    /* A formula has no spaces to wrap at, so a long one would widen the message
+    /* Not scoped to `.markdown`: notation is rendered in two places, the answer
+       body and a citation snippet, and only one of them is markdown.
+
+       A formula has no spaces to wrap at, so a long one would widen the message
        instead of clipping. It scrolls in its own box, like tables and code. */
-    .markdown .katex-display {
+    .katex-display {
         margin-block: 0.9em;
         overflow-x: auto;
         overflow-y: hidden;
         padding-block: 0.2em;
     }
 
-    .markdown .katex {
+    .katex {
         font-size: 1.05em;
     }
 

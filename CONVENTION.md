@@ -65,6 +65,11 @@ lockfile and Markdown are excluded.
   list drifts further out of position the further you scroll.
 - **Ask for the next page before the end, not at it.** Derived from the last
   rendered virtual item, so scroll position has one source of truth.
+- **A quotation is rendered with `MathText`, an answer with `Markdown`.** A
+  citation snippet is text from someone's document: Markdown would let it
+  restructure itself, turning pipes into a table and `*` into a list the source
+  never had. `MathText` renders notation and emits every other character
+  verbatim.
 - **A scroll store's first snapshot is not a measurement.** `MessageScroller`
   creates its state as `{start: false, end: false}` and corrects it in a layout
   effect, so a passive effect on mount reads "at the top" for a viewport that is

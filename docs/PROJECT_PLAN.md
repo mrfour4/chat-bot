@@ -7,7 +7,7 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `6.15` — mathematical notation ✅ · **PHASE 6 COMPLETE**
+**Last completed:** `6.16` — notation in citations ✅ · **PHASE 6 COMPLETE**
 **Current phase:** Phase 7 — testing, yours
 **State:** Phase 6 complete — ten small phases, one commit each. The two real
 bugs are fixed and covered: uploading was refused by our own RLS policy, and the
@@ -574,6 +574,7 @@ outright, and the chat scroller fetched in a loop.
 | 6.13 | Refetch loop, again | one page per arrival at the top; input autocomplete off | [6.13](phases/6.13-refetch-and-input.md) | ✅ |
 | 6.14 | Conversation header | same layout as the home intro; title in the tab | [6.14](phases/6.14-conversation-header.md) | ✅ |
 | 6.15 | Mathematical notation | KaTeX, so formulas read as formulas | [6.15](phases/6.15-math.md) | ✅ |
+| 6.16 | Notation in citations | math in a snippet, without letting markdown reformat a quotation | [6.16](phases/6.16-citation-math.md) | ✅ |
 
 ### The two real bugs, and what caused them
 

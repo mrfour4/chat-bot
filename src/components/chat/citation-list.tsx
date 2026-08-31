@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { ChevronRightIcon } from "lucide-react";
 
+import { CitationEntry } from "@/components/chat/citation-entry";
 import {
     Collapsible,
     CollapsibleContent,
@@ -28,21 +29,10 @@ export function CitationList({ citations }: { citations: Citation[] }) {
             <CollapsibleContent>
                 <ul className="mt-3 flex flex-col gap-2">
                     {citations.map((citation, index) => (
-                        <li
+                        <CitationEntry
                             key={`${citation.documentId ?? citation.fileName}-${citation.page ?? index}`}
-                            className="border-l-2 border-lacquer pl-3"
-                        >
-                            <p className="doc-ref text-lacquer">
-                                {citation.fileName}
-                                {citation.page !== null &&
-                                    ` · ${t("page", { page: citation.page })}`}
-                            </p>
-                            {citation.snippet && (
-                                <p className="mt-1 text-sm leading-relaxed text-ink-soft">
-                                    {citation.snippet}
-                                </p>
-                            )}
-                        </li>
+                            citation={citation}
+                        />
                     ))}
                 </ul>
             </CollapsibleContent>
