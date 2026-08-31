@@ -99,8 +99,6 @@ export async function POST(request: Request) {
 
     const supabase = await createClient();
 
-    // Sequential, so that one file's rejection cannot take the others with it
-    // and so the results come back in the order they were chosen.
     const results: UploadResult[] = [];
     for (const file of files) {
         results.push(await store(supabase, teacher.id, file, t));

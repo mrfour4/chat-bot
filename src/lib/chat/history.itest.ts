@@ -10,10 +10,6 @@ import {
 } from "@/lib/chat/conversations";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-/**
- * No Gemini. Here because the keyset predicate and the ilike escaping are
- * PostgREST filter strings, and only PostgREST can say whether they are right.
- */
 const admin = createAdminClient();
 const ids = Array.from({ length: 60 }, () => randomUUID());
 
@@ -35,8 +31,6 @@ describe("listConversationPage", () => {
             ids.map((id, index) => ({
                 id,
                 user_id: user!.id,
-                // Pairs share a timestamp, as several conversations started in
-                // the same second would.
                 created_at: new Date(
                     base + Math.floor(index / 2) * 1000,
                 ).toISOString(),

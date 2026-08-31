@@ -14,8 +14,6 @@ import type { ConversationSummary } from "@/lib/chat/conversations";
 
 const ESTIMATED_ROW_HEIGHT = 82;
 
-// Ask for the next page a few rows before the end, so the reader usually never
-// meets the bottom of what has been loaded.
 const PREFETCH_ROWS = 5;
 
 export function ConversationList({
@@ -42,10 +40,6 @@ export function ConversationList({
     const t = useTranslations("history");
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    // The virtualizer is a mutable instance whose methods read scroll state
-    // React cannot see, so the compiler must not memoize around it. The
-    // "use no memo" directive above is what actually opts this component out;
-    // the rule reports the library by name regardless.
     // eslint-disable-next-line react-hooks/incompatible-library
     const virtualizer = useVirtualizer({
         count: conversations.length,

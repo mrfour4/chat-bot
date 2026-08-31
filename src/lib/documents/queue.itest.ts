@@ -9,16 +9,6 @@ import { getDocument, setStoragePath } from "@/lib/documents/repo";
 import { objectPath, putPdf, removePdf } from "@/lib/documents/storage";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-/**
- * Point this at the mock Gemini server, not the real one:
- *
- *   npm run mock:gemini
- *   GEMINI_BASE_URL=http://127.0.0.1:4010 npm run test:api
- *
- * Four documents against the real API would cost four uploads and four probe
- * calls -- nearly half a day's free-tier budget to prove an ordering property
- * that has nothing to do with Gemini.
- */
 const admin = createAdminClient();
 const ids = [randomUUID(), randomUUID(), randomUUID(), randomUUID()];
 const paths: string[] = [];
@@ -82,9 +72,6 @@ describe("runIndexingQueue", () => {
                 });
         }, 250);
 
-        // Two callers, as two uploads landing together would produce. The
-        // in-process lock should make the second join the first rather than
-        // start a second worker.
         await Promise.all([runIndexingQueue(), runIndexingQueue()]);
         clearInterval(watcher);
 

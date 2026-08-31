@@ -63,8 +63,6 @@ export function useConversations() {
 
     const { fetchNextPage, hasNextPage, isFetchingNextPage } = query;
 
-    // Stable, because the virtualizer calls this from an effect keyed on the
-    // last rendered row.
     const loadMore = useCallback(() => {
         if (!hasNextPage || isFetchingNextPage) return;
         void fetchNextPage();

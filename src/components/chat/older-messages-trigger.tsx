@@ -16,8 +16,6 @@ export function OlderMessagesTrigger({
     const t = useTranslations("chat");
     const { start } = useMessageScrollerScrollable();
 
-    // `start` is false once there is nothing left to scroll towards, which is
-    // the moment the reader has arrived at the oldest loaded message.
     useEffect(() => {
         if (!start) onReach();
     }, [start, onReach]);

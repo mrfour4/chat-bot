@@ -9,11 +9,6 @@ import {
 } from "@/lib/chat/conversations";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-/**
- * Touches no Gemini API. It lives with the other `.itest.ts` files because it
- * needs a real database: the keyset predicate is a PostgREST `or(...)` string,
- * which nothing but PostgREST can tell us is correct.
- */
 const admin = createAdminClient();
 const conversationId = randomUUID();
 const TOTAL = 60;
@@ -37,9 +32,6 @@ describe("listMessagesPage", () => {
             title: "Phân trang",
         });
 
-        // Half the messages deliberately share a timestamp with their
-        // neighbour, which is what a real turn does: the question and the
-        // answer are written in one round trip.
         const base = Date.parse("2026-08-31T00:00:00.000Z");
         const rows = Array.from({ length: TOTAL }, (_, index) => ({
             id: randomUUID(),
@@ -77,7 +69,6 @@ describe("listMessagesPage", () => {
         expect(seen).toHaveLength(TOTAL);
         expect(new Set(seen).size, "a message was returned twice").toBe(TOTAL);
 
-        // Oldest first, in the order they were written.
         expect(seen[0]).toBe("tin nhắn 0");
         expect(seen.at(-1)).toBe(`tin nhắn ${TOTAL - 1}`);
     });

@@ -38,9 +38,6 @@ export function useChat({
         initialConversationId,
     );
 
-    // Kept as its own value rather than derived from `messages`: a live answer
-    // is held under a client-side id the server has never seen, so a cursor
-    // taken from the array could name a message that does not exist.
     const [cursor, setCursor] = useState<string | null>(initialCursor);
 
     const send = useMutation({
@@ -86,9 +83,6 @@ export function useChat({
     const olderMutate = older.mutate;
     const olderPending = older.isPending;
 
-    // Stable, because the scroller calls this from an effect that watches
-    // whether there is anything left to scroll towards: an identity that
-    // changed every render would re-run that effect every render.
     const loadOlder = useCallback(() => {
         if (!conversationId || !cursor || olderPending) return;
         olderMutate({ conversationId, before: cursor });

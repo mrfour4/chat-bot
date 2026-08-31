@@ -7,10 +7,10 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `5.9` — seed data ✅
-**Current phase:** `5.10` — conventions
-**State:** Phase 5 planned in §10, ten small phases. Conventions in `CONVENTION.md`.
-**Blocked on:** nothing. Gemini quota is exhausted, which is what 5.2 is for.
+**Last completed:** `5.10` — conventions ✅ · **PHASE 5 COMPLETE**
+**Current phase:** Phase 6 — testing, yours
+**State:** Phase 5 complete. Conventions in `CONVENTION.md`.
+**Blocked on:** nothing. Gemini quota is exhausted; `npm run mock:gemini` stands in.
 
 **Settled:** **D7** = `gemini-3.6-flash`, overridable via `GEMINI_MODEL`.
 **D6** = **no TanStack AI** — reversed in 2.3.0, because the grounding guarantee
@@ -449,7 +449,7 @@ because your quota is exhausted and every phase after it needs indexing to run.
 | 5.7 | Message paging | cursor, 25/page, MessageScroller, fetch on approaching the top | [5.7](phases/5.7-message-paging.md) | ✅ |
 | 5.8 | History | cursor paging, virtualized, search, rename, delete | [5.8](phases/5.8-history.md) | ✅ |
 | 5.9 | Seed data | enough rows to make paging, virtualization and filters real | [5.9](phases/5.9-seed.md) | ✅ |
-| 5.10 | Conventions | `CONVENTION.md` and this file brought up to date | [5.10](phases/5.10-conventions.md) | ⚪ |
+| 5.10 | Conventions | `CONVENTION.md` and this file brought up to date | [5.10](phases/5.10-conventions.md) | ✅ |
 
 ### What the libraries already decided
 
@@ -614,3 +614,4 @@ checked against whether that document actually indexed.
 - **2026-08-31** — `5.7` messages paged 25 at a time, newest first, through shadcn's `MessageScroller` — which turned out to answer all three of your asks by itself, so **chat needs no TanStack Virtual**: every item carries `content-visibility: auto`, the viewport takes `preserveScrollOnPrepend`, and `useMessageScrollerScrollable()` reports when the top is reached. The cursor is `(created_at, id)`, not `created_at`: a turn writes its question and answer in one round trip, so an identical millisecond is normal, not an edge case. Proved by a database-backed test that pages through 60 messages where half share a timestamp — and falsified by switching to a timestamp-only cursor, which lost exactly 2 of the 60. Older pages prepend into the array `useChat` already owns, rather than arriving from a second source that would have to agree with it about order and about the message the server has just persisted; the cursor is tracked separately because a live answer carries a client-side id the server has never seen. Fitting the scroller also fixed 4.3's compromise: the composer is no longer `fixed` over the page but the last row of a full-height column, which looks identical, gives the scroller a real height, and ends the nested-scrolling problem before it starts.
 - **2026-08-31** — `5.8` history gains search, rename, delete, cursor paging and virtualization. **This is where TanStack Virtual belongs and chat was not** — a plain list of uniform rows with no scroller written for it, versus a component that already virtualizes. Rows are measured rather than assumed, because a title wraps to two lines at narrow widths and an estimate-only list drifts further out of position the further you scroll, which looks like the scrollbar lying. The next page is requested five rows before the end rather than at it, derived from the last rendered virtual item — the virtualizer already knows what is on screen, and a scroll listener would be a second source of truth to keep in step. Cursor here and page numbers on the documents table is deliberate: a teacher navigates a library and wants to know how many pages there are, a student continues their own history and there is no page 4 of it — and a cursor cannot skip or repeat a row when a new conversation appears mid-scroll. Verified against the database with 60 conversations, half sharing a timestamp, plus the literal-percent search. `useVirtualizer` needs `"use no memo"`: it is a mutable instance whose methods read scroll state React cannot see.
 - **2026-08-31** — `5.9` seed data: 80 documents across all six statuses, 60 conversations, and 200 messages in the newest one — 8 document pages, 3 conversation pages, 8 message pages. Everything it writes is prefixed `[SEED]` and `--clean` deletes exactly that, because it runs against the project you are actually using and "remove the test data" has to mean something narrower than emptying the tables. Seeding starts by cleaning, so running it twice gives 80 documents rather than 160. Archived and deleted rows are `ready` underneath, which is what they were before someone archived them — seeding them as `failed` would have been easier and would have quietly modelled a state the app cannot produce. The documents have no PDF and no Gemini document, so they cannot reach an answer; they can only be listed, searched, filtered and paged.
+- **2026-08-31** — `5.10` comments stripped and `CONVENTION.md` brought up to date, **completing Phase 5**. The stripper from 4.9 needed one change: `"use no memo"` had to join its functional list, or it would have been removed with the sentence explaining it — silently re-enabling the React Compiler on the one component that must not have it. 186 → 262 lines of conventions, the largest additions being eleven new entries under "constraints that are not visible from the code". Two of those cost the most time in this phase and are the ones most likely to cost it again: **`signInWithPassword` replaces the token on the client it is called on**, and **`realtime.send` swallows its errors as a `WARNING`**. Together they produced three consistent runs of a wrong conclusion in 5.5.

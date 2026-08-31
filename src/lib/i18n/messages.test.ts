@@ -24,14 +24,6 @@ function valueAt(messages: Messages, key: string): string {
 
 const BRANCHING_TYPES = new Set(["plural", "select", "selectordinal"]);
 
-// A regex cannot do this, and neither can a depth counter alone.
-// `{count, plural, =0 {Upload} other {Upload # files}}` contains `{Upload}`,
-// which looks exactly like an argument and is a branch body. Reading it as one
-// is how a correct catalogue fails this test -- and, worse, how a renamed
-// argument could pass it.
-//
-// So the branch list is walked as what it is: selector, body, selector, body,
-// with the argument search recursing into the bodies only.
 function icuArguments(message: string): Set<string> {
     const found = new Set<string>();
 
@@ -73,7 +65,6 @@ function readBraced(text: string, open: number) {
     return { text: text.slice(open + 1), end: text.length };
 }
 
-// Only commas outside braces separate an argument's name, type and options.
 function splitArgument(body: string): [string, string, string] {
     const cuts: number[] = [];
     let depth = 0;

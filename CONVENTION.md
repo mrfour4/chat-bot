@@ -52,6 +52,14 @@ lockfile and Markdown are excluded.
 - **Do not overwrite `components/ui/*` from the CLI** without deciding to. The
   install prompt is declined by default.
 
+- **Chat uses `MessageScroller`, history uses `useVirtualizer`.** The scroller
+  already virtualizes (`content-visibility: auto` on every item), preserves
+  scroll on prepend, and reports reaching the top. A plain list has none of
+  that, so it gets a virtualizer — with rows **measured**, not estimated, or the
+  list drifts further out of position the further you scroll.
+- **Ask for the next page before the end, not at it.** Derived from the last
+  rendered virtual item, so scroll position has one source of truth.
+
 ## 3. Forms
 
 TanStack Form with a Zod schema in `lib/validation/`.
@@ -113,6 +121,15 @@ question with no answer and no explanation looks like it was ignored.
   the Dashboard.
 - Storage object policies mirror the table policies exactly. If they diverged, a
   teacher could reach a PDF whose row is invisible to them.
+- **A soft delete is an `UPDATE`.** When `deleted_at` replaced a row delete, the
+  `DELETE` policy stopped covering the action it existed for, without failing.
+  Any policy that guards an action has to guard the statement that performs it.
+- **`WITH CHECK` sees only the new row**, so it cannot express "this column is
+  immutable". `documents.uploaded_by` and `checksum` are held by a trigger;
+  without it a teacher could take ownership of a colleague's document and then
+  delete it, passing every policy on the way.
+- **Two permissive policies for one role and action both run on every row.** The
+  advisor flags it. Merge them into one `using (a or b)`.
 - `npm run test:rls` is the proof, and it is worth breaking on purpose
   occasionally: add a permissive policy, watch a check fail, remove it.
 
@@ -146,6 +163,33 @@ These caused real failures. Changing them will look harmless and will not be.
 - **`gemini-3.6-flash`, not the newer 3.7.** 3.7 returned 503 for ~75 seconds
   straight while 3.6 answered first try. Newest is not most available.
 - **The free tier is 20 requests per day per model.**
+- **Gemini cannot rename a document.** `fileSearchStores.documents` exposes
+  `list`, `get` and `delete` — no update. `displayName` is written once at
+  upload. So a citation's name comes from our own row, resolved through the
+  `docid` stamped into `customMetadata`, and it is resolved **at render**: a
+  rename has to reach messages written last week.
+- **Archiving means deleting from the store.** File Search has no "disable", so
+  leaving retrieval scope is `documents.delete` and un-archiving costs a
+  re-index.
+- **`%` and `_` are `ilike` wildcards.** An unescaped search for `100%` matches
+  every row rather than one. Both search boxes escape them.
+- **PostgREST's `or()` takes a comma-separated string**, so a comma in a search
+  term would rewrite the filter. Searches are single-column for that reason.
+- **PostgREST has no row-value comparison.** A `(created_at, id)` keyset is
+  written out as `created_at.lt.X,and(created_at.eq.X,id.lt.Y)`.
+- **A cursor on a timestamp alone loses messages.** A turn writes its question
+  and its answer in one round trip, so an identical millisecond is the normal
+  case. Measured: 2 of 60.
+- **`signInWithPassword` replaces the token on the client it is called on.** A
+  probe that signs in on the service-role client silently downgrades every later
+  write, and if the write is refused by RLS the probe reports whatever it was
+  measuring as broken. Use two clients.
+- **`realtime.send` swallows its errors as a `WARNING`.** A broadcast that never
+  arrives leaves no trace in the caller.
+- **`realtime.messages` is shared by every channel in the project.** A policy on
+  it must check `realtime.topic()` as well as the role, or it opens all of them.
+- **`useVirtualizer` needs `"use no memo"`.** It is a mutable instance whose
+  methods read scroll state React cannot see.
 - **The answer cannot be streamed.** `groundingSupports[].segment` carries
   offsets into the *completed* answer, so the metadata that decides whether an
   answer may be shown necessarily arrives last. Streaming would mean publishing
@@ -165,6 +209,26 @@ These caused real failures. Changing them will look harmless and will not be.
 - The sweeper re-drives anything stale. `STALE_AFTER_MS` is imported by both the
   route and the panel: if they disagreed, the panel would ask on every poll and
   be told nothing every time.
+- **`STALE_AFTER_MS` must exceed `INDEXING_TIMEOUT_MS`.** The sweeper resets a
+  row to `pending` before re-running it, so if indexing could outlast the stale
+  window the sweeper would hijack a job that was still working — and the claim
+  could not stop it, because the reset already put the row back. Asserted in
+  `status.test.ts`.
+- **Uploading schedules one worker, not one job per file.** The worker drains
+  the queue in sequence. Sequence is enforced twice: an in-process promise keeps
+  concurrent Gemini calls to one, and the claim keeps two instances from
+  indexing the same document. The lock saves quota; the claim is the
+  correctness.
+- **A document that loses the claim race is skipped, not retried.** Otherwise
+  the worker asks for the same oldest row forever.
+- **Status reaches the browser by Realtime broadcast, and polling is the
+  fallback.** Polling runs only while the channel is not `SUBSCRIBED`, because a
+  WebSocket fails in ways a fetch does not and a dead socket would otherwise
+  look like a document stuck on "Uploading".
+- **The broadcast is a signal, not data.** It invalidates the query rather than
+  patching the row into the cache: the list is paged, searched and filtered
+  server-side, so merging a payload would mean re-implementing the `where`
+  clause in the browser.
 
 ## 9. The rule underneath most of the above
 
@@ -180,7 +244,19 @@ visible, and the tests are written to fail when it stops being.
 
 - `npm test` — unit tests, Node environment, no jsdom. Components are asserted
   through `renderToStaticMarkup` where a string is enough.
-- `npm run test:api` — opt-in, calls the real Gemini API. Uses the single-page
-  fixtures in `doc-to-test/`.
+- `npm run test:api` — opt-in. `*.itest.ts` needs a real database, and some of
+  them need Gemini. Point them at the mock instead of spending quota:
+
+  ```bash
+  npm run mock:gemini
+  GEMINI_BASE_URL=http://127.0.0.1:4010 npm run test:api
+  ```
+
+  The real-API tests use the single-page fixtures in `doc-to-test/`.
+- `npm run mock:gemini` — an independent server speaking Gemini's wire protocol,
+  so the real SDK stays in the path. `GEMINI_BASE_URL` redirects the whole
+  surface, because the SDK rewrites the resumable upload's host to that base.
+- `npm run seed:test -- <email>` — enough rows to see paging, virtualization,
+  search and filtering; `--clean` removes exactly what it made.
 - `npm run test:rls` — authorization, at the database.
 - The UI is verified by hand. No browser automation.

@@ -25,8 +25,6 @@ async function load(id: string) {
 
     const supabase = await createClient();
 
-    // Through the user's own client, so RLS decides. 404 rather than 403 for
-    // someone else's conversation: 403 confirms that it exists.
     const conversation = await getConversation(supabase, id);
     if (!conversation) {
         return {

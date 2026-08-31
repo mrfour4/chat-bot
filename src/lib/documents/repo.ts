@@ -48,8 +48,6 @@ export type DocumentListing = {
     total: number;
 };
 
-// % and _ are ilike wildcards, so an unescaped search for "100%" matches
-// every row instead of none.
 function escapeLike(value: string): string {
     return value.replace(/[\\%_]/g, (character) => `\\${character}`);
 }
@@ -64,9 +62,6 @@ export async function listDocumentsPage(
         .from("documents")
         .select(LISTING_SELECT, { count: "exact" });
 
-    // The six display statuses are derived, not stored (5.3), so each one has
-    // to be translated back into the columns that actually hold it. Tombstones
-    // are excluded unless they are what was asked for.
     if (query.status === "deleted") {
         builder = builder.not("deleted_at", "is", null);
     } else {

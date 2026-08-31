@@ -31,8 +31,6 @@ export async function GET(
     const { id } = await params;
     const supabase = await createClient();
 
-    // Read through the user's own client, so RLS decides. 404 rather than 403
-    // for someone else's conversation: 403 confirms it exists.
     const conversation = await getConversation(supabase, id);
     if (!conversation) {
         return NextResponse.json(

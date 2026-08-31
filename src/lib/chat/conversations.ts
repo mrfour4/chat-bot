@@ -80,7 +80,6 @@ export type ConversationPage = {
     nextCursor: MessageCursor | null;
 };
 
-// The same wildcards that bite the documents search bite here.
 function escapeLike(value: string): string {
     return value.replace(/[\\%_]/g, (character) => `\\${character}`);
 }
@@ -190,10 +189,6 @@ export async function listMessagesPage(
         .select("*")
         .eq("conversation_id", conversationId);
 
-    // Keyset on (created_at, id): a turn writes its question and its answer in
-    // one round trip, so an identical millisecond is the normal case. A cursor
-    // on the timestamp alone would skip one of them or repeat it forever.
-    // PostgREST has no row-value comparison, so the pair is spelled out.
     if (input.before) {
         builder = builder.or(
             `created_at.lt.${input.before.createdAt},` +

@@ -65,9 +65,6 @@ export function useDocuments() {
     const invalidate = () =>
         queryClient.invalidateQueries({ queryKey: queryKeys.documents });
 
-    // Realtime pushes the change; polling only covers a socket that never
-    // connected, because a dead connection and a slow index would otherwise
-    // look identical -- a document stuck on "Uploading" forever.
     const live = useDocumentsRealtime(invalidate);
 
     const [uploadFormKey, setUploadFormKey] = useState(0);
@@ -103,8 +100,6 @@ export function useDocuments() {
             ).length;
             const refused = results.length - queued;
 
-            // A mixed batch is the interesting case, so the two halves are
-            // reported separately rather than averaged into one verdict.
             if (queued > 0) {
                 notifySuccess(
                     t("uploadedTitle", { count: queued }),
