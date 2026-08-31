@@ -728,7 +728,7 @@ password, connect/disconnect Google — following the existing auth architecture
 | # | What | Doc | Status |
 |---|------|-----|--------|
 | 9.1 | Schema — `avatar_url`, a safe UPDATE path, guard trigger | [9.1](phases/9.1-profile-schema.md) | ✅ |
-| 9.2 | The avatars bucket — private, signed, validated by content | [9.2](phases/9.2-avatar-storage.md) | ⏳ |
+| 9.2 | The avatars bucket — private, signed, validated by content | [9.2](phases/9.2-avatar-storage.md) | ✅ |
 | 9.3 | The page — display name and avatar | [9.3](phases/9.3-profile-page.md) | ⏳ |
 | 9.4 | Password — change it, or set a first one | [9.4](phases/9.4-password.md) | ⏳ |
 | 9.5 | Forgot password — the emailed recovery flow | [9.5](phases/9.5-reset-password.md) | ⏳ |
