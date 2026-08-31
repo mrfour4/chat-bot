@@ -4,7 +4,8 @@
         "cancel": "Cancel",
         "close": "Close",
         "processing": "Working…",
-        "save": "Save"
+        "save": "Save",
+        "clearSearch": "Clear search"
     },
     "nav": {
         "label": "Main navigation",

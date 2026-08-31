@@ -19,6 +19,7 @@ const PREFETCH_ROWS = 5;
 export function ConversationList({
     conversations,
     loading,
+    settling,
     filtered,
     hasMore,
     loadingMore,
@@ -28,6 +29,7 @@ export function ConversationList({
 }: {
     conversations: ConversationSummary[];
     loading: boolean;
+    settling: boolean;
     filtered: boolean;
     hasMore: boolean;
     loadingMore: boolean;
@@ -59,6 +61,8 @@ export function ConversationList({
 
     if (loading) return <HistorySkeleton />;
     if (conversations.length === 0) {
+        // A term typed but not yet queried is a search in flight, not a result.
+        if (settling) return <HistorySkeleton />;
         return filtered ? <HistoryNoMatches /> : <HistoryEmpty />;
     }
 

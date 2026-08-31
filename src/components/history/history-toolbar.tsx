@@ -1,36 +1,29 @@
 "use client";
 
-import { SearchIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupInput,
-} from "@/components/ui/input-group";
+import { SearchInput } from "@/components/common";
 
 export function HistoryToolbar({
     search,
+    searching,
     onSearchChange,
 }: {
     search: string;
+    searching: boolean;
     onSearchChange: (value: string) => void;
 }) {
     const t = useTranslations("history");
 
     return (
         <div className="mt-8">
-            <InputGroup>
-                <InputGroupAddon>
-                    <SearchIcon />
-                </InputGroupAddon>
-                <InputGroupInput
-                    value={search}
-                    onChange={(event) => onSearchChange(event.target.value)}
-                    placeholder={t("searchPlaceholder")}
-                    aria-label={t("searchLabel")}
-                />
-            </InputGroup>
+            <SearchInput
+                value={search}
+                searching={searching}
+                placeholder={t("searchPlaceholder")}
+                label={t("searchLabel")}
+                onChange={onSearchChange}
+            />
         </div>
     );
 }

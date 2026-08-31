@@ -1,6 +1,7 @@
 "use client";
 
 import {
+    keepPreviousData,
     useInfiniteQuery,
     useMutation,
     useQueryClient,
@@ -27,6 +28,8 @@ export function useConversations() {
     const [search, setSearch] = useState("");
     const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
 
+    const settling = search !== debouncedSearch;
+
     const query = useInfiniteQuery({
         queryKey: [...queryKeys.conversations, debouncedSearch],
         queryFn: ({ pageParam }) =>
@@ -36,6 +39,7 @@ export function useConversations() {
             }),
         initialPageParam: null as string | null,
         getNextPageParam: (page) => page.nextCursor,
+        placeholderData: keepPreviousData,
     });
 
     const conversations = useMemo(
@@ -71,6 +75,7 @@ export function useConversations() {
     return {
         conversations,
         loading: query.isPending,
+        searching: settling || (query.isFetching && !query.isPending),
         error: query.error?.message ?? null,
 
         search,

@@ -18,12 +18,14 @@ export function HistoryPanel() {
         <>
             <HistoryToolbar
                 search={history.search}
+                searching={history.searching}
                 onSearchChange={history.onSearchChange}
             />
 
             <ConversationList
                 conversations={history.conversations}
                 loading={history.loading}
+                settling={history.searching}
                 filtered={history.search.length > 0}
                 hasMore={history.hasMore}
                 loadingMore={history.loadingMore}

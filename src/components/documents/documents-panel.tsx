@@ -40,6 +40,7 @@ export function DocumentsPanel() {
 
             <DocumentsToolbar
                 search={documents.search}
+                searching={documents.searching}
                 onSearchChange={documents.onSearchChange}
                 status={documents.status}
                 onStatusChange={documents.onStatusChange}
@@ -48,6 +49,7 @@ export function DocumentsPanel() {
             <DocumentsTable
                 documents={documents.documents}
                 loading={documents.loading}
+                settling={documents.searching}
                 filtered={
                     documents.search.length > 0 || documents.status !== "all"
                 }

@@ -71,7 +71,11 @@ export function useDocuments() {
     const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS);
     const queryInput = { search: debouncedSearch, status, page, pageSize };
 
-    const { data = EMPTY_PAGE, isPlaceholderData } = useQuery({
+    const {
+        data = EMPTY_PAGE,
+        isPending: firstLoad,
+        isFetching,
+    } = useQuery({
         queryKey: queryKeys.documentsPage(queryInput),
         queryFn: () => fetchDocumentsPage(queryInput),
         placeholderData: keepPreviousData,
@@ -158,10 +162,16 @@ export function useDocuments() {
             setPage(0);
         };
 
+    // A term typed but not yet queried is a search in flight, not a result.
+    // Without this the "nothing matched" state shows for the old term while the
+    // new one settles, which is the flicker on clearing the box.
+    const settling = search !== debouncedSearch;
+
     return {
         documents: data.documents,
         total: data.total,
-        loading: isPlaceholderData,
+        loading: firstLoad,
+        searching: settling || (isFetching && !firstLoad),
 
         search,
         onSearchChange: changeFilter(setSearch),

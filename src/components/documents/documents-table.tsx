@@ -25,12 +25,14 @@ const EMPTY_ROWS: DocumentListItem[] = [];
 export function DocumentsTable({
     documents,
     loading,
+    settling,
     filtered,
     pendingId,
     actions,
 }: {
     documents: DocumentListItem[];
     loading: boolean;
+    settling: boolean;
     filtered: boolean;
     pendingId: string | null;
     actions: DocumentActions;
@@ -65,7 +67,9 @@ export function DocumentsTable({
                 </TableHeader>
 
                 <TableBody>
-                    {loading && rows.length === 0 ? (
+                    {loading ? (
+                        <DocumentsTableSkeleton rows={5} />
+                    ) : rows.length === 0 && settling ? (
                         <DocumentsTableSkeleton rows={3} />
                     ) : rows.length === 0 ? (
                         <TableRow>

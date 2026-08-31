@@ -4,7 +4,8 @@
         "cancel": "Huỷ",
         "close": "Đóng",
         "processing": "Đang xử lý…",
-        "save": "Lưu"
+        "save": "Lưu",
+        "clearSearch": "Xoá tìm kiếm"
     },
     "nav": {
         "label": "Điều hướng chính",

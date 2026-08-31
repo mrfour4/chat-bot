@@ -1,13 +1,8 @@
 "use client";
 
-import { SearchIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupInput,
-} from "@/components/ui/input-group";
+import { SearchInput } from "@/components/common";
 import {
     Select,
     SelectContent,
@@ -31,11 +26,13 @@ const STATUS_KEYS: Record<string, string> = {
 
 export function DocumentsToolbar({
     search,
+    searching,
     onSearchChange,
     status,
     onStatusChange,
 }: {
     search: string;
+    searching: boolean;
     onSearchChange: (value: string) => void;
     status: DocumentsStatusFilter;
     onStatusChange: (value: DocumentsStatusFilter) => void;
@@ -44,17 +41,14 @@ export function DocumentsToolbar({
 
     return (
         <div className="mt-8 flex flex-wrap items-center gap-3">
-            <InputGroup className="min-w-56 flex-1">
-                <InputGroupAddon>
-                    <SearchIcon />
-                </InputGroupAddon>
-                <InputGroupInput
-                    value={search}
-                    onChange={(event) => onSearchChange(event.target.value)}
-                    placeholder={t("searchPlaceholder")}
-                    aria-label={t("searchLabel")}
-                />
-            </InputGroup>
+            <SearchInput
+                value={search}
+                searching={searching}
+                placeholder={t("searchPlaceholder")}
+                label={t("searchLabel")}
+                className="min-w-56 flex-1"
+                onChange={onSearchChange}
+            />
 
             <Select
                 value={status}
