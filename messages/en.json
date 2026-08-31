@@ -168,7 +168,10 @@
         "signUp": "Create account",
         "haveAccount": "Already have an account? ",
         "noAccount": "No account yet? ",
-        "failed": "That did not work"
+        "failed": "That did not work",
+        "errorOauth": "Google sign-in did not complete. Please try again.",
+        "errorOauthCancelled": "You cancelled Google sign-in.",
+        "errorConfirm": "That confirmation link is no longer valid. Please sign in again."
     },
     "validation": {
         "email": "That is not a valid email address.",
@@ -189,7 +192,8 @@
         "invalidCredentials": "Wrong email or password.",
         "signUpInvalid": "Those sign-up details are not valid.",
         "configError": "Could not reach the authentication server. Check the Supabase settings in .env.local.",
-        "confirmEmail": "Check your email to confirm the account, then sign in."
+        "confirmEmail": "Check your email to confirm the account, then sign in.",
+        "oauthUnavailable": "Google sign-in is not configured. Check the Google settings in .env.local."
     },
     "api": {
         "unauthenticated": "Please sign in to continue.",

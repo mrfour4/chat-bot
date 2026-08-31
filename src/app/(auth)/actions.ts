@@ -4,6 +4,8 @@ import { getTranslations } from "next-intl/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { safeNextPath } from "@/lib/auth/next-path";
+import { requestOrigin } from "@/lib/auth/request-origin";
 import { createClient } from "@/lib/supabase/server";
 import {
     MIN_PASSWORD_LENGTH,
@@ -84,6 +86,37 @@ export async function signUp(input: SignUpInput): Promise<AuthFormState> {
 
     revalidatePath("/", "layout");
     redirect("/");
+}
+
+export async function signInWithGoogle(next?: string): Promise<AuthFormState> {
+    const t = await getTranslations("serverAuth");
+
+    let authorizeUrl: string;
+
+    try {
+        const origin = await requestOrigin();
+        if (!origin) return { error: t("configError") };
+
+        const callback = new URL("/auth/callback", origin);
+        callback.searchParams.set("next", safeNextPath(next));
+
+        const supabase = await createClient();
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: {
+                redirectTo: callback.toString(),
+                skipBrowserRedirect: true,
+            },
+        });
+
+        if (error || !data.url) return { error: t("oauthUnavailable") };
+
+        authorizeUrl = data.url;
+    } catch {
+        return { error: t("configError") };
+    }
+
+    redirect(authorizeUrl);
 }
 
 export async function signOut() {

@@ -57,3 +57,11 @@ export function serverEnv() {
             (mocking ? MOCK_FILE_SEARCH_STORE : ""),
     };
 }
+
+export function googleAuthEnabled(): boolean {
+    return Boolean(process.env.SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID);
+}
+
+export function siteUrl(): string | undefined {
+    return process.env.NEXT_PUBLIC_SITE_URL;
+}

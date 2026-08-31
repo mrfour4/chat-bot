@@ -168,7 +168,10 @@
         "signUp": "Tạo tài khoản",
         "haveAccount": "Đã có tài khoản? ",
         "noAccount": "Chưa có tài khoản? ",
-        "failed": "Không thành công"
+        "failed": "Không thành công",
+        "errorOauth": "Đăng nhập bằng Google không thành công. Vui lòng thử lại.",
+        "errorOauthCancelled": "Bạn đã huỷ đăng nhập bằng Google.",
+        "errorConfirm": "Liên kết xác nhận không còn hiệu lực. Vui lòng đăng nhập lại."
     },
     "validation": {
         "email": "Email không hợp lệ.",
@@ -189,7 +192,8 @@
         "invalidCredentials": "Email hoặc mật khẩu không đúng.",
         "signUpInvalid": "Thông tin đăng ký chưa hợp lệ.",
         "configError": "Không kết nối được máy chủ xác thực. Kiểm tra cấu hình Supabase trong .env.local.",
-        "confirmEmail": "Kiểm tra email để xác nhận tài khoản, rồi đăng nhập."
+        "confirmEmail": "Kiểm tra email để xác nhận tài khoản, rồi đăng nhập.",
+        "oauthUnavailable": "Chưa bật đăng nhập bằng Google. Kiểm tra cấu hình Google trong .env.local."
     },
     "api": {
         "unauthenticated": "Vui lòng đăng nhập để tiếp tục.",

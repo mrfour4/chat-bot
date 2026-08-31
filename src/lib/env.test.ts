@@ -61,3 +61,27 @@ describe("serverEnv", () => {
         expect(env.fileSearchStore).toBe("fileSearchStores/real");
     });
 });
+
+describe("googleAuthEnabled", () => {
+    const key = "SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID";
+    const before = process.env[key];
+
+    afterEach(() => {
+        if (before === undefined) delete process.env[key];
+        else process.env[key] = before;
+    });
+
+    it("is off until a client id is set, so the button cannot offer a broken flow", async () => {
+        delete process.env[key];
+        vi.resetModules();
+        const { googleAuthEnabled } = await import("@/lib/env");
+        expect(googleAuthEnabled()).toBe(false);
+    });
+
+    it("is on once the client id is set", async () => {
+        process.env[key] = "123.apps.googleusercontent.com";
+        vi.resetModules();
+        const { googleAuthEnabled } = await import("@/lib/env");
+        expect(googleAuthEnabled()).toBe(true);
+    });
+});

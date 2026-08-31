@@ -1,9 +1,12 @@
+import { TriangleAlertIcon } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { SignInForm, SignUpForm } from "@/components/auth";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getSessionUser } from "@/lib/auth";
+import { loginErrorKey } from "@/lib/auth/login-error";
 
 export async function generateMetadata() {
     const t = await getTranslations();
@@ -13,14 +16,15 @@ export async function generateMetadata() {
 export default async function LoginPage({
     searchParams,
 }: {
-    searchParams: Promise<{ mode?: string }>;
+    searchParams: Promise<{ mode?: string; error?: string }>;
 }) {
     if (await getSessionUser()) redirect("/");
 
     const t = await getTranslations("auth");
 
-    const { mode } = await searchParams;
+    const { mode, error } = await searchParams;
     const isSignUp = mode === "signup";
+    const errorKey = loginErrorKey(error);
 
     return (
         <div className="mx-auto grid max-w-5xl gap-12 px-5 py-16 md:grid-cols-[1fr_360px] md:py-24">
@@ -62,6 +66,13 @@ export default async function LoginPage({
             </div>
 
             <div className="md:pt-11">
+                {errorKey && (
+                    <Alert variant="destructive" className="mb-4">
+                        <TriangleAlertIcon />
+                        <AlertDescription>{t(errorKey)}</AlertDescription>
+                    </Alert>
+                )}
+
                 {isSignUp ? <SignUpForm /> : <SignInForm />}
                 <p className="mt-6 text-center text-sm text-ink-soft">
                     {isSignUp ? t("haveAccount") : t("noAccount")}

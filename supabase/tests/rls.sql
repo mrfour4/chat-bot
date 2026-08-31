@@ -24,6 +24,7 @@ declare
   student constant uuid := '22222222-2222-2222-2222-222222222222';
   doc_id  constant uuid := '99999999-9999-9999-9999-999999999999';
   conv_id constant uuid := '88888888-8888-8888-8888-888888888888';
+  google_user constant uuid := '77777777-7777-7777-7777-777777777777';
   n int;
   blocked boolean;
   detail text;
@@ -396,6 +397,37 @@ begin
   insert into rls_results values
     ('a background job does not overwrite updated_by', n = 1,
      case when n = 1 then '' else 'the job claimed the edit' end);
+
+  ---------------------------------------------------------------- 29
+  -- Google sign-in creates the auth user, and handle_new_user must turn that
+  -- into a profile. Google's metadata shape is what is asserted here: the
+  -- trigger reads `full_name`, which Supabase fills from Google's `name` claim.
+  -- Verified with a real Google identity's metadata rather than our own
+  -- sign-up shape, because only the latter was ever exercised before 8.2.
+  insert into auth.users (id, instance_id, aud, role, email, email_confirmed_at,
+                          raw_app_meta_data, raw_user_meta_data,
+                          created_at, updated_at)
+  values (google_user, '00000000-0000-0000-0000-000000000000',
+          'authenticated', 'authenticated',
+          'google.probe@example.com', now(),
+          '{"provider":"google","providers":["google"]}'::jsonb,
+          '{"iss":"https://accounts.google.com","sub":"1078",
+            "name":"Lê Quốc Tú","full_name":"Lê Quốc Tú",
+            "email":"google.probe@example.com","email_verified":true,
+            "avatar_url":"https://lh3.googleusercontent.com/x",
+            "provider_id":"1078","phone_verified":false}'::jsonb,
+          now(), now());
+
+  select count(*) into n from public.profiles
+    where id = google_user
+      and email = 'google.probe@example.com'
+      and full_name = 'Lê Quốc Tú'
+      and role = 'student';
+  insert into rls_results values
+    ('a Google identity gets a profile with its name and the student role',
+     n = 1, n || ' matching profiles');
+
+  delete from auth.users where id = google_user;
 
   perform set_config('storage.allow_delete_query', 'false', true);
 
