@@ -1,19 +1,12 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
 
-import { askQuestion } from "@/lib/api/chat";
+import { askQuestion, fetchOlderMessages } from "@/lib/api/chat";
 import { notifyError } from "@/lib/notify";
 import type { ChatMessage, HistoryTurn } from "@/types/chat";
-
-function scrollBehavior(): ScrollBehavior {
-    return typeof window !== "undefined" &&
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "auto"
-        : "smooth";
-}
 
 function message(
     role: ChatMessage["role"],
@@ -33,16 +26,22 @@ function message(
 export function useChat({
     initialMessages,
     initialConversationId,
+    initialCursor = null,
 }: {
     initialMessages: ChatMessage[];
     initialConversationId: string | null;
+    initialCursor?: string | null;
 }) {
     const t = useTranslations("chat");
     const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
     const [conversationId, setConversationId] = useState<string | null>(
         initialConversationId,
     );
-    const endRef = useRef<HTMLDivElement>(null);
+
+    // Kept as its own value rather than derived from `messages`: a live answer
+    // is held under a client-side id the server has never seen, so a cursor
+    // taken from the array could name a message that does not exist.
+    const [cursor, setCursor] = useState<string | null>(initialCursor);
 
     const send = useMutation({
         mutationFn: (payload: { question: string; history: HistoryTurn[] }) =>
@@ -73,16 +72,27 @@ export function useChat({
         onError: (error) => notifyError(t("askFailed"), error.message),
     });
 
+    const older = useMutation({
+        mutationFn: fetchOlderMessages,
+        onSuccess: (page) => {
+            setCursor(page.nextCursor);
+            setMessages((current) => [...page.messages, ...current]);
+        },
+        onError: (error) => notifyError(t("loadOlderFailed"), error.message),
+    });
+
     const pending = send.isPending;
 
-    useEffect(() => {
-        if (messages.length > 0 || pending) {
-            endRef.current?.scrollIntoView({
-                behavior: scrollBehavior(),
-                block: "end",
-            });
-        }
-    }, [messages, pending]);
+    const olderMutate = older.mutate;
+    const olderPending = older.isPending;
+
+    // Stable, because the scroller calls this from an effect that watches
+    // whether there is anything left to scroll towards: an identity that
+    // changed every render would re-run that effect every render.
+    const loadOlder = useCallback(() => {
+        if (!conversationId || !cursor || olderPending) return;
+        olderMutate({ conversationId, before: cursor });
+    }, [conversationId, cursor, olderPending, olderMutate]);
 
     function ask(question: string) {
         const history: HistoryTurn[] = messages.map((entry) => ({
@@ -98,7 +108,9 @@ export function useChat({
         messages,
         pending,
         error: send.error?.message ?? null,
-        endRef,
+        hasOlder: Boolean(conversationId && cursor),
+        loadingOlder: older.isPending,
+        loadOlder,
         ask,
     };
 }

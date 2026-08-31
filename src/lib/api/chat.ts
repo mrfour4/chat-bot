@@ -1,5 +1,5 @@
 import { expectOk } from "@/lib/api/http";
-import type { ChatResponse, HistoryTurn } from "@/types/chat";
+import type { ChatMessage, ChatResponse, HistoryTurn } from "@/types/chat";
 
 export async function askQuestion(payload: {
     question: string;
@@ -23,4 +23,23 @@ export async function askQuestion(payload: {
     );
 
     return (await response.json()) as ChatResponse;
+}
+
+export type MessagePageResponse = {
+    messages: ChatMessage[];
+    nextCursor: string | null;
+};
+
+export async function fetchOlderMessages(input: {
+    conversationId: string;
+    before: string;
+}): Promise<MessagePageResponse> {
+    const response = await expectOk(
+        await fetch(
+            `/api/conversations/${input.conversationId}/messages` +
+                `?before=${encodeURIComponent(input.before)}`,
+        ),
+        "Không tải được các tin nhắn cũ hơn.",
+    );
+    return (await response.json()) as MessagePageResponse;
 }

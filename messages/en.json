@@ -36,14 +36,16 @@
         "suggestion1": "What admission methods are there?",
         "suggestion2": "Which programmes does the university offer?",
         "suggestion3": "Who is eligible to apply?",
-        "askFailed": "Could not send your question"
+        "askFailed": "Could not send your question",
+        "olderAbove": "Scroll up for older messages",
+        "loadingOlder": "Loading older messages…",
+        "loadOlderFailed": "Could not load older messages"
     },
     "conversation": {
         "eyebrow": "Continue the conversation",
         "new": "+ New",
         "untitled": "Conversation",
         "startedOn": "Started {date}",
-        "all": "← All conversations",
         "metaTitle": "Conversation"
     },
     "history": {

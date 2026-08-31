@@ -35,7 +35,7 @@ export function ChatComposer({
     });
 
     return (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-rule bg-paper/90 backdrop-blur">
+        <div className="shrink-0 border-t border-rule bg-paper/90 backdrop-blur">
             <div className="mx-auto w-full max-w-2xl px-5 py-4">
                 {error && <ChatError message={error} />}
 

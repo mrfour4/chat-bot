@@ -7,6 +7,7 @@ export { EmptyLibraryNotice } from "@/components/chat/empty-library-notice";
 export { ForbiddenNotice } from "@/components/chat/forbidden-notice";
 export { Markdown } from "@/components/chat/markdown";
 export { MessageList } from "@/components/chat/message-list";
+export { OlderMessagesTrigger } from "@/components/chat/older-messages-trigger";
 export { QuestionMessage } from "@/components/chat/question-message";
 export { SuggestionList } from "@/components/chat/suggestion-list";
 export { ThinkingIndicator } from "@/components/chat/thinking-indicator";

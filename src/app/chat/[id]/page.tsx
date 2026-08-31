@@ -6,8 +6,13 @@ import { AskBox } from "@/components/chat";
 import { Button } from "@/components/ui/button";
 import type { ChatMessage } from "@/types/chat";
 import { requireUser } from "@/lib/auth";
-import { getConversation, listMessages } from "@/lib/chat/conversations";
+import {
+    encodeCursor,
+    getConversation,
+    listMessagesPage,
+} from "@/lib/chat/conversations";
 import { parseCitations } from "@/lib/db";
+import { MESSAGES_PAGE_SIZE } from "@/constants/chat";
 import { listIndexedDocuments } from "@/lib/documents";
 import { resolveCitationTitles } from "@/lib/documents/titles";
 import { createClient } from "@/lib/supabase/server";
@@ -31,13 +36,13 @@ export default async function ConversationPage({
     const conversation = await getConversation(supabase, id);
     if (!conversation) notFound();
 
-    const [messages, documents] = await Promise.all([
-        listMessages(supabase, id),
+    const [page, documents] = await Promise.all([
+        listMessagesPage(supabase, id, { limit: MESSAGES_PAGE_SIZE }),
         listIndexedDocuments(),
     ]);
 
     const initialMessages: ChatMessage[] = await Promise.all(
-        messages.map(async (message) => ({
+        page.messages.map(async (message) => ({
             id: message.id,
             role:
                 message.role === "assistant"
@@ -53,8 +58,8 @@ export default async function ConversationPage({
     );
 
     return (
-        <div className="mx-auto max-w-2xl px-5 py-10 md:py-14">
-            <div className="border-b border-rule pb-5">
+        <div className="flex min-h-0 flex-1 flex-col">
+            <div className="mx-auto w-full max-w-2xl shrink-0 border-b border-rule px-5 pt-8 pb-5">
                 <div className="flex items-baseline justify-between gap-4">
                     <p className="eyebrow">{t("eyebrow")}</p>
                     <Button
@@ -76,19 +81,13 @@ export default async function ConversationPage({
                 </p>
             </div>
 
-            <div className="mt-8">
-                <AskBox
-                    documentCount={documents.length}
-                    initialMessages={initialMessages}
-                    initialConversationId={conversation.id}
-                />
-            </div>
-
-            <Button
-                variant="link"
-                size="sm"
-                className="mt-10 px-0 text-ink-soft"
-                render={<Link href="/history">{t("all")}</Link>}
+            <AskBox
+                documentCount={documents.length}
+                initialMessages={initialMessages}
+                initialConversationId={conversation.id}
+                initialCursor={
+                    page.nextCursor ? encodeCursor(page.nextCursor) : null
+                }
             />
         </div>
     );

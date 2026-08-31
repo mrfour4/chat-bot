@@ -91,16 +91,68 @@ export async function listConversationSummaries(
     }));
 }
 
-export async function listMessages(
+export type MessageCursor = { createdAt: string; id: string };
+
+export type MessagePage = {
+    messages: Message[];
+    nextCursor: MessageCursor | null;
+};
+
+export function encodeCursor(cursor: MessageCursor): string {
+    return `${cursor.createdAt},${cursor.id}`;
+}
+
+export function decodeCursor(value: string | null): MessageCursor | null {
+    if (!value) return null;
+
+    const separator = value.lastIndexOf(",");
+    if (separator < 1) return null;
+
+    const createdAt = value.slice(0, separator);
+    const id = value.slice(separator + 1);
+
+    return createdAt && id ? { createdAt, id } : null;
+}
+
+export async function listMessagesPage(
     supabase: ChatClient,
     conversationId: string,
-): Promise<Message[]> {
-    const { data, error } = await supabase
+    input: { before?: MessageCursor | null; limit: number },
+): Promise<MessagePage> {
+    let builder = supabase
         .from("messages")
         .select("*")
-        .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: true });
+        .eq("conversation_id", conversationId);
+
+    // Keyset on (created_at, id): a turn writes its question and its answer in
+    // one round trip, so an identical millisecond is the normal case. A cursor
+    // on the timestamp alone would skip one of them or repeat it forever.
+    // PostgREST has no row-value comparison, so the pair is spelled out.
+    if (input.before) {
+        builder = builder.or(
+            `created_at.lt.${input.before.createdAt},` +
+                `and(created_at.eq.${input.before.createdAt},` +
+                `id.lt.${input.before.id})`,
+        );
+    }
+
+    const { data, error } = await builder
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(input.limit + 1);
 
     if (error) throw error;
-    return data ?? [];
+
+    const rows = data ?? [];
+    const hasMore = rows.length > input.limit;
+    const page = hasMore ? rows.slice(0, input.limit) : rows;
+    const oldest = page.at(-1);
+
+    return {
+        messages: page.reverse(),
+        nextCursor:
+            hasMore && oldest
+                ? { createdAt: oldest.created_at, id: oldest.id }
+                : null,
+    };
 }
