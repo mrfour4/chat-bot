@@ -1,3 +1,4 @@
+import { cache } from "react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -18,9 +19,22 @@ import { listIndexedDocuments } from "@/lib/documents";
 import { resolveCitationTitles } from "@/lib/documents/titles";
 import { createClient } from "@/lib/supabase/server";
 
-export async function generateMetadata() {
+const loadConversation = cache(async (id: string) => {
+    const supabase = await createClient();
+    return getConversation(supabase, id);
+});
+
+export async function generateMetadata({
+    params,
+}: {
+    params: Promise<{ id: string }>;
+}) {
     const t = await getTranslations();
-    return { title: `${t("conversation.metaTitle")} · ${t("common.appName")}` };
+    const { id } = await params;
+    const conversation = await loadConversation(id);
+
+    const name = conversation?.title ?? t("conversation.metaTitle");
+    return { title: `${name} · ${t("common.appName")}` };
 }
 
 export default async function ConversationPage({
@@ -34,7 +48,7 @@ export default async function ConversationPage({
     const { id } = await params;
     const supabase = await createClient();
 
-    const conversation = await getConversation(supabase, id);
+    const conversation = await loadConversation(id);
     if (!conversation) notFound();
 
     const [page, documents] = await Promise.all([
@@ -58,33 +72,35 @@ export default async function ConversationPage({
         })),
     );
 
+    const intro = (
+        <div className="pt-4 pb-2 md:pt-8">
+            <div className="flex items-baseline justify-between gap-4">
+                <p className="eyebrow">{t("eyebrow")}</p>
+                <Link
+                    href="/"
+                    className={cn(
+                        buttonVariants({ variant: "ghost", size: "sm" }),
+                        "doc-ref shrink-0",
+                    )}
+                >
+                    {t("new")}
+                </Link>
+            </div>
+            <h1 className="mt-2 font-display text-2xl font-semibold tracking-tight">
+                {conversation.title ?? t("untitled")}
+            </h1>
+            <p className="mt-1.5 text-sm text-ink-soft">
+                {t("startedOn", {
+                    date: new Date(
+                        conversation.created_at,
+                    ).toLocaleDateString(),
+                })}
+            </p>
+        </div>
+    );
+
     return (
         <div className="flex min-h-0 flex-1 flex-col">
-            <div className="mx-auto w-full max-w-2xl shrink-0 border-b border-rule px-5 pt-8 pb-5">
-                <div className="flex items-baseline justify-between gap-4">
-                    <p className="eyebrow">{t("eyebrow")}</p>
-                    <Link
-                        href="/"
-                        className={cn(
-                            buttonVariants({ variant: "ghost", size: "sm" }),
-                            "doc-ref shrink-0",
-                        )}
-                    >
-                        {t("new")}
-                    </Link>
-                </div>
-                <h1 className="mt-2 font-display text-2xl font-semibold tracking-tight">
-                    {conversation.title ?? t("untitled")}
-                </h1>
-                <p className="mt-1.5 text-sm text-ink-soft">
-                    {t("startedOn", {
-                        date: new Date(
-                            conversation.created_at,
-                        ).toLocaleDateString(),
-                    })}
-                </p>
-            </div>
-
             <AskBox
                 documentCount={documents.length}
                 initialMessages={initialMessages}
@@ -92,6 +108,7 @@ export default async function ConversationPage({
                 initialCursor={
                     page.nextCursor ? encodeCursor(page.nextCursor) : null
                 }
+                intro={intro}
             />
         </div>
     );
