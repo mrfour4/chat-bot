@@ -7,8 +7,10 @@ its own doc in `docs/phases/`; this file says where we are and why.
 
 ## 1. Status
 
-**Last completed:** `6.17` — Vietnamese in KaTeX ✅ · **PHASE 6 COMPLETE**
+**Last completed:** `8.1` — the Google provider ✅
 **Current phase:** Phase 7 — testing, yours
+**Google sign-in:** Phase 8 in progress — provider configured (8.1), flow and
+button next.
 **State:** Phase 6 complete — ten small phases, one commit each. The two real
 bugs are fixed and covered: uploading was refused by our own RLS policy, and the
 chat refetched older messages in a loop.
@@ -640,7 +642,76 @@ checked against whether that document actually indexed.
 
 ---
 
-## 13. Changelog
+## 13. Phase 8 — Google sign-in
+
+**Asked for:** "i want support login with google", tested locally now, deployed
+to Vercel later.
+
+| # | What | Doc | Status |
+|---|------|-----|--------|
+| 8.1 | The Google provider — `config.toml`, env vars, Cloud Console walkthrough | [8.1](phases/8.1-google-provider.md) | ✅ |
+| 8.2 | The flow — server action, callback route, origin derivation | [8.2](phases/8.2-oauth-flow.md) | ⏳ |
+| 8.3 | The button — login UI, gated on configuration | [8.3](phases/8.3-google-button.md) | ⏳ |
+
+### What the SDK decided for us
+
+Read from `@supabase/ssr` 0.12.5 and `auth-js` 2.112.4 before writing anything,
+and each finding changed the design:
+
+- Both `createServerClient` and `createBrowserClient` set `flowType: "pkce"`, so
+  this is the code-exchange flow. There is a code verifier to keep somewhere.
+- `ssr/dist/main/cookies.js` flushes a cookie **immediately** for any storage key
+  ending `-code-verifier`, with the comment that no auth event fires when a
+  verifier is stored. That is what makes starting the flow from a **server
+  action** work: the verifier lands in an `HttpOnly` cookie. The browser client
+  would have put it in one readable by JavaScript.
+- This `auth-js` keys verifiers per flow and passes the id as `sb_flow_id`, but
+  only when `experimental.appendPkceFlowIdToRedirects` is on — and `@supabase/ssr`
+  does not enable it. So the callback calls `exchangeCodeForSession(code)` with
+  **no** `flowId`, using the fixed key that `storePKCEVerifier` dual-writes.
+  Passing a guessed flow id would burn the single-use code; the SDK says so in
+  its own comment.
+
+### Two bugs found on the way
+
+**The redirect allow-list could never have matched.** `additional_redirect_urls`
+held `["https://127.0.0.1:3000"]` — `https` where the dev server serves `http`,
+and no path at all, against a setting whose own comment says it holds *exact*
+URLs. Pre-existing, and unrelated to Google except that Google is the first
+feature to depend on it.
+
+**`/auth/confirm` could not have been reused.** It only knows `verifyOtp`, which
+is a different exchange from `exchangeCodeForSession`. OAuth needed its own
+route, not a branch in that one.
+
+### The two callbacks
+
+The single most confusable thing in this phase, worth stating once:
+
+| URL | Belongs to | Who must be told |
+|---|---|---|
+| `http://127.0.0.1:54421/auth/v1/callback` | Supabase Auth | Google Cloud Console |
+| `http://localhost:3000/auth/callback` | this app | `additional_redirect_urls` |
+
+Google returns the user to Supabase; Supabase returns them to us. Pasting the
+app's own URL into Google Cloud Console is the usual first failure, and the
+Supabase one is on port **54421**, not 3000.
+
+### Deploying to Vercel
+
+Nothing localhost-specific is compiled in — the callback origin comes from the
+request. The deploy-time checklist is at the end of
+[8.1](phases/8.1-google-provider.md): one redirect URI to add in Google Cloud
+Console, `site_url` plus the Vercel URL in `config.toml`, one deliberate
+`supabase config push` (it sends the *whole* file, so read the diff), and the
+client id in Vercel's environment so the button appears.
+
+The hosted project is untouched for now, on purpose: pushing today would enable
+a provider holding placeholder credentials.
+
+---
+
+## 14. Changelog
 
 - **2026-08-31** — Phase 6 complete. Two of the ten were genuine bugs rather than polish. Uploading had been broken since 5.3: `documents_update_teacher` requires `updated_by = auth.uid()`, and the upload route's `setStoragePath` never set it, so every upload failed at 42501 — a message Postgres words as "new row", which is why it read as an insert problem. A `BEFORE UPDATE` trigger now stamps the column, because the rule belongs to the table rather than to whichever route remembers it. The chat's infinite fetch was not a threshold: the scroller restores scroll on a prepend only when the previously-first element has moved down, and our "older messages" trigger was that element and never moved. Also: the client-driven reindex sweep is gone, so nothing but upload, restore, retry and cron can reach Gemini; and `keys.test.ts` was written after the dev log caught a `MISSING_MESSAGE` that catalogue parity could never have found.
 
