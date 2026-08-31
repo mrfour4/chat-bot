@@ -95,8 +95,6 @@
         "deleteDescription": "“{title}” sẽ bị xoá khỏi danh sách và khỏi chỉ mục của trợ lý. Học sinh sẽ không còn nhận được câu trả lời trích từ tài liệu này.",
         "deleteConfirm": "Xoá tài liệu",
         "download": "Tải xuống",
-        "openInNewTab": "Mở trong tab mới",
-        "previewTitle": "Xem trước {title}",
         "failureTitle": "Lập chỉ mục thất bại",
         "retry": "Thử lập chỉ mục lại",
         "retrying": "Đang thử lại…",
@@ -147,7 +145,8 @@
         "chooseFiles": "Chọn tệp PDF",
         "changeFiles": "Chọn tệp khác",
         "clearFiles": "Xoá tất cả",
-        "removeFile": "Bỏ {name}"
+        "removeFile": "Bỏ {name}",
+        "openDocument": "Mở {title} trong tab mới"
     },
     "auth": {
         "metaTitle": "Đăng nhập",

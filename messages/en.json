@@ -95,8 +95,6 @@
         "deleteDescription": "“{title}” will be removed from the list and from the assistant's index. Students will no longer get answers quoted from it.",
         "deleteConfirm": "Delete document",
         "download": "Download",
-        "openInNewTab": "Open in a new tab",
-        "previewTitle": "Preview of {title}",
         "failureTitle": "Indexing failed",
         "retry": "Try indexing again",
         "retrying": "Retrying…",
@@ -147,7 +145,8 @@
         "chooseFiles": "Choose PDF files",
         "changeFiles": "Choose different files",
         "clearFiles": "Clear all",
-        "removeFile": "Remove {name}"
+        "removeFile": "Remove {name}",
+        "openDocument": "Open {title} in a new tab"
     },
     "auth": {
         "metaTitle": "Sign in",

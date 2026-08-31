@@ -2,7 +2,6 @@ export { DocumentActionsMenu } from "@/components/documents/document-actions-men
 export { DocumentFailure } from "@/components/documents/document-failure";
 export { DocumentNameCell } from "@/components/documents/document-name-cell";
 export { DocumentPeopleCell } from "@/components/documents/document-people-cell";
-export { DocumentPreview } from "@/components/documents/document-preview";
 export { DocumentsEmpty } from "@/components/documents/documents-empty";
 export { DocumentsPagination } from "@/components/documents/documents-pagination";
 export { DocumentsPanel } from "@/components/documents/documents-panel";

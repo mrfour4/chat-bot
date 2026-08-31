@@ -3,6 +3,7 @@
 import {
     ArchiveIcon,
     ArchiveRestoreIcon,
+    DownloadIcon,
     MoreHorizontalIcon,
     PencilIcon,
     RefreshCwIcon,
@@ -75,6 +76,19 @@ export function DocumentActionsMenu({
                             <PencilIcon data-icon="inline-start" />
                             {t("edit")}
                         </DropdownMenuItem>
+
+                        {document.storage_path && (
+                            <DropdownMenuItem
+                                render={
+                                    <a
+                                        href={`/api/documents/${document.id}/file?download=1`}
+                                    />
+                                }
+                            >
+                                <DownloadIcon data-icon="inline-start" />
+                                {t("download")}
+                            </DropdownMenuItem>
+                        )}
 
                         {status === "failed" && (
                             <DropdownMenuItem

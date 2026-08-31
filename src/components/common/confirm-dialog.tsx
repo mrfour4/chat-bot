@@ -41,7 +41,7 @@ export function ConfirmDialog({
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>{title}</AlertDialogTitle>
-                    <AlertDialogDescription>
+                    <AlertDialogDescription className="wrap-anywhere">
                         {description}
                     </AlertDialogDescription>
                 </AlertDialogHeader>

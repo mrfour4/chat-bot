@@ -22,6 +22,13 @@ import type { DocumentListItem } from "@/lib/documents/repo";
 
 const EMPTY_ROWS: DocumentListItem[] = [];
 
+const COLUMN_WIDTHS: Record<string, string> = {
+    title: "w-auto max-w-0",
+    uploaded_by: "w-52",
+    status: "w-36",
+    actions: "w-14",
+};
+
 export function DocumentsTable({
     documents,
     loading,
@@ -51,12 +58,15 @@ export function DocumentsTable({
 
     return (
         <div className="mt-6 overflow-x-auto rounded-lg border border-rule">
-            <Table>
+            <Table className="table-fixed">
                 <TableHeader>
                     {table.getHeaderGroups().map((group) => (
                         <TableRow key={group.id}>
                             {group.headers.map((header) => (
-                                <TableHead key={header.id}>
+                                <TableHead
+                                    key={header.id}
+                                    className={COLUMN_WIDTHS[header.column.id]}
+                                >
                                     {header.isPlaceholder ? null : (
                                         <table.FlexRender header={header} />
                                     )}
@@ -87,7 +97,12 @@ export function DocumentsTable({
                                 className="data-busy:opacity-60"
                             >
                                 {row.getAllCells().map((cell) => (
-                                    <TableCell key={cell.id}>
+                                    <TableCell
+                                        key={cell.id}
+                                        className={
+                                            COLUMN_WIDTHS[cell.column.id]
+                                        }
+                                    >
                                         <table.FlexRender cell={cell} />
                                     </TableCell>
                                 ))}
