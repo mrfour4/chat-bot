@@ -142,7 +142,11 @@
         "archiveFailed": "Could not archive the document",
         "restoredTitle": "Restoring and re-indexing",
         "restoreFailed": "Could not restore the document",
-        "uploadRefused": "{count, plural, one {# file was not accepted} other {# files were not accepted}}"
+        "uploadRefused": "{count, plural, one {# file was not accepted} other {# files were not accepted}}",
+        "chooseFiles": "Choose PDF files",
+        "changeFiles": "Choose different files",
+        "clearFiles": "Clear all",
+        "removeFile": "Remove {name}"
     },
     "auth": {
         "metaTitle": "Sign in",
@@ -174,8 +178,8 @@
         "questionRequired": "Type your question.",
         "questionTooLong": "Questions are limited to {max} characters.",
         "fileRequired": "Choose a PDF file.",
-        "fileEmpty": "That file is empty.",
-        "fileTooLarge": "That file is larger than {size} MB.",
+        "fileEmpty": "{name} is empty.",
+        "fileTooLarge": "{name} is larger than {size} MB.",
         "titleRequired": "Enter a document name.",
         "titleTooLong": "That document name is too long.",
         "tooManyFiles": "Choose at most {maxFiles} files at a time."

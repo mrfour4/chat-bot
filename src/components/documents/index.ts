@@ -11,3 +11,5 @@ export { DocumentsTable } from "@/components/documents/documents-table";
 export { DocumentsToolbar } from "@/components/documents/documents-toolbar";
 export { DocumentUploadForm } from "@/components/documents/document-upload-form";
 export { RenameDocumentDialog } from "@/components/documents/rename-document-dialog";
+export { SelectedFiles } from "@/components/documents/selected-files";
+export { UploadButton } from "@/components/documents/upload-button";

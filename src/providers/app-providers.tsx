@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import type { ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/toast";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { DEFAULT_THEME } from "@/constants/theme";
 
 function makeQueryClient() {
@@ -35,7 +36,9 @@ export function AppProviders({ children }: { children: ReactNode }) {
             disableTransitionOnChange
         >
             <QueryClientProvider client={getQueryClient()}>
-                <Toaster>{children}</Toaster>
+                <TooltipProvider>
+                    <Toaster>{children}</Toaster>
+                </TooltipProvider>
             </QueryClientProvider>
         </ThemeProvider>
     );

@@ -142,7 +142,11 @@
         "archiveFailed": "Không lưu trữ được tài liệu",
         "restoredTitle": "Đang khôi phục và lập chỉ mục lại",
         "restoreFailed": "Không khôi phục được tài liệu",
-        "uploadRefused": "{count, plural, other {# tệp không được nhận}}"
+        "uploadRefused": "{count, plural, other {# tệp không được nhận}}",
+        "chooseFiles": "Chọn tệp PDF",
+        "changeFiles": "Chọn tệp khác",
+        "clearFiles": "Xoá tất cả",
+        "removeFile": "Bỏ {name}"
     },
     "auth": {
         "metaTitle": "Đăng nhập",
@@ -174,8 +178,8 @@
         "questionRequired": "Nhập câu hỏi của bạn.",
         "questionTooLong": "Câu hỏi tối đa {max} ký tự.",
         "fileRequired": "Chọn một tệp PDF.",
-        "fileEmpty": "Tệp rỗng.",
-        "fileTooLarge": "Tệp vượt quá {size} MB.",
+        "fileEmpty": "{name} là tệp rỗng.",
+        "fileTooLarge": "{name} lớn hơn {size} MB.",
         "titleRequired": "Vui lòng nhập tên tài liệu.",
         "titleTooLong": "Tên tài liệu quá dài.",
         "tooManyFiles": "Chọn tối đa {maxFiles} tệp một lần."

@@ -17,3 +17,21 @@ export const uploadSchema = z.object({
 });
 
 export type UploadInput = z.infer<typeof uploadSchema>;
+
+export type UploadRefusal = {
+    key: "fileRequired" | "tooManyFiles" | "fileEmpty" | "fileTooLarge";
+    name?: string;
+};
+
+export function describeRefusal(files: File[]): UploadRefusal | null {
+    if (files.length === 0) return { key: "fileRequired" };
+    if (files.length > MAX_UPLOAD_FILES) return { key: "tooManyFiles" };
+
+    const empty = files.find((file) => file.size === 0);
+    if (empty) return { key: "fileEmpty", name: empty.name };
+
+    const large = files.find((file) => file.size > MAX_UPLOAD_BYTES);
+    if (large) return { key: "fileTooLarge", name: large.name };
+
+    return null;
+}

@@ -8,7 +8,7 @@ its own doc in `docs/phases/`; this file says where we are and why.
 ## 1. Status
 
 **Last completed:** `5.10` — conventions ✅ · **PHASE 5 COMPLETE**
-**Current phase:** `6.5` — upload form
+**Current phase:** `6.6` — one refresh per change
 **State:** Phase 6 planned in §11: ten small phases from your eight UI reports
 and the reindexing follow-up. Two are bug fixes, not polish — uploading fails at
 RLS, and the chat fetches older messages in a loop.
@@ -563,7 +563,7 @@ outright, and the chat scroller fetched in a loop.
 | 6.2 | Older messages | the prepend loop, and where the viewport lands after | [6.2](phases/6.2-older-messages.md) | ✅ |
 | 6.3 | Reindexing | what may call Gemini, and what may not | [6.3](phases/6.3-reindexing.md) | ✅ |
 | 6.4 | Upload RLS | `updated_by` stamped by the database; upload works again | [6.4](phases/6.4-upload-rls.md) | ✅ |
-| 6.5 | Upload form | why the button is disabled, clearing a choice, reset after success | [6.5](phases/6.5-upload-form.md) | ⏳ |
+| 6.5 | Upload form | why the button is disabled, clearing a choice, reset after success | [6.5](phases/6.5-upload-form.md) | ✅ |
 | 6.6 | One refresh per change | the duplicated `GET /api/documents` | [6.6](phases/6.6-one-refresh.md) | ⏳ |
 | 6.7 | Search | clear button, pending indicator, calm empty states | [6.7](phases/6.7-search.md) | ⏳ |
 | 6.8 | Documents table | long file names, new tab, size only, download | [6.8](phases/6.8-documents-table.md) | ⏳ |

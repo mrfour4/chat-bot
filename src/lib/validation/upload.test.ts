@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { MAX_UPLOAD_BYTES } from "@/lib/documents/validate";
-import { MAX_UPLOAD_FILES, uploadSchema } from "@/lib/validation/upload";
+import {
+    describeRefusal,
+    MAX_UPLOAD_FILES,
+    uploadSchema,
+} from "@/lib/validation/upload";
 
 function file(bytes: number, name = "dean.pdf") {
     return new File([new Uint8Array(bytes)], name, {
@@ -60,5 +64,43 @@ describe("uploadSchema", () => {
             file(1024, `doc-${i}.pdf`),
         );
         expect(uploadSchema.safeParse({ files }).success).toBe(false);
+    });
+});
+
+describe("describeRefusal", () => {
+    function sized(name: string, size: number): File {
+        const made = new File([], name, { type: "application/pdf" });
+        Object.defineProperty(made, "size", { value: size });
+        return made;
+    }
+
+    it("asks for a file when none is chosen", () => {
+        expect(describeRefusal([])).toEqual({ key: "fileRequired" });
+    });
+
+    it("names the file that is too large", () => {
+        expect(
+            describeRefusal([
+                sized("ok.pdf", 1024),
+                sized("qua-lon.pdf", MAX_UPLOAD_BYTES + 1),
+            ]),
+        ).toEqual({ key: "fileTooLarge", name: "qua-lon.pdf" });
+    });
+
+    it("names the file that is empty", () => {
+        expect(
+            describeRefusal([sized("ok.pdf", 1024), sized("rong.pdf", 0)]),
+        ).toEqual({ key: "fileEmpty", name: "rong.pdf" });
+    });
+
+    it("counts before it measures", () => {
+        const many = Array.from({ length: MAX_UPLOAD_FILES + 1 }, (_, index) =>
+            sized(`${index}.pdf`, MAX_UPLOAD_BYTES + 1),
+        );
+        expect(describeRefusal(many)).toEqual({ key: "tooManyFiles" });
+    });
+
+    it("says nothing when the selection is fine", () => {
+        expect(describeRefusal([sized("ok.pdf", 2048)])).toBeNull();
     });
 });

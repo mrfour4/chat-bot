@@ -1,8 +1,12 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
+import { PaperclipIcon } from "lucide-react";
+import { useRef } from "react";
 import { useTranslations } from "next-intl";
 
+import { SelectedFiles } from "@/components/documents/selected-files";
+import { UploadButton } from "@/components/documents/upload-button";
 import { Button } from "@/components/ui/button";
 import {
     Field,
@@ -10,11 +14,12 @@ import {
     FieldError,
     FieldLabel,
 } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
 import { MAX_UPLOAD_BYTES } from "@/lib/documents/validate";
-import { useFieldErrors } from "@/hooks/use-field-errors";
-import { MAX_UPLOAD_FILES, uploadSchema } from "@/lib/validation/upload";
+import {
+    describeRefusal,
+    MAX_UPLOAD_FILES,
+    uploadSchema,
+} from "@/lib/validation/upload";
 
 const MAX_MEGABYTES = Math.round(MAX_UPLOAD_BYTES / (1024 * 1024));
 
@@ -26,13 +31,15 @@ export function DocumentUploadForm({
     onUpload: (files: File[]) => void;
 }) {
     const t = useTranslations("documents");
-    const translateErrors = useFieldErrors();
+    const tv = useTranslations("validation");
+    const inputRef = useRef<HTMLInputElement>(null);
 
     const form = useForm({
         defaultValues: { files: [] as File[] },
         validators: { onChange: uploadSchema },
         onSubmit: ({ value }) => {
-            if (value.files.length > 0) onUpload(value.files);
+            if (describeRefusal(value.files)) return;
+            onUpload(value.files);
         },
     });
 
@@ -47,9 +54,27 @@ export function DocumentUploadForm({
         >
             <form.Field name="files">
                 {(field) => {
-                    const errors = field.state.meta.errors;
-                    const invalid =
-                        field.state.meta.isTouched && errors.length > 0;
+                    const files = field.state.value;
+                    const refusal = describeRefusal(files);
+
+                    const reason = refusal
+                        ? tv(refusal.key, {
+                              size: MAX_MEGABYTES,
+                              maxFiles: MAX_UPLOAD_FILES,
+                              name: refusal.name ?? "",
+                          })
+                        : null;
+
+                    const replace = (next: File[]) => {
+                        field.handleChange(next);
+                        if (next.length === 0 && inputRef.current) {
+                            inputRef.current.value = "";
+                        }
+                    };
+
+                    // Nothing chosen yet is not an error, it is the starting
+                    // state; only a selection that cannot be sent is.
+                    const invalid = Boolean(refusal) && files.length > 0;
 
                     return (
                         <Field data-invalid={invalid || undefined}>
@@ -57,45 +82,65 @@ export function DocumentUploadForm({
                                 {t("fileLabel")}
                             </FieldLabel>
 
+                            <input
+                                ref={inputRef}
+                                id="document-file"
+                                type="file"
+                                multiple
+                                accept="application/pdf,.pdf"
+                                disabled={uploading}
+                                onBlur={field.handleBlur}
+                                onChange={(event) =>
+                                    replace([...(event.target.files ?? [])])
+                                }
+                                className="sr-only"
+                            />
+
                             <div className="flex flex-wrap items-center gap-3">
-                                <Input
-                                    id="document-file"
-                                    type="file"
-                                    multiple
-                                    accept="application/pdf,.pdf"
+                                <Button
+                                    type="button"
+                                    variant="outline"
                                     disabled={uploading}
-                                    aria-invalid={invalid || undefined}
-                                    onBlur={field.handleBlur}
-                                    onChange={(event) => {
-                                        field.handleChange([
-                                            ...(event.target.files ?? []),
-                                        ]);
-                                    }}
-                                    className="h-9 min-w-0 flex-1 border-rule bg-paper py-1.5 text-ink-soft file:mr-3 file:cursor-pointer file:font-medium file:text-ink"
+                                    onClick={() => inputRef.current?.click()}
+                                >
+                                    <PaperclipIcon data-icon="inline-start" />
+                                    {files.length === 0
+                                        ? t("chooseFiles")
+                                        : t("changeFiles")}
+                                </Button>
+
+                                <UploadButton
+                                    count={files.length}
+                                    uploading={uploading}
+                                    refusal={refusal}
+                                    reason={reason}
                                 />
 
-                                <form.Subscribe
-                                    selector={(state) => ({
-                                        canSubmit: state.canSubmit,
-                                        count: state.values.files.length,
-                                    })}
-                                >
-                                    {({ canSubmit, count }) => (
-                                        <Button
-                                            type="submit"
-                                            disabled={!canSubmit || uploading}
-                                        >
-                                            {uploading && <Spinner />}
-                                            {uploading
-                                                ? t("uploading")
-                                                : t("upload", { count })}
-                                        </Button>
-                                    )}
-                                </form.Subscribe>
+                                {files.length > 1 && !uploading && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => replace([])}
+                                        className="text-ink-soft"
+                                    >
+                                        {t("clearFiles")}
+                                    </Button>
+                                )}
                             </div>
 
-                            {invalid ? (
-                                <FieldError errors={translateErrors(errors)} />
+                            <SelectedFiles
+                                files={files}
+                                disabled={uploading}
+                                onRemove={(index) =>
+                                    replace(
+                                        files.filter((_, at) => at !== index),
+                                    )
+                                }
+                            />
+
+                            {invalid && reason ? (
+                                <FieldError errors={[{ message: reason }]} />
                             ) : (
                                 <FieldDescription>
                                     {t("uploadHint", {
