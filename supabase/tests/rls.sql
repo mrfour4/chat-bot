@@ -355,6 +355,48 @@ begin
     ('a student cannot rename a document', n = 0,
      case when n = 0 then '' else 'the rename succeeded' end);
 
+  ---------------------------------------------------------------- 26
+  -- The upload route's own update: insert, then record where the file landed,
+  -- without naming updated_by. This is the 42501 from 6.4.
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', teacher, 'role', 'authenticated')::text, true);
+  begin
+    update public.documents set storage_path = 'x/y.pdf' where id = doc_id;
+    blocked := false;
+    detail := '';
+  exception when others then
+    blocked := true;
+    detail := sqlstate || ' ' || sqlerrm;
+  end;
+  perform set_config('role', 'postgres', true);
+  insert into rls_results values
+    ('a teacher can record a storage path without naming updated_by',
+     not blocked, detail);
+
+  ---------------------------------------------------------------- 27
+  -- ...and the database, not the route, is what filled the column in.
+  select count(*) into n from public.documents
+    where id = doc_id and updated_by = teacher;
+  insert into rls_results values
+    ('that update stamps updated_by with the acting teacher', n = 1,
+     n || ' rows stamped');
+
+  ---------------------------------------------------------------- 28
+  -- Service role is not a person: an indexing job must not claim the edit.
+  update public.documents set updated_by = teacher2 where id = doc_id;
+  perform set_config('role', 'service_role', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('role', 'service_role')::text, true);
+  update public.documents set status = 'ready' where id = doc_id;
+  perform set_config('role', 'postgres', true);
+  perform set_config('request.jwt.claims', null, true);
+  select count(*) into n from public.documents
+    where id = doc_id and updated_by = teacher2;
+  insert into rls_results values
+    ('a background job does not overwrite updated_by', n = 1,
+     case when n = 1 then '' else 'the job claimed the edit' end);
+
   perform set_config('storage.allow_delete_query', 'false', true);
 
   delete from public.documents where id = doc_id;
