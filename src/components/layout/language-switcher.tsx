@@ -36,7 +36,7 @@ export function LanguageSwitcher() {
                     </Button>
                 }
             />
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-auto">
                 <DropdownMenuGroup>
                     <DropdownMenuRadioGroup
                         value={locale}

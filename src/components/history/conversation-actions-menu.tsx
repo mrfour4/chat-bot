@@ -51,7 +51,7 @@ export function ConversationActionsMenu({
                     }
                 />
 
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="w-auto">
                     <DropdownMenuGroup>
                         <DropdownMenuItem onClick={() => setRenaming(true)}>
                             <PencilIcon data-icon="inline-start" />

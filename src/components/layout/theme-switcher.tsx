@@ -39,7 +39,7 @@ export function ThemeSwitcher() {
                     </Button>
                 }
             />
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-auto">
                 <DropdownMenuGroup>
                     <DropdownMenuRadioGroup
                         value={theme ?? DEFAULT_THEME}

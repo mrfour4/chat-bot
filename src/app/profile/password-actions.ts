@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth";
+import { authErrorKind } from "@/lib/auth/auth-error";
 import { requestOrigin } from "@/lib/auth/request-origin";
 import { PROFILE_PASSWORD_PATH, PROFILE_PATH } from "@/lib/profile/paths";
 import { createClient } from "@/lib/supabase/server";
@@ -86,9 +87,15 @@ export async function sendPasswordReset(
     landing.searchParams.set("next", PROFILE_PASSWORD_PATH);
     landing.searchParams.set("flow", "recovery");
 
-    await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-        redirectTo: landing.toString(),
-    });
+    const { error } = await supabase.auth.resetPasswordForEmail(
+        parsed.data.email,
+        { redirectTo: landing.toString() },
+    );
+
+    const kind = authErrorKind(error);
+
+    if (kind === "rate-limited") return { error: t("resetRateLimited") };
+    if (kind !== "none") return { error: t("resetFailed") };
 
     return { notice: t("resetEmailSent") };
 }

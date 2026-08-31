@@ -203,7 +203,8 @@
         "signUpInvalid": "Those sign-up details are not valid.",
         "configError": "Could not reach the authentication server. Check the Supabase settings in .env.local.",
         "confirmEmail": "Check your email to confirm the account, then sign in.",
-        "oauthUnavailable": "Google sign-in is not configured. Check the Google settings in .env.local."
+        "oauthUnavailable": "Google sign-in is not configured. Check the Google settings in .env.local.",
+        "rateLimited": "Too many attempts. Please wait a few minutes and try again."
     },
     "api": {
         "unauthenticated": "Please sign in to continue.",
@@ -300,6 +301,8 @@
         "disconnectFailed": "Could not disconnect. Please try again.",
         "disconnectLastIdentity": "This is your only way to sign in. Set a password first.",
         "disconnected": "Google disconnected.",
-        "passwordRejected": "Could not change the password. It may be too weak, or your session may have expired."
+        "passwordRejected": "Could not change the password. It may be too weak, or your session may have expired.",
+        "resetRateLimited": "Too many emails have been sent in the past hour. Please try again in about an hour.",
+        "resetFailed": "Could not send the reset email. Please try again later."
     }
 }

@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { authErrorKind } from "@/lib/auth/auth-error";
 import { safeNextPath } from "@/lib/auth/next-path";
 import { requestOrigin } from "@/lib/auth/request-origin";
 import { createClient } from "@/lib/supabase/server";
@@ -37,10 +38,11 @@ export async function signIn(input: SignInInput): Promise<AuthFormState> {
             password,
         });
 
-        if (error)
-            signInError = error.status
-                ? t("invalidCredentials")
-                : t("configError");
+        const kind = authErrorKind(error);
+
+        if (kind === "rate-limited") signInError = t("rateLimited");
+        else if (kind === "refused") signInError = t("invalidCredentials");
+        else if (kind === "unreachable") signInError = t("configError");
     } catch {
         signInError = t("configError");
     }
@@ -74,8 +76,11 @@ export async function signUp(input: SignUpInput): Promise<AuthFormState> {
             options: { data: { full_name: fullName || null } },
         });
 
-        if (error)
-            return { error: error.status ? error.message : t("configError") };
+        const kind = authErrorKind(error);
+
+        if (kind === "rate-limited") return { error: t("rateLimited") };
+        if (kind === "refused") return { error: error!.message };
+        if (kind === "unreachable") return { error: t("configError") };
 
         if (!data.session) {
             return { notice: t("confirmEmail") };

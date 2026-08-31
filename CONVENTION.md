@@ -185,6 +185,23 @@ question with no answer and no explanation looks like it was ignored.
 
 These caused real failures. Changing them will look harmless and will not be.
 
+- **The built-in Supabase email provider sends 2 emails per hour, project-wide.**
+  Only custom SMTP raises it, and only custom SMTP allows custom templates. Every
+  auth email — confirmation, recovery — shares that budget, so `enable_confirmations`
+  competes with password resets.
+- **Never report an auth failure as a wrong password.** Classify with
+  `authErrorKind`: 429 is a rate limit, no status is an unreachable server, and
+  only another status means the request was actually refused. Telling a
+  rate-limited user their password is wrong makes them retype it and conclude the
+  account is broken.
+- **A refusal is not a fact about the account.** `resetPasswordForEmail` answers
+  success for an unknown address by design, so any error it returns is a genuine
+  failure and can be shown in full — the neutral "if that address has an account"
+  wording belongs only on the success path.
+- **`DropdownMenuContent` is `w-(--anchor-width)`.** Hanging off an icon button it
+  is floored at `min-w-32` with `overflow-x-hidden`, so long labels wrap or clip.
+  Pass `className="w-auto"`; adding `whitespace-nowrap` alone converts a wrap
+  into a clip.
 - **`@supabase/ssr` forces PKCE, so every emailed link returns `?code=`, never a
   fragment.** The token in the email is prefixed `pkce_`. Probing an auth endpoint
   with `curl` produces an *implicit* link instead (no verifier), which is a
