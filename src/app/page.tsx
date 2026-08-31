@@ -14,23 +14,25 @@ export default async function HomePage({
         searchParams,
     ]);
 
+    const intro = (
+        <div className="pt-4 pb-2 md:pt-8">
+            {error === "forbidden" && <ForbiddenNotice />}
+
+            <section>
+                <p className="eyebrow">{t("eyebrow")}</p>
+                <h1 className="mt-3 font-display text-4xl leading-[1.1] font-semibold tracking-tight text-balance md:text-5xl">
+                    {t("title")}
+                </h1>
+                <p className="mt-5 leading-relaxed text-ink-soft">
+                    {t("description")}
+                </p>
+            </section>
+        </div>
+    );
+
     return (
         <div className="flex min-h-0 flex-1 flex-col">
-            <div className="mx-auto w-full max-w-2xl shrink-0 px-5 pt-12 md:pt-16">
-                {error === "forbidden" && <ForbiddenNotice />}
-
-                <section>
-                    <p className="eyebrow">{t("eyebrow")}</p>
-                    <h1 className="mt-3 font-display text-4xl leading-[1.1] font-semibold tracking-tight text-balance md:text-5xl">
-                        {t("title")}
-                    </h1>
-                    <p className="mt-5 leading-relaxed text-ink-soft">
-                        {t("description")}
-                    </p>
-                </section>
-            </div>
-
-            <AskBox documentCount={documents.length} />
+            <AskBox documentCount={documents.length} intro={intro} />
         </div>
     );
 }

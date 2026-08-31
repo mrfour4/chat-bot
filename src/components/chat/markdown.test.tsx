@@ -71,3 +71,34 @@ describe("Markdown", () => {
         expect(render("```\nQSC\n```")).toContain("<pre");
     });
 });
+
+describe("Markdown with mathematical notation", () => {
+    it("renders the inline notation that prompted this phase", () => {
+        const html = render(
+            "**$\\text{THPT}_\\text{ĐT}$:** Điểm thi tốt nghiệp",
+        );
+
+        expect(html).toContain('class="katex"');
+
+        expect(html).toContain("<msub><mtext>THPT</mtext><mtext>ĐT</mtext>");
+
+        expect(html, "the dollar delimiters reached the reader").not.toContain(
+            "$",
+        );
+    });
+
+    it("renders display notation as its own block", () => {
+        expect(render("$$\n\\frac{a}{b}\n$$")).toContain("katex-display");
+    });
+
+    it("leaves an unmatched dollar sign as text", () => {
+        expect(render("Học phí 5 triệu $ mỗi kỳ")).toContain(
+            "Học phí 5 triệu $ mỗi kỳ",
+        );
+    });
+
+    it("does not throw on notation the model got wrong", () => {
+        expect(() => render("$\\frac{1}{$")).not.toThrow();
+        expect(() => render("$\\notacommand{x}$")).not.toThrow();
+    });
+});

@@ -99,6 +99,19 @@
         margin-block: 0.75em;
     }
 
+    /* A formula has no spaces to wrap at, so a long one would widen the message
+       instead of clipping. It scrolls in its own box, like tables and code. */
+    .markdown .katex-display {
+        margin-block: 0.9em;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding-block: 0.2em;
+    }
+
+    .markdown .katex {
+        font-size: 1.05em;
+    }
+
     .markdown ul,
     .markdown ol {
         margin-block: 0.75em;

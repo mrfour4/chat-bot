@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { AnswerMessage } from "@/components/chat/answer-message";
 import { OlderMessagesTrigger } from "@/components/chat/older-messages-trigger";
 import { QuestionMessage } from "@/components/chat/question-message";
@@ -16,6 +18,7 @@ import {
 import type { ChatMessage } from "@/types/chat";
 
 export function MessageList({
+    intro,
     messages,
     pending,
     hasOlder,
@@ -23,6 +26,7 @@ export function MessageList({
     restoreTo,
     onLoadOlder,
 }: {
+    intro: ReactNode;
     messages: ChatMessage[];
     pending: boolean;
     hasOlder: boolean;
@@ -30,7 +34,9 @@ export function MessageList({
     restoreTo: string | null;
     onLoadOlder: () => void;
 }) {
-    if (messages.length === 0 && !pending) return null;
+    const showIntro = Boolean(intro) && !hasOlder;
+
+    if (!showIntro && messages.length === 0 && !pending) return null;
 
     return (
         <MessageScrollerProvider autoScroll defaultScrollPosition="end">
@@ -41,6 +47,12 @@ export function MessageList({
                     aria-atomic="false"
                 >
                     <MessageScrollerContent className="mx-auto w-full max-w-2xl gap-6 px-5 py-8">
+                        {showIntro && (
+                            <MessageScrollerItem messageId="intro">
+                                {intro}
+                            </MessageScrollerItem>
+                        )}
+
                         {messages.map((message) => (
                             <MessageScrollerItem
                                 key={message.id}

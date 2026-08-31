@@ -11,6 +11,7 @@ import { AppProviders } from "@/providers";
 import { SiteHeader } from "@/components/layout";
 import { getSessionUser } from "@/lib/auth";
 
+import "katex/dist/katex.min.css";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({

@@ -47,6 +47,7 @@ export function ChatComposer({
                 )}
 
                 <form
+                    autoComplete="off"
                     onSubmit={(event) => {
                         event.preventDefault();
                         event.stopPropagation();
@@ -72,6 +73,10 @@ export function ChatComposer({
                                                 )
                                             }
                                             disabled={pending}
+                                            name="question"
+                                            autoComplete="off"
+                                            autoCorrect="off"
+                                            spellCheck={false}
                                             placeholder={t("placeholder")}
                                             aria-label={t("inputLabel")}
                                             aria-invalid={invalid || undefined}

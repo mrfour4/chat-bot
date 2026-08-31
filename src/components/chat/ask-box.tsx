@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { ChatComposer } from "@/components/chat/chat-composer";
 import { EmptyLibraryNotice } from "@/components/chat/empty-library-notice";
 import { MessageList } from "@/components/chat/message-list";
@@ -11,12 +13,14 @@ export function AskBox({
     initialMessages = [],
     initialConversationId = null,
     initialCursor = null,
+    intro = null,
 }: {
     documentCount: number;
 
     initialMessages?: ChatMessage[];
     initialConversationId?: string | null;
     initialCursor?: string | null;
+    intro?: ReactNode;
 }) {
     const {
         messages,
@@ -38,6 +42,7 @@ export function AskBox({
             )}
 
             <MessageList
+                intro={intro}
                 messages={messages}
                 pending={pending}
                 hasOlder={hasOlder}

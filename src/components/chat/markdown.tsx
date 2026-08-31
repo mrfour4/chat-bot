@@ -1,5 +1,7 @@
 import ReactMarkdown, { type Components } from "react-markdown";
+import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 
 const components: Components = {
     h1: ({ children }) => <h3 className="md-heading">{children}</h3>,
@@ -56,10 +58,20 @@ const components: Components = {
     ),
 };
 
+const katexOptions = {
+    throwOnError: false,
+    strict: "ignore" as const,
+    trust: false,
+};
+
 export function Markdown({ children }: { children: string }) {
     return (
         <div className="markdown text-sm leading-relaxed">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+            <ReactMarkdown
+                remarkPlugins={[remarkGfm, remarkMath]}
+                rehypePlugins={[[rehypeKatex, katexOptions]]}
+                components={components}
+            >
                 {children}
             </ReactMarkdown>
         </div>
