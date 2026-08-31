@@ -106,7 +106,7 @@ export default async function ProfilePage() {
                     <div className="divide-y divide-rule">
                         <ConnectionRow
                             label={t("google")}
-                            mark={<GoogleMark />}
+                            mark={<GoogleMark className="size-5" />}
                             connection={connections.google}
                         />
                     </div>

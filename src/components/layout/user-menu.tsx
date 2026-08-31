@@ -19,7 +19,7 @@ export function UserMenu({
 
     return (
         <>
-            <Separator orientation="vertical" className="h-5" />
+            <Separator orientation="vertical" className="hidden h-5 md:block" />
 
             <div className="flex items-center gap-2">
                 <Link
@@ -38,7 +38,7 @@ export function UserMenu({
                     </span>
                 </Link>
                 <span
-                    className={`doc-ref shrink-0 ${isTeacher ? "text-lacquer" : ""}`}
+                    className={`doc-ref hidden shrink-0 sm:inline ${isTeacher ? "text-lacquer" : ""}`}
                 >
                     {isTeacher ? t("teacher") : t("student")}
                 </span>

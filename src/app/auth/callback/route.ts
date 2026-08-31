@@ -11,16 +11,20 @@ export async function GET(request: NextRequest) {
     const next = safeNextPath(searchParams.get("next"));
     const failure = searchParams.get("error");
     const code = searchParams.get("code");
+    const failedPath =
+        searchParams.get("flow") === "recovery"
+            ? "/login?error=recovery"
+            : "/login?error=oauth";
 
     if (failure) {
         redirect(
             failure === "access_denied"
                 ? "/login?error=oauth_cancelled"
-                : "/login?error=oauth",
+                : failedPath,
         );
     }
 
-    if (!code) redirect("/login?error=oauth");
+    if (!code) redirect(failedPath);
 
     let failed = false;
 
@@ -32,7 +36,7 @@ export async function GET(request: NextRequest) {
         failed = true;
     }
 
-    if (failed) redirect("/login?error=oauth");
+    if (failed) redirect(failedPath);
 
     revalidatePath("/", "layout");
     redirect(next);

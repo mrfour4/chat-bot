@@ -32,10 +32,10 @@ export function SiteHeader({
 
     return (
         <header className="sticky top-0 z-40 border-b border-rule bg-paper/85 backdrop-blur">
-            <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-5 sm:gap-4">
+            <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-2 gap-y-1.5 px-4 py-2 sm:gap-x-3 sm:px-5 md:h-16 md:flex-nowrap md:gap-x-4 md:py-0">
                 <Link
                     href="/"
-                    className="flex min-w-0 items-center gap-2.5 text-lacquer"
+                    className="order-1 flex min-w-0 shrink items-center gap-2.5 text-lacquer"
                 >
                     <SealMark size={26} />
                     <span className="truncate font-display text-[15px] font-semibold tracking-tight text-ink">
@@ -43,8 +43,11 @@ export function SiteHeader({
                     </span>
                 </Link>
 
-                <div className="ml-auto flex items-center gap-2 sm:gap-3">
+                <nav className="order-3 -mx-4 w-[calc(100%+2rem)] overflow-x-auto px-4 md:order-2 md:mx-0 md:ml-auto md:w-auto md:overflow-visible md:px-0">
                     <SiteNav items={items} />
+                </nav>
+
+                <div className="order-2 ml-auto flex shrink-0 items-center gap-1 sm:gap-2 md:order-3 md:ml-0 md:gap-3">
                     <ThemeSwitcher />
                     <LanguageSwitcher />
 

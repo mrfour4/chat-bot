@@ -180,7 +180,7 @@
         "sendResetLink": "Gửi liên kết",
         "backToSignIn": "Quay lại đăng nhập",
         "forgotPassword": "Quên mật khẩu?",
-        "verifying": "Đang xác minh liên kết…"
+        "errorRecovery": "Liên kết đặt lại mật khẩu không dùng được. Hãy mở liên kết trong đúng trình duyệt bạn đã yêu cầu, hoặc yêu cầu một liên kết mới."
     },
     "validation": {
         "email": "Email không hợp lệ.",

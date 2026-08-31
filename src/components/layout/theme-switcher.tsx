@@ -51,6 +51,7 @@ export function ThemeSwitcher() {
                                 <DropdownMenuRadioItem
                                     key={option}
                                     value={option}
+                                    className="whitespace-nowrap"
                                 >
                                     <OptionIcon data-icon="inline-start" />
                                     {t(option)}

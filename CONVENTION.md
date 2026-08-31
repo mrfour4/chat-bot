@@ -185,6 +185,17 @@ question with no answer and no explanation looks like it was ignored.
 
 These caused real failures. Changing them will look harmless and will not be.
 
+- **`@supabase/ssr` forces PKCE, so every emailed link returns `?code=`, never a
+  fragment.** The token in the email is prefixed `pkce_`. Probing an auth endpoint
+  with `curl` produces an *implicit* link instead (no verifier), which is a
+  different shape from what the app will ever see — do not design around it.
+  Consequence: an emailed link only works in the browser that requested it.
+- **`push` after every migration, and check `supabase migration list --linked`.**
+  The app reads hosted, so a migration applied only locally is invisible to it —
+  a `remote: ""` row is a feature that silently does nothing.
+- **An SVG with only a `viewBox` expands to fill its container.** Icons written
+  for `Button` carry no size class on purpose (its CSS sizes them); at any other
+  call site they need one, or they squeeze their neighbours.
 - **A `"use server"` file may export only async functions.** Every export becomes
   a callable endpoint, so a `const` export is refused — and the refusal breaks
   every *other* export in the file, surfacing as "Export X doesn't exist in

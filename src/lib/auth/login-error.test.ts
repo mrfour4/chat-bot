@@ -8,6 +8,7 @@ describe("loginErrorKey", () => {
         expect(loginErrorKey("oauth")).toBe("errorOauth");
         expect(loginErrorKey("oauth_cancelled")).toBe("errorOauthCancelled");
         expect(loginErrorKey("confirm")).toBe("errorConfirm");
+        expect(loginErrorKey("recovery")).toBe("errorRecovery");
     });
 
     it("ignores anything else, so a crafted query cannot pick a message", () => {
@@ -27,7 +28,12 @@ describe("loginErrorKey", () => {
     it("names keys that exist in the catalogue", () => {
         const auth = en.auth as Record<string, string | undefined>;
 
-        for (const value of ["oauth", "oauth_cancelled", "confirm"]) {
+        for (const value of [
+            "oauth",
+            "oauth_cancelled",
+            "confirm",
+            "recovery",
+        ]) {
             const key = loginErrorKey(value);
             expect(key, value).not.toBeNull();
             expect(typeof auth[key as string], `auth.${key}`).toBe("string");

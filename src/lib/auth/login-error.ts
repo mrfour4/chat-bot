@@ -2,6 +2,7 @@ const KEYS = {
     oauth: "errorOauth",
     oauth_cancelled: "errorOauthCancelled",
     confirm: "errorConfirm",
+    recovery: "errorRecovery",
 } as const;
 
 export type LoginErrorKey = (typeof KEYS)[keyof typeof KEYS];

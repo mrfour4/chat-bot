@@ -82,8 +82,9 @@ export async function sendPasswordReset(
 
     const supabase = await createClient();
 
-    const landing = new URL("/auth/recover", origin);
+    const landing = new URL("/auth/callback", origin);
     landing.searchParams.set("next", PROFILE_PASSWORD_PATH);
+    landing.searchParams.set("flow", "recovery");
 
     await supabase.auth.resetPasswordForEmail(parsed.data.email, {
         redirectTo: landing.toString(),
