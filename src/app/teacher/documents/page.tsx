@@ -14,7 +14,7 @@ export default async function TeacherDocumentsPage() {
     const t = await getTranslations("documents");
 
     return (
-        <div className="mx-auto max-w-5xl px-5 py-12 md:py-16">
+        <div className="mx-auto w-full max-w-6xl px-5 py-12 md:py-16">
             <div className="border-b border-rule pb-6">
                 <p className="eyebrow">{t("eyebrow")}</p>
                 <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight">

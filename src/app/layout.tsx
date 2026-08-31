@@ -52,11 +52,11 @@ export default async function RootLayout({
             suppressHydrationWarning
             className={`${bricolage.variable} ${beVietnam.variable} ${jetbrains.variable}`}
         >
-            <body className="flex min-h-dvh flex-col">
+            <body className="flex h-dvh flex-col overflow-hidden">
                 <NextIntlClientProvider>
                     <AppProviders>
                         <SiteHeader user={user} />
-                        <main className="flex min-h-0 flex-1 flex-col">
+                        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
                             {children}
                         </main>
                     </AppProviders>

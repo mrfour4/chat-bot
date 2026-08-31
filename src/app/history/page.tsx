@@ -16,7 +16,7 @@ export default async function HistoryPage() {
     const t = await getTranslations("history");
 
     return (
-        <div className="mx-auto max-w-3xl px-5 py-12 md:py-16">
+        <div className="mx-auto w-full max-w-5xl px-5 py-12 md:py-16">
             <div className="flex items-end justify-between gap-4 border-b border-rule pb-6">
                 <div>
                     <p className="eyebrow">{t("eyebrow")}</p>

@@ -8,9 +8,12 @@ its own doc in `docs/phases/`; this file says where we are and why.
 ## 1. Status
 
 **Last completed:** `5.10` — conventions ✅ · **PHASE 5 COMPLETE**
-**Current phase:** Phase 6 — testing, yours
-**State:** Phase 5 complete. Conventions in `CONVENTION.md`.
-**Blocked on:** nothing. Gemini quota is exhausted; `npm run mock:gemini` stands in.
+**Current phase:** `6.1` — app shell height
+**State:** Phase 6 planned in §11: ten small phases from your eight UI reports
+and the reindexing follow-up. Two are bug fixes, not polish — uploading fails at
+RLS, and the chat fetches older messages in a loop.
+**Blocked on:** nothing. No Gemini quota is spent: `GEMINI_BASE_URL` points every
+call at `npm run mock:gemini` on `127.0.0.1`.
 
 **Settled:** **D7** = `gemini-3.6-flash`, overridable via `GEMINI_MODEL`.
 **D6** = **no TanStack AI** — reversed in 2.3.0, because the grounding guarantee
@@ -548,7 +551,74 @@ again.
 
 ---
 
-## 11. Phase 6 — Test
+## 11. Phase 6 — the fourth feedback round
+
+Everything here comes from using the app: eight numbered UI reports plus a
+follow-up about reindexing. Two of them are not polish — uploading was broken
+outright, and the chat scroller fetched in a loop.
+
+| # | Phase | What it settles |
+|---|-------|-----------------|
+| 6.1 | App shell height, page width | The composer stays on screen; History and Documents stop hiding in a 3xl column |
+| 6.2 | Older messages | The prepend loop, and where the viewport lands afterwards |
+| 6.3 | Reindexing | What may call Gemini, and what may not |
+| 6.4 | Upload RLS | `updated_by`, stamped by the database |
+| 6.5 | Upload form | Why the button is disabled, clearing a choice, resetting after success |
+| 6.6 | One refresh per change | The duplicated `GET /api/documents` |
+| 6.7 | Search | Clear button, pending indicator, calm empty states |
+| 6.8 | Documents table | Long file names, opening in a new tab, size only, download |
+| 6.9 | Status filter | The English label on a Vietnamese menu |
+| 6.10 | Conventions | Comment strip, `CONVENTION.md`, this file |
+
+### The two real bugs, and what caused them
+
+**Uploading has been broken since 5.3, and no test caught it.** `documents_update_teacher`
+requires `updated_by = auth.uid()` in its `WITH CHECK`. The upload route's
+`setStoragePath` runs on the *user's* client and never set that column, so every
+upload failed at 42501 the moment it tried to record where the file was stored.
+Verified against the local database rather than reasoned about — insert `ok`,
+update without `updated_by` `42501`, update with it `ok`. The RLS suite passed
+because it tested the policy, and the policy was right; nothing tested the route
+that had to satisfy it. 6.4 stamps the column in a `BEFORE UPDATE` trigger, so
+the rule cannot be forgotten by the next route that writes to the table.
+
+**The chat fetched older messages forever.** Not a threshold to tune. In
+`handleContentChange` the scroller compares the element that *used to be first*
+against the new children and restores scroll only `if (preserveScrollOnPrepend && index > 0)`.
+Our "older messages above" trigger was itself the first child and stayed first
+after every prepend, so the index was always `0`, the restore never ran, the
+viewport stayed pinned at the top, and the trigger fired again. 6.2 moves the
+trigger out of the message flow entirely.
+
+### Reindexing — the answer to the follow-up
+
+**What triggered it:** a `useEffect` in `use-documents.ts` keyed on the query
+result object. Every refetch produced a new object, so after *every* search,
+rename, archive and delete the effect re-ran, and if any row on the page looked
+stale it posted `/api/documents/reindex`, which requeued and called Gemini.
+Seeded rows sit in `pending`/`indexing` with old timestamps, so they are
+permanently stale — the sweep fired on essentially every action.
+
+**Whether it was necessary:** no. Renaming, archiving, deleting and searching do
+not change what Gemini has indexed. The sweeper exists for one case only: a
+serverless indexing job killed mid-flight, leaving a row stuck in `indexing`
+forever. That is a recovery mechanism, and a recovery mechanism must not be
+driven by a client rendering a table.
+
+**What may call Gemini now:** uploading a new file · restoring an archived one ·
+Retry on a failed row, pressed deliberately · the cron sweep behind
+`REINDEX_SECRET`. Nothing else. Removing the effect removes the only path that
+called Gemini without anyone asking it to.
+
+**And locally, nothing reaches Google at all.** `GEMINI_BASE_URL` rewrites the
+host, so with the mock running every call ends at `127.0.0.1`. 6.3 also lets the
+key and store fall back to placeholders when that variable is set, so a commented-out
+`GEMINI_API_KEY` no longer throws — the quota is not merely unspent, it is
+unreachable.
+
+---
+
+## 12. Phase 7 — Test
 
 - **Documents:** valid PDF (`uit.pdf`) · **scanned PDF (`iuh.pdf`) — must not report `ready` unless text was genuinely retrieved** · invalid file · oversized · duplicate · deletion · indexing failure · multiple documents
 - **RAG:** answerable · multi-part · cross-document (UIT + IUH in one question) · off-topic · **no answer in the documents** · ambiguous · Vietnamese · prompt-injection against the document-only rule
@@ -563,7 +633,7 @@ checked against whether that document actually indexed.
 
 ---
 
-## 12. Changelog
+## 13. Changelog
 
 - **2026-08-30** — Phase 1 complete, merged to `main`. Scaffold, auth, design system, shadcn/ui on Base UI; schema under Supabase CLI control (local stack on 544xx, applied and verified on both local and hosted); types generated; `/api/health` green. Node scripts renamed to `.mts`; teacher promotion verified on hosted.
 - **2026-08-30** — TanStack AI evaluated from package source: adopted client-side only, because its Gemini adapter drops `groundingMetadata` (§5.11). Test PDFs parsed: `iuh.pdf` is a pure scan with no font resources, making OCR support an open risk with a silent failure mode (§5.12).
