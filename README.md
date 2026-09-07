@@ -1,4 +1,4 @@
-# Cố vấn Tuyển sinh — AI Admissions Advisor
+# AI Admissions Advisor
 
 An admissions Q&A assistant that answers **only** from admissions PDFs uploaded
 by teachers. Retrieval runs on Gemini File Search; there is no custom vector
